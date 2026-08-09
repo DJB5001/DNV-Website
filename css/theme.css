@@ -1,0 +1,387 @@
+/* ═══════════════════════════════════════════════════════════════
+   OPSuchtWeb · Design DarkNova
+   ---------------------------------------------------------------
+   Diese Datei wird NACH css/style.css geladen und überschreibt nur
+   Aussehen und Layout. Kein Klassenname und keine ID wird verändert,
+   damit script.js unverändert weiterläuft.
+
+   Grundgedanke: Die App zeigt Preise und Marktdaten. Statt der
+   bisherigen zierenden Gold-Optik bekommt sie den nüchternen Auftritt
+   eines Handelsterminals - scharfe Kanten, dichte Zeilen, Zahlen in
+   Monospace. Der Akzent ist das Amethyst des Clans.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── 1. Farbwelt und Maße ─────────────────────────────────────── */
+
+:root {
+  --background: #0b0b0f;
+  --surface: #131319;
+  --surface-card: #15151c;
+  --surface-modal: #15151c;
+  --border: rgba(255, 255, 255, 0.09);
+
+  --text-primary: #ebe9f1;
+  --text-secondary: #8e8a9c;
+  --text-dark: #0b0b0f;
+
+  /* Heller Amethyst: hell genug, dass dunkler Text darauf lesbar bleibt */
+  --accent-color1: #a97ef0;
+  --accent-color2: #0b0b0f;
+  --accent-violet: #a97ef0;
+
+  --accent-glow: rgba(169, 126, 240, 0.22);
+  --accent-glow-weak: rgba(169, 126, 240, 0.08);
+
+  --sell-color: #4fbf87;
+  --buy-color: #e8636f;
+
+  /* Kanten statt Rundungen - der wichtigste Hebel für den neuen Charakter */
+  --border-radius: 3px;
+  --transition-speed: 0.15s;
+
+  --schrift-display: 'Archivo', system-ui, sans-serif;
+  --schrift-text: 'Public Sans', system-ui, sans-serif;
+  --schrift-mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+/* ── 2. Grundschrift ──────────────────────────────────────────── */
+
+body {
+  font-family: var(--schrift-text);
+  background: var(--background);
+  letter-spacing: 0;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--schrift-display);
+  font-variation-settings: 'wdth' 108, 'wght' 750;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+}
+
+/* Alles Zahlenhafte in Monospace: Preise lassen sich so untereinander
+   vergleichen, weil jede Ziffer gleich breit ist. */
+.price,
+.amount,
+.value,
+.stat-value,
+.auction-price,
+.market-price,
+.shard-price,
+[class*='price'],
+[class*='Price'],
+input[type='number'],
+.timer,
+.auction-timer,
+.countdown {
+  font-family: var(--schrift-mono) !important;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* ── 3. Kopfbereich und Reiter ────────────────────────────────── */
+
+.container {
+  max-width: 82rem;
+}
+
+.header-controls {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: rgba(11, 11, 15, 0.92);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  margin: 0 -1rem 1.5rem;
+  padding: 0 1rem;
+}
+
+/* Wortmarke links neben den Reitern, ohne Eingriff ins HTML */
+.header-controls::before {
+  content: 'DNV';
+  font-family: var(--schrift-display);
+  font-variation-settings: 'wdth' 112, 'wght' 800;
+  font-size: 1rem;
+  letter-spacing: 0.04em;
+  color: var(--accent-color1);
+  padding-right: 1.1rem;
+  margin-right: 0.4rem;
+  border-right: 1px solid var(--border);
+  align-self: center;
+  white-space: nowrap;
+}
+
+.header-controls {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+}
+
+#tabs.tabs {
+  display: flex;
+  gap: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  flex: 1;
+}
+
+#tabs.tabs::-webkit-scrollbar {
+  display: none;
+}
+
+/* Reiter als Unterstrich-Navigation statt gefüllter Pillen */
+#tabs.tabs button {
+  position: relative;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  color: var(--text-secondary) !important;
+  font-family: var(--schrift-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 1.15rem 1.05rem;
+  white-space: nowrap;
+  transition: color var(--transition-speed) ease;
+}
+
+#tabs.tabs button::after {
+  content: '';
+  position: absolute;
+  left: 0.5rem;
+  right: 0.5rem;
+  bottom: 0;
+  height: 2px;
+  background: var(--accent-color1);
+  transform: scaleX(0);
+  transition: transform var(--transition-speed) ease;
+}
+
+#tabs.tabs button:hover {
+  color: var(--text-primary) !important;
+}
+
+#tabs.tabs button.active,
+#tabs.tabs button[class*='active'] {
+  color: var(--text-primary) !important;
+  font-weight: 500;
+}
+
+#tabs.tabs button.active::after,
+#tabs.tabs button[class*='active']::after {
+  transform: scaleX(1);
+}
+
+/* ── 4. Flächen und Karten ────────────────────────────────────── */
+
+.card,
+.partner-card,
+.profile-card,
+.chart-container,
+.modal-content,
+.settings-content-section,
+[class*='-box'] {
+  border-radius: var(--border-radius) !important;
+  box-shadow: none !important;
+}
+
+.card {
+  background: var(--surface-card);
+  border: 1px solid var(--border);
+  transition:
+    border-color var(--transition-speed) ease,
+    background var(--transition-speed) ease;
+}
+
+.card:hover {
+  border-color: rgba(169, 126, 240, 0.45);
+  background: #191921;
+}
+
+/* Dichtere Zeilen: bei Preislisten zählt Übersicht mehr als Luft */
+.grid {
+  gap: 0.75rem;
+}
+
+/* ── 5. Eingabefelder und Knöpfe ──────────────────────────────── */
+
+input,
+select,
+textarea {
+  border-radius: var(--border-radius) !important;
+  background: var(--surface) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text-primary) !important;
+  font-family: var(--schrift-text);
+  transition: border-color var(--transition-speed) ease;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--accent-color1) !important;
+  outline: none;
+  box-shadow: 0 0 0 3px var(--accent-glow-weak) !important;
+}
+
+button {
+  border-radius: var(--border-radius) !important;
+  font-family: var(--schrift-mono);
+  letter-spacing: 0.06em;
+}
+
+.refresh-btn,
+.auth-submit-btn,
+.chart-buttons button {
+  text-transform: uppercase;
+  font-size: 0.78rem;
+}
+
+/* ── 6. Modale Fenster ────────────────────────────────────────── */
+
+.modal-content {
+  background: var(--surface-modal) !important;
+  border: 1px solid var(--border) !important;
+}
+
+.settings-tabs {
+  border-bottom: 1px solid var(--border);
+  gap: 0;
+}
+
+.settings-tab {
+  border-radius: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-bottom: 2px solid transparent !important;
+  color: var(--text-secondary) !important;
+  font-family: var(--schrift-mono);
+  font-size: 0.74rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.settings-tab.active {
+  color: var(--text-primary) !important;
+  border-bottom-color: var(--accent-color1) !important;
+}
+
+/* ── 7. Zurückgenommene Effekte ───────────────────────────────── */
+
+/* Die Glitzer- und Regenebenen gehören zur alten Optik.
+   Sie bleiben im HTML, treten aber nicht mehr in Erscheinung. */
+#glitter-canvas,
+#rain-container,
+#matrix-canvas {
+  opacity: 0.18;
+}
+
+/* ── 8. Verweis auf die Clan-Seite ────────────────────────────── */
+
+.dnv-clanlink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  align-self: center;
+  margin-left: 0.75rem;
+  padding: 0.5rem 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius);
+  font-family: var(--schrift-mono);
+  font-size: 0.74rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    color var(--transition-speed) ease,
+    border-color var(--transition-speed) ease;
+}
+
+.dnv-clanlink:hover {
+  color: var(--accent-color1);
+  border-color: var(--accent-color1);
+}
+
+@media (max-width: 40rem) {
+  .header-controls::before {
+    font-size: 0.85rem;
+    padding-right: 0.7rem;
+  }
+  .dnv-clanlink span {
+    display: none;
+  }
+  #tabs.tabs button {
+    padding: 1rem 0.75rem;
+    font-size: 0.72rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #tabs.tabs button::after {
+    transition: none;
+  }
+}
+
+/* ── 9. Nachträge: Regeln mit !important aus style.css überstimmen ──
+   style.css setzt für die Tab-Leiste und den Titel eigene !important-
+   Regeln. Höhere Spezifität über den body-Selektor löst das sauber,
+   ohne die Originaldatei zu verändern. */
+
+body #tabs.tabs,
+body .tabs {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  backdrop-filter: none !important;
+  gap: 0 !important;
+}
+
+/* Der Unterstrich aus style.css wächst aus der Mitte. Hier wird er
+   durch die volle Breite ersetzt, passend zur nüchternen Optik. */
+body .tabs button::after {
+  left: 0.5rem !important;
+  right: 0.5rem !important;
+  bottom: 0 !important;
+  width: auto !important;
+  height: 2px !important;
+  background: var(--accent-color1) !important;
+  transform: scaleX(0);
+  transition: transform var(--transition-speed) ease !important;
+}
+
+body .tabs button.active::after {
+  transform: scaleX(1);
+  width: auto !important;
+  left: 0.5rem !important;
+}
+
+body .tabs button.active {
+  background-color: transparent !important;
+  border-color: transparent !important;
+  color: var(--text-primary) !important;
+}
+
+/* Seitentitel: war Cormorant Garamond in Gold, jetzt die Displayschrift */
+body > .container > h1,
+body > .container > h1 span {
+  font-family: var(--schrift-display) !important;
+  font-variation-settings: 'wdth' 116, 'wght' 850;
+  font-size: clamp(2.2rem, 6vw, 3.4rem) !important;
+  letter-spacing: -0.03em !important;
+  text-transform: uppercase;
+  background: none !important;
+  -webkit-text-fill-color: var(--text-primary) !important;
+  color: var(--text-primary) !important;
+  text-shadow: none !important;
+  margin-bottom: 0.25rem;
+}

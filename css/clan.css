@@ -1,0 +1,736 @@
+/* ═══════════════════════════════════════════════════════════
+   DarkNova [DNV]
+   Gestaltung: redaktioneller Aufbau mit wechselnden Bändern.
+   Helle und dunkle Abschnitte lösen sich ab, dazwischen ein
+   Laufband. Große Ziffern gliedern die Seite.
+   ═══════════════════════════════════════════════════════════ */
+
+:root {
+  --ink: #0b0b0f;
+  --ink-2: #131319;
+  --ink-3: #1e1e26;
+  --paper: #f4f1ea;
+  --paper-2: #e7e2d7;
+  --nova: #a97ef0;
+  --nova-hell: #c9adf7;
+  --gold: #e2b34a;
+
+  --auf-ink: #ece9f2;
+  --auf-ink-leise: #9a95a8;
+  --auf-paper: #1a1a20;
+  --auf-paper-leise: #6b6659;
+
+  --breite: 78rem;
+  --spalte: 62ch;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: var(--ink);
+  color: var(--auf-ink);
+  font-family: 'Public Sans', system-ui, sans-serif;
+  font-size: 1.0625rem;
+  line-height: 1.62;
+  -webkit-font-smoothing: antialiased;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+/* ── Bausteine ───────────────────────────────────────────── */
+
+.band {
+  padding: clamp(3.5rem, 9vw, 7rem) 1.5rem;
+}
+
+.band--paper {
+  background: var(--paper);
+  color: var(--auf-paper);
+}
+
+.band--ink {
+  background: var(--ink);
+  color: var(--auf-ink);
+}
+
+.band--nova {
+  background: var(--nova);
+  color: #fff;
+}
+
+.innen {
+  max-width: var(--breite);
+  margin: 0 auto;
+}
+
+.kicker {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--nova-hell);
+  margin: 0 0 1rem;
+}
+
+.band--paper .kicker {
+  color: #6d3bb8;
+}
+
+.band--nova .kicker {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+h1,
+h2,
+h3 {
+  font-family: 'Archivo', system-ui, sans-serif;
+  font-variation-settings: 'wdth' 112, 'wght' 800;
+  letter-spacing: -0.03em;
+  line-height: 0.95;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+h2 {
+  font-size: clamp(2rem, 5.5vw, 3.6rem);
+}
+
+h3 {
+  font-size: 1.15rem;
+  font-variation-settings: 'wdth' 100, 'wght' 700;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+
+p {
+  max-width: var(--spalte);
+}
+
+a {
+  color: inherit;
+}
+
+/* ── Kopfbereich ─────────────────────────────────────────── */
+
+.hero {
+  min-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 5rem 1.5rem 3rem;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Schwacher Lichtkegel, damit die Fläche nicht tot wirkt */
+.hero::before {
+  content: '';
+  position: absolute;
+  top: -30%;
+  left: 50%;
+  width: 90rem;
+  height: 60rem;
+  transform: translateX(-50%);
+  background: radial-gradient(closest-side, rgba(139, 79, 224, 0.22), transparent 72%);
+  pointer-events: none;
+}
+
+.hero > * {
+  position: relative;
+}
+
+.hero__titel {
+  font-size: clamp(3.2rem, 15vw, 11rem);
+  font-variation-settings: 'wdth' 118, 'wght' 900;
+  line-height: 0.82;
+  margin: 0.5rem 0;
+}
+
+/* Zweite Zeile nur als Kontur - setzt einen Akzent ohne zweite Farbe */
+.hero__kontur {
+  display: block;
+  color: transparent;
+  -webkit-text-stroke: 2px var(--nova-hell);
+}
+
+.hero__text {
+  font-size: clamp(1.05rem, 2.2vw, 1.3rem);
+  color: var(--auf-ink-leise);
+  margin: 1.75rem 0 2.5rem;
+  max-width: 46ch;
+}
+
+.knopfreihe {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.85rem;
+}
+
+.knopf {
+  border-radius: 3px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.9rem 1.6rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.82rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-decoration: none;
+  border: 2px solid var(--nova);
+  background: var(--nova);
+  color: #fff;
+  transition:
+    transform 0.15s ease,
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.knopf:hover {
+  transform: translateY(-2px);
+  background: var(--nova-hell);
+  border-color: var(--nova-hell);
+  color: var(--ink);
+}
+
+.knopf--leer {
+  background: transparent;
+  color: var(--auf-ink);
+  border-color: #3a3a45;
+}
+
+.knopf--leer:hover {
+  background: transparent;
+  border-color: var(--nova-hell);
+  color: var(--nova-hell);
+}
+
+.band--nova .knopf {
+  border-radius: 3px;
+  background: #fff;
+  border-color: #fff;
+  color: var(--nova);
+}
+
+.band--nova .knopf:hover {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: #fff;
+}
+
+.hero__fuss {
+  margin-top: 4rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid #2a2a33;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--auf-ink-leise);
+}
+
+/* ── Laufband ────────────────────────────────────────────── */
+
+.laufband {
+  background: var(--nova);
+  color: #fff;
+  padding: 0.9rem 0;
+  overflow: hidden;
+  white-space: nowrap;
+  border-top: 2px solid var(--ink);
+  border-bottom: 2px solid var(--ink);
+}
+
+.laufband__inhalt {
+  display: inline-block;
+  animation: laufen 32s linear infinite;
+  font-family: 'Archivo', sans-serif;
+  font-variation-settings: 'wdth' 110, 'wght' 800;
+  font-size: 1.15rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.laufband__inhalt span {
+  padding: 0 1.5rem;
+}
+
+@keyframes laufen {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* ── Abschnittskopf mit großer Ziffer ────────────────────── */
+
+.kopf {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: clamp(1rem, 4vw, 3rem);
+  align-items: start;
+  margin-bottom: 3rem;
+}
+
+.ziffer {
+  font-family: 'Archivo', sans-serif;
+  font-variation-settings: 'wdth' 118, 'wght' 900;
+  font-size: clamp(3.5rem, 10vw, 7rem);
+  line-height: 0.8;
+  color: transparent;
+  /* Konturschrift: bewusst kräftig genug, um als Gliederung zu wirken.
+     Mit currentColor und niedriger Deckkraft war sie praktisch unsichtbar. */
+  -webkit-text-stroke: 2px var(--nova);
+  text-stroke: 2px var(--nova);
+  opacity: 0.55;
+}
+
+.band--ink .ziffer {
+  -webkit-text-stroke-color: var(--nova-hell);
+  opacity: 0.45;
+}
+
+.band--nova .ziffer {
+  -webkit-text-stroke-color: #fff;
+  opacity: 0.5;
+}
+
+/* ── Raster für Karten ───────────────────────────────────── */
+
+.raster {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: 1.25rem;
+  margin-top: 2.5rem;
+}
+
+.karte {
+  padding: 1.5rem;
+  border: 1px solid currentColor;
+  border-color: rgba(0, 0, 0, 0.14);
+  background: rgba(255, 255, 255, 0.35);
+  transition: transform 0.15s ease;
+}
+
+.band--ink .karte {
+  border-color: #2c2c36;
+  background: var(--ink-2);
+}
+
+.karte:hover {
+  transform: translateY(-3px);
+}
+
+.karte__nr {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.16em;
+  color: var(--nova);
+  display: block;
+  margin-bottom: 0.6rem;
+}
+
+.band--ink .karte__nr {
+  color: var(--nova-hell);
+}
+
+.karte p {
+  margin: 0.6rem 0 0;
+  font-size: 0.96rem;
+  color: var(--auf-paper-leise);
+}
+
+.band--ink .karte p {
+  color: var(--auf-ink-leise);
+}
+
+/* ── Zahlenreihe ─────────────────────────────────────────── */
+
+.zahlen {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: 1px;
+  margin-top: 3rem;
+  background: rgba(0, 0, 0, 0.14);
+  border: 1px solid rgba(0, 0, 0, 0.14);
+}
+
+.band--ink .zahlen {
+  background: #2c2c36;
+  border-color: #2c2c36;
+}
+
+.zahl {
+  background: var(--paper);
+  padding: 1.5rem;
+}
+
+.band--ink .zahl {
+  background: var(--ink);
+}
+
+.zahl__wert {
+  font-family: 'Archivo', sans-serif;
+  font-variation-settings: 'wdth' 112, 'wght' 800;
+  font-size: 2.4rem;
+  line-height: 1;
+  display: block;
+  color: var(--nova);
+}
+
+.band--ink .zahl__wert {
+  color: var(--gold);
+}
+
+.zahl__label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--auf-paper-leise);
+  margin-top: 0.5rem;
+  display: block;
+}
+
+.band--ink .zahl__label {
+  color: var(--auf-ink-leise);
+}
+
+/* ── App-Vorschau ────────────────────────────────────────── */
+
+.app {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr));
+  gap: clamp(1.5rem, 4vw, 3rem);
+  align-items: start;
+  margin-top: 2.5rem;
+}
+
+.fenster {
+  border: 1px solid #2c2c36;
+  background: var(--ink-2);
+  overflow: hidden;
+}
+
+.fenster__leiste {
+  display: flex;
+  gap: 0.4rem;
+  padding: 0.7rem 0.9rem;
+  background: var(--ink-3);
+  border-bottom: 1px solid #2c2c36;
+}
+
+.fenster__punkt {
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  background: #45454f;
+}
+
+.fenster__reiter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1px;
+  background: #2c2c36;
+}
+
+.fenster__reiter span {
+  flex: 1 1 auto;
+  padding: 0.7rem 0.9rem;
+  background: var(--ink-2);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  color: var(--auf-ink-leise);
+  text-align: center;
+}
+
+.fenster__reiter span[aria-current] {
+  background: var(--nova);
+  color: #fff;
+}
+
+.zeile {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid #22222a;
+  font-size: 0.9rem;
+}
+
+.zeile:last-child {
+  border-bottom: 0;
+}
+
+.zeile__preis {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--gold);
+  white-space: nowrap;
+}
+
+.zeile__preis--runter {
+  color: #56c489;
+}
+
+/* ── Liste mit Punkten ───────────────────────────────────── */
+
+.liste {
+  list-style: none;
+  padding: 0;
+  margin: 1.5rem 0 0;
+  max-width: var(--spalte);
+}
+
+.liste li {
+  padding: 0.7rem 0 0.7rem 1.75rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  position: relative;
+}
+
+.band--ink .liste li,
+.band--nova .liste li {
+  border-bottom-color: rgba(255, 255, 255, 0.16);
+}
+
+.liste li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 1.35em;
+  width: 0.6rem;
+  height: 2px;
+  background: var(--nova);
+}
+
+.band--ink .liste li::before {
+  background: var(--nova-hell);
+}
+
+.band--nova .liste li::before {
+  background: #fff;
+}
+
+/* ── Kopfnavigation ──────────────────────────────────────── */
+
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.9rem 1.5rem;
+  background: rgba(14, 14, 17, 0.86);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid #24242c;
+}
+
+.nav__marke {
+  font-family: 'Archivo', sans-serif;
+  font-variation-settings: 'wdth' 112, 'wght' 800;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--auf-ink);
+  font-size: 1.05rem;
+}
+
+.nav__links {
+  display: flex;
+  gap: 1.4rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.nav__links a {
+  color: var(--auf-ink-leise);
+  text-decoration: none;
+}
+
+.nav__links a:hover {
+  color: var(--nova-hell);
+}
+
+@media (max-width: 46rem) {
+  .nav__links {
+    display: none;
+  }
+}
+
+/* ── Fußzeile ────────────────────────────────────────────── */
+
+footer {
+  background: var(--ink);
+  border-top: 1px solid #24242c;
+  padding: 3rem 1.5rem;
+}
+
+.fuss__raster {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: 2rem;
+  max-width: var(--breite);
+  margin: 0 auto;
+}
+
+footer h4 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--auf-ink-leise);
+  margin: 0 0 0.9rem;
+  font-weight: 400;
+}
+
+footer ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+footer li {
+  margin-bottom: 0.5rem;
+}
+
+footer a {
+  color: var(--auf-ink);
+  text-decoration: none;
+  font-size: 0.95rem;
+}
+
+footer a:hover {
+  color: var(--nova-hell);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.fuss__unten {
+  max-width: var(--breite);
+  margin: 2.5rem auto 0;
+  padding-top: 1.5rem;
+  border-top: 1px solid #24242c;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  color: var(--auf-ink-leise);
+  letter-spacing: 0.06em;
+}
+
+/* ── Rechtstexte ─────────────────────────────────────────── */
+
+.recht {
+  max-width: 48rem;
+  margin: 0 auto;
+  padding: clamp(3rem, 8vw, 6rem) 1.5rem 5rem;
+}
+
+.recht h1 {
+  font-size: clamp(2rem, 6vw, 3.4rem);
+  margin-bottom: 0.75rem;
+}
+
+.recht h2 {
+  font-size: 1.35rem;
+  margin: 3rem 0 0.9rem;
+  font-variation-settings: 'wdth' 100, 'wght' 750;
+}
+
+.recht dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.4rem 1.5rem;
+  margin: 1.5rem 0;
+  padding: 1.25rem;
+  border: 1px solid #2c2c36;
+  background: var(--ink-2);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85rem;
+}
+
+.recht dt {
+  color: var(--auf-ink-leise);
+}
+
+.recht dd {
+  margin: 0;
+}
+
+.recht ul {
+  max-width: var(--spalte);
+  padding-left: 1.1rem;
+}
+
+.recht li {
+  margin-bottom: 0.4rem;
+}
+
+.recht a {
+  color: var(--nova-hell);
+  text-underline-offset: 0.2em;
+}
+
+.hinweis {
+  margin-top: 3rem;
+  padding: 1rem 1.25rem;
+  border-left: 3px solid var(--nova);
+  background: var(--ink-2);
+  font-size: 0.92rem;
+  color: var(--auf-ink-leise);
+}
+
+/* ── Barrierefreiheit ────────────────────────────────────── */
+
+a:focus-visible,
+.knopf:focus-visible {
+  outline: 3px solid var(--nova-hell);
+  outline-offset: 3px;
+}
+
+.ueberspringen {
+  position: absolute;
+  left: -9999px;
+}
+
+.ueberspringen:focus {
+  left: 1rem;
+  top: 1rem;
+  z-index: 50;
+  background: var(--nova);
+  color: #fff;
+  padding: 0.75rem 1.25rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .laufband__inhalt {
+    animation: none;
+  }
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+  }
+}
