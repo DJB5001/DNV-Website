@@ -1,3 +1,9 @@
+// Basis-Adresse für Bilder von Item-Typen.
+// Sie wird genutzt, wenn ein Item kein eigenes Bild hat: Aus dem Material
+// (z. B. NETHERITE_PICKAXE) wird Netherite_Pickaxe.png. Passt die Quelle
+// nicht, genügt es, diese eine Zeile zu ändern.
+const materialBildBasis = 'https://mcdf.wiki.gg/images/';
+
 const customAuctionIcons = {
   "Engelschuhe v3": "https://i.postimg.cc/jSnGfbHW/engelsschuhe-v2.png",
   "Unendliche Kohle": "https://i.postimg.cc/9QHBxH3Z/unendliche-kohle.png",
