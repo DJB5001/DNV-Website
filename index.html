@@ -5,29 +5,30 @@
 
   <!-- PWA: als App installierbar machen -->
   <link rel="manifest" href="manifest.webmanifest">
-  <meta name="theme-color" content="#0a0a0f">
+  <meta name="theme-color" content="#06060b">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="OPSUCHT">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
 
-  <!-- Elegante Schriften: Cormorant Garamond (Display-Serif) + Outfit (Body) -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,500&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
   <script src="js/chart.js"></script>
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/user-profile.css">
+  <!-- Schriften des Redesigns: Sora als Anzeige, Manrope als Text,
+       JetBrains Mono fuer alles Zahlenhafte -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=JetBrains+Mono:wght@400;500&family=Public+Sans:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;800&family=Manrope:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <!-- Redesign: wird nach style.css geladen und ueberschreibt nur das Aussehen -->
   <link rel="stylesheet" href="css/theme.css">
   <link rel="stylesheet" href="css/auth.css">
 </head>
 
 <body class="loading">
+  <!-- Nova-Himmel: zwei weiche Lichtwolken hinter der gesamten Seite.
+       Rein dekorativ, liegt hinter allem und faengt keine Klicks ab. -->
+  <div class="nova-himmel" aria-hidden="true"><span></span><span></span></div>
+
   <!-- Disclaimer Modal -->
   <div id="disclaimerModal" class="modal disclaimer-modal" style="display: none;">
     <div class="modal-content disclaimer-content">
@@ -1505,6 +1506,9 @@
   <script src="js/supabase-compat.js"></script>
   <script src="js/config.js"></script>
   <script src="js/script.js"></script>
+  <!-- Bewegung des Redesigns. Laeuft eigenstaendig und fasst weder eine
+       ID noch eine Klasse aus script.js an. -->
+  <script src="js/nova.js"></script>
 
   <div id="custom-cursor"></div>
 

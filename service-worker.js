@@ -3,16 +3,25 @@
 // Live-Daten (Auktionen, Markt, Verlauf) werden weiterhin frisch aus dem
 // Netz geladen und NICHT gecached.
 
-const CACHE_NAME = 'opsucht-static-v2';
+// Hochzählen, sobald sich die Liste ändert — beim Aktivieren wirft der
+// Worker alle Caches weg, die nicht mehr so heißen.
+const CACHE_NAME = 'opsucht-static-v3';
 const STATIC_ASSETS = [
   './',
   './index.html',
+  './clan.html',
+  './impressum.html',
+  './datenschutz.html',
+  './nutzungsbedingungen.html',
   './css/style.css',
   './css/user-profile.css',
   './css/auth.css',
+  './css/theme.css',
+  './css/clan.css',
   './js/chart.js',
   './js/script.js',
   './js/config.js',
+  './js/nova.js',
   './js/supabase-config.js',
   './js/supabase-compat.js',
   './manifest.webmanifest'

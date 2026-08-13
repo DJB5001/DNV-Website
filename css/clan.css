@@ -1,27 +1,43 @@
-/* ═══════════════════════════════════════════════════════════
-   DarkNova [DNV]
-   Gestaltung: redaktioneller Aufbau mit wechselnden Bändern.
-   Helle und dunkle Abschnitte lösen sich ab, dazwischen ein
-   Laufband. Große Ziffern gliedern die Seite.
-   ═══════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════
+   DarkNova [DNV] · Supernova
+   ---------------------------------------------------------------
+   Gilt für clan.html und die drei Rechtsseiten.
+
+   Der Name des Clans ist ein Sternenereignis, und genau davon lebt
+   die Gestaltung: ein Kern, der hinter dem Schriftzug glimmt, ein
+   treibendes Sternenfeld, Licht das nach außen wandert. Gearbeitet
+   wird mit einer einzigen hellen Achse — Amethyst über Magenta ins
+   Cyan. Alles andere bleibt ruhig und dunkel, damit das Leuchten
+   etwas zu bedeuten hat.
+
+   Die Klassennamen sind dieselben wie vorher. Die Rechtsseiten
+   ziehen ihr Aussehen komplett aus dieser Datei.
+   ═══════════════════════════════════════════════════════════════ */
 
 :root {
-  --ink: #0b0b0f;
-  --ink-2: #131319;
-  --ink-3: #1e1e26;
-  --paper: #f4f1ea;
-  --paper-2: #e7e2d7;
-  --nova: #a97ef0;
-  --nova-hell: #c9adf7;
-  --gold: #e2b34a;
+  --grund: #06060b;
+  --flaeche: #10101b;
+  --flaeche-2: #16162447;
+  --linie: rgba(255, 255, 255, 0.09);
+  --linie-stark: rgba(255, 255, 255, 0.16);
 
-  --auf-ink: #ece9f2;
-  --auf-ink-leise: #9a95a8;
-  --auf-paper: #1a1a20;
-  --auf-paper-leise: #6b6659;
+  --fg: #edebf5;
+  --leise: #8c87a3;
 
-  --breite: 78rem;
+  --amethyst: #a97ef0;
+  --magenta: #e85cd6;
+  --cyan: #5be1ff;
+
+  --schein: rgba(169, 126, 240, 0.22);
+  --schein-schwach: rgba(169, 126, 240, 0.08);
+
+  --anzeige: 'Sora', system-ui, sans-serif;
+  --text: 'Manrope', system-ui, sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  --breite: 72rem;
   --spalte: 62ch;
+  --rundung: 4px;
 }
 
 *,
@@ -36,12 +52,13 @@ html {
 
 body {
   margin: 0;
-  background: var(--ink);
-  color: var(--auf-ink);
-  font-family: 'Public Sans', system-ui, sans-serif;
+  background: var(--grund);
+  color: var(--fg);
+  font-family: var(--text);
   font-size: 1.0625rem;
-  line-height: 1.62;
+  line-height: 1.65;
   -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
 }
 
 img {
@@ -49,527 +66,99 @@ img {
   display: block;
 }
 
-/* ── Bausteine ───────────────────────────────────────────── */
-
-.band {
-  padding: clamp(3.5rem, 9vw, 7rem) 1.5rem;
-}
-
-.band--paper {
-  background: var(--paper);
-  color: var(--auf-paper);
-}
-
-.band--ink {
-  background: var(--ink);
-  color: var(--auf-ink);
-}
-
-.band--nova {
-  background: var(--nova);
-  color: #fff;
-}
-
-.innen {
-  max-width: var(--breite);
-  margin: 0 auto;
-}
-
-.kicker {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.72rem;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: var(--nova-hell);
-  margin: 0 0 1rem;
-}
-
-.band--paper .kicker {
-  color: #6d3bb8;
-}
-
-.band--nova .kicker {
-  color: rgba(255, 255, 255, 0.75);
+a {
+  color: inherit;
 }
 
 h1,
 h2,
 h3 {
-  font-family: 'Archivo', system-ui, sans-serif;
-  font-variation-settings: 'wdth' 112, 'wght' 800;
-  letter-spacing: -0.03em;
-  line-height: 0.95;
+  font-family: var(--anzeige);
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 0.98;
   margin: 0;
-  text-transform: uppercase;
+  text-wrap: balance;
 }
 
 h2 {
-  font-size: clamp(2rem, 5.5vw, 3.6rem);
+  font-size: clamp(1.7rem, 4.5vw, 2.6rem);
+  text-transform: uppercase;
 }
 
 h3 {
   font-size: 1.15rem;
-  font-variation-settings: 'wdth' 100, 'wght' 700;
-  letter-spacing: -0.01em;
-  line-height: 1.2;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
 }
 
 p {
   max-width: var(--spalte);
 }
 
-a {
-  color: inherit;
-}
+/* ── Auftauchen beim Scrollen ────────────────────────────────────
+   Gesteuert von js/nova.js. Ohne JavaScript bleibt alles sichtbar,
+   weil der Ausgangszustand über .auf gesetzt wird und nur dann
+   greift, wenn die Datei tatsächlich läuft — siehe .js-an unten. */
 
-/* ── Kopfbereich ─────────────────────────────────────────── */
-
-.hero {
-  min-height: 92vh;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding: 5rem 1.5rem 3rem;
-  position: relative;
-  overflow: hidden;
-}
-
-/* Schwacher Lichtkegel, damit die Fläche nicht tot wirkt */
-.hero::before {
-  content: '';
-  position: absolute;
-  top: -30%;
-  left: 50%;
-  width: 90rem;
-  height: 60rem;
-  transform: translateX(-50%);
-  background: radial-gradient(closest-side, rgba(139, 79, 224, 0.22), transparent 72%);
-  pointer-events: none;
-}
-
-.hero > * {
-  position: relative;
-}
-
-.hero__titel {
-  font-size: clamp(3.2rem, 15vw, 11rem);
-  font-variation-settings: 'wdth' 118, 'wght' 900;
-  line-height: 0.82;
-  margin: 0.5rem 0;
-}
-
-/* Zweite Zeile nur als Kontur - setzt einen Akzent ohne zweite Farbe */
-.hero__kontur {
-  display: block;
-  color: transparent;
-  -webkit-text-stroke: 2px var(--nova-hell);
-}
-
-.hero__text {
-  font-size: clamp(1.05rem, 2.2vw, 1.3rem);
-  color: var(--auf-ink-leise);
-  margin: 1.75rem 0 2.5rem;
-  max-width: 46ch;
-}
-
-.knopfreihe {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.85rem;
-}
-
-.knopf {
-  border-radius: 3px;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.9rem 1.6rem;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.82rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  text-decoration: none;
-  border: 2px solid var(--nova);
-  background: var(--nova);
-  color: #fff;
+.js-an .auf {
+  opacity: 0;
+  transform: translateY(26px);
   transition:
-    transform 0.15s ease,
-    background 0.15s ease,
-    color 0.15s ease;
+    opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+  transition-delay: calc(var(--i, 0) * 85ms);
 }
 
-.knopf:hover {
-  transform: translateY(-2px);
-  background: var(--nova-hell);
-  border-color: var(--nova-hell);
-  color: var(--ink);
+.js-an .auf.sichtbar {
+  opacity: 1;
+  transform: none;
 }
 
-.knopf--leer {
-  background: transparent;
-  color: var(--auf-ink);
-  border-color: #3a3a45;
-}
-
-.knopf--leer:hover {
-  background: transparent;
-  border-color: var(--nova-hell);
-  color: var(--nova-hell);
-}
-
-.band--nova .knopf {
-  border-radius: 3px;
-  background: #fff;
-  border-color: #fff;
-  color: var(--nova);
-}
-
-.band--nova .knopf:hover {
-  background: var(--ink);
-  border-color: var(--ink);
-  color: #fff;
-}
-
-.hero__fuss {
-  margin-top: 4rem;
-  padding-top: 1.25rem;
-  border-top: 1px solid #2a2a33;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1.5rem;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.75rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--auf-ink-leise);
-}
-
-/* ── Laufband ────────────────────────────────────────────── */
-
-.laufband {
-  background: var(--nova);
-  color: #fff;
-  padding: 0.9rem 0;
-  overflow: hidden;
-  white-space: nowrap;
-  border-top: 2px solid var(--ink);
-  border-bottom: 2px solid var(--ink);
-}
-
-.laufband__inhalt {
-  display: inline-block;
-  animation: laufen 32s linear infinite;
-  font-family: 'Archivo', sans-serif;
-  font-variation-settings: 'wdth' 110, 'wght' 800;
-  font-size: 1.15rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.laufband__inhalt span {
-  padding: 0 1.5rem;
-}
-
-@keyframes laufen {
-  from {
-    transform: translateX(0);
-  }
-  to {
-    transform: translateX(-50%);
-  }
-}
-
-/* ── Abschnittskopf mit großer Ziffer ────────────────────── */
-
-.kopf {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: clamp(1rem, 4vw, 3rem);
-  align-items: start;
-  margin-bottom: 3rem;
-}
-
-.ziffer {
-  font-family: 'Archivo', sans-serif;
-  font-variation-settings: 'wdth' 118, 'wght' 900;
-  font-size: clamp(3.5rem, 10vw, 7rem);
-  line-height: 0.8;
-  color: transparent;
-  /* Konturschrift: bewusst kräftig genug, um als Gliederung zu wirken.
-     Mit currentColor und niedriger Deckkraft war sie praktisch unsichtbar. */
-  -webkit-text-stroke: 2px var(--nova);
-  text-stroke: 2px var(--nova);
-  opacity: 0.55;
-}
-
-.band--ink .ziffer {
-  -webkit-text-stroke-color: var(--nova-hell);
-  opacity: 0.45;
-}
-
-.band--nova .ziffer {
-  -webkit-text-stroke-color: #fff;
-  opacity: 0.5;
-}
-
-/* ── Raster für Karten ───────────────────────────────────── */
-
-.raster {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
-  gap: 1.25rem;
-  margin-top: 2.5rem;
-}
-
-.karte {
-  padding: 1.5rem;
-  border: 1px solid currentColor;
-  border-color: rgba(0, 0, 0, 0.14);
-  background: rgba(255, 255, 255, 0.35);
-  transition: transform 0.15s ease;
-}
-
-.band--ink .karte {
-  border-color: #2c2c36;
-  background: var(--ink-2);
-}
-
-.karte:hover {
-  transform: translateY(-3px);
-}
-
-.karte__nr {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.7rem;
-  letter-spacing: 0.16em;
-  color: var(--nova);
-  display: block;
-  margin-bottom: 0.6rem;
-}
-
-.band--ink .karte__nr {
-  color: var(--nova-hell);
-}
-
-.karte p {
-  margin: 0.6rem 0 0;
-  font-size: 0.96rem;
-  color: var(--auf-paper-leise);
-}
-
-.band--ink .karte p {
-  color: var(--auf-ink-leise);
-}
-
-/* ── Zahlenreihe ─────────────────────────────────────────── */
-
-.zahlen {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
-  gap: 1px;
-  margin-top: 3rem;
-  background: rgba(0, 0, 0, 0.14);
-  border: 1px solid rgba(0, 0, 0, 0.14);
-}
-
-.band--ink .zahlen {
-  background: #2c2c36;
-  border-color: #2c2c36;
-}
-
-.zahl {
-  background: var(--paper);
-  padding: 1.5rem;
-}
-
-.band--ink .zahl {
-  background: var(--ink);
-}
-
-.zahl__wert {
-  font-family: 'Archivo', sans-serif;
-  font-variation-settings: 'wdth' 112, 'wght' 800;
-  font-size: 2.4rem;
-  line-height: 1;
-  display: block;
-  color: var(--nova);
-}
-
-.band--ink .zahl__wert {
-  color: var(--gold);
-}
-
-.zahl__label {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.7rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--auf-paper-leise);
-  margin-top: 0.5rem;
-  display: block;
-}
-
-.band--ink .zahl__label {
-  color: var(--auf-ink-leise);
-}
-
-/* ── App-Vorschau ────────────────────────────────────────── */
-
-.app {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr));
-  gap: clamp(1.5rem, 4vw, 3rem);
-  align-items: start;
-  margin-top: 2.5rem;
-}
-
-.fenster {
-  border: 1px solid #2c2c36;
-  background: var(--ink-2);
-  overflow: hidden;
-}
-
-.fenster__leiste {
-  display: flex;
-  gap: 0.4rem;
-  padding: 0.7rem 0.9rem;
-  background: var(--ink-3);
-  border-bottom: 1px solid #2c2c36;
-}
-
-.fenster__punkt {
-  width: 0.6rem;
-  height: 0.6rem;
-  border-radius: 50%;
-  background: #45454f;
-}
-
-.fenster__reiter {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1px;
-  background: #2c2c36;
-}
-
-.fenster__reiter span {
-  flex: 1 1 auto;
-  padding: 0.7rem 0.9rem;
-  background: var(--ink-2);
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.72rem;
-  letter-spacing: 0.06em;
-  color: var(--auf-ink-leise);
-  text-align: center;
-}
-
-.fenster__reiter span[aria-current] {
-  background: var(--nova);
-  color: #fff;
-}
-
-.zeile {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0.85rem 1rem;
-  border-bottom: 1px solid #22222a;
-  font-size: 0.9rem;
-}
-
-.zeile:last-child {
-  border-bottom: 0;
-}
-
-.zeile__preis {
-  font-family: 'JetBrains Mono', monospace;
-  color: var(--gold);
-  white-space: nowrap;
-}
-
-.zeile__preis--runter {
-  color: #56c489;
-}
-
-/* ── Liste mit Punkten ───────────────────────────────────── */
-
-.liste {
-  list-style: none;
-  padding: 0;
-  margin: 1.5rem 0 0;
-  max-width: var(--spalte);
-}
-
-.liste li {
-  padding: 0.7rem 0 0.7rem 1.75rem;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-  position: relative;
-}
-
-.band--ink .liste li,
-.band--nova .liste li {
-  border-bottom-color: rgba(255, 255, 255, 0.16);
-}
-
-.liste li::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 1.35em;
-  width: 0.6rem;
-  height: 2px;
-  background: var(--nova);
-}
-
-.band--ink .liste li::before {
-  background: var(--nova-hell);
-}
-
-.band--nova .liste li::before {
-  background: #fff;
-}
-
-/* ── Kopfnavigation ──────────────────────────────────────── */
+/* ── Kopfnavigation ──────────────────────────────────────────── */
 
 .nav {
   position: sticky;
   top: 0;
-  z-index: 20;
+  z-index: 30;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: 0.9rem 1.5rem;
-  background: rgba(14, 14, 17, 0.86);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid #24242c;
+  padding: 0.9rem clamp(1rem, 4vw, 2rem);
+  background: rgba(6, 6, 11, 0.82);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--linie);
 }
 
 .nav__marke {
-  font-family: 'Archivo', sans-serif;
-  font-variation-settings: 'wdth' 112, 'wght' 800;
+  font-family: var(--anzeige);
+  font-weight: 800;
+  font-size: 1.05rem;
   letter-spacing: -0.02em;
   text-transform: uppercase;
   text-decoration: none;
-  color: var(--auf-ink);
-  font-size: 1.05rem;
+  color: var(--fg);
 }
 
 .nav__links {
   display: flex;
-  gap: 1.4rem;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.75rem;
-  letter-spacing: 0.1em;
+  gap: 1.5rem;
+  font-family: var(--mono);
+  font-size: 0.74rem;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 
 .nav__links a {
-  color: var(--auf-ink-leise);
+  color: var(--leise);
   text-decoration: none;
+  transition: color 0.18s ease;
 }
 
 .nav__links a:hover {
-  color: var(--nova-hell);
+  color: var(--amethyst);
 }
 
 @media (max-width: 46rem) {
@@ -578,30 +167,389 @@ a {
   }
 }
 
-/* ── Fußzeile ────────────────────────────────────────────── */
+/* ── Kopfbereich ─────────────────────────────────────────────────
+   Drei Ebenen übereinander: Sternenfeld ganz hinten, darüber zwei
+   weiche Lichtwolken, ganz vorne der Text. */
+
+.hero {
+  position: relative;
+  overflow: hidden;
+  min-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-align: center;
+  padding: clamp(4rem, 10vw, 7rem) 1.5rem 4rem;
+}
+
+#sternenfeld {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  display: block;
+}
+
+.kern {
+  position: absolute;
+  z-index: 1;
+  border-radius: 50%;
+  filter: blur(70px);
+  pointer-events: none;
+}
+
+.kern--1 {
+  top: -10rem;
+  left: 50%;
+  width: 44rem;
+  height: 30rem;
+  margin-left: -22rem;
+  background: radial-gradient(circle, rgba(169, 126, 240, 0.4), transparent 68%);
+  animation: atmen 11s ease-in-out infinite;
+}
+
+.kern--2 {
+  top: 8rem;
+  right: -8rem;
+  width: 28rem;
+  height: 28rem;
+  background: radial-gradient(circle, rgba(232, 92, 214, 0.26), transparent 66%);
+  animation: atmen 15s ease-in-out infinite reverse;
+}
+
+@keyframes atmen {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.85;
+  }
+  50% {
+    transform: scale(1.13);
+    opacity: 1;
+  }
+}
+
+.hero > .innen {
+  position: relative;
+  z-index: 2;
+}
+
+.kicker {
+  display: block;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--leise);
+  margin: 0 0 1.5rem;
+}
+
+/* Der Schriftzug trägt die ganze Farbachse der Seite. */
+.hero__titel {
+  font-family: var(--anzeige);
+  font-weight: 800;
+  font-size: clamp(3rem, 13vw, 8.5rem);
+  line-height: 0.88;
+  letter-spacing: -0.055em;
+  text-transform: uppercase;
+  margin: 0;
+  background: linear-gradient(97deg, #ffffff 8%, var(--amethyst) 45%, var(--magenta) 78%, var(--cyan) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 44px rgba(169, 126, 240, 0.45));
+}
+
+.hero__text {
+  font-size: clamp(1.02rem, 2.2vw, 1.22rem);
+  color: #c5c1d6;
+  margin: 1.7rem auto 0;
+  max-width: 42ch;
+}
+
+.knopfreihe {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.8rem;
+  margin-top: 2.4rem;
+}
+
+.knopf {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.85rem 1.7rem;
+  border-radius: 100px;
+  border: 1px solid transparent;
+  font-family: var(--text);
+  font-weight: 700;
+  font-size: 0.92rem;
+  text-decoration: none;
+  background: linear-gradient(100deg, var(--amethyst), var(--magenta));
+  color: #0b0616;
+  box-shadow: 0 0 30px rgba(169, 126, 240, 0.4);
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease;
+}
+
+.knopf:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 44px rgba(232, 92, 214, 0.52);
+}
+
+.knopf--leer {
+  background: none;
+  border-color: var(--linie-stark);
+  color: var(--fg);
+  box-shadow: none;
+}
+
+.knopf--leer:hover {
+  border-color: var(--cyan);
+  color: var(--cyan);
+  box-shadow: none;
+}
+
+.hero__fuss {
+  margin-top: 3.5rem;
+  padding-top: 1.4rem;
+  border-top: 1px solid var(--linie);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1.5rem;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--leise);
+}
+
+/* ── Abschnitte ──────────────────────────────────────────────── */
+
+.band {
+  position: relative;
+  padding: clamp(3.5rem, 8vw, 6.5rem) 1.5rem;
+}
+
+/* Ein schwacher Schimmer am oberen Rand hält die Abschnitte
+   verbunden, ohne dass eine harte Kante nötig wird. */
+.band--schimmer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: min(60rem, 90%);
+  height: 1px;
+  transform: translateX(-50%);
+  background: linear-gradient(90deg, transparent, var(--schein), transparent);
+}
+
+.innen {
+  max-width: var(--breite);
+  margin: 0 auto;
+}
+
+/* Abschnittskopf: Überschrift links, danach eine Linie, die beim
+   Auftauchen von links nach rechts zündet. */
+.kopf {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 1.25rem;
+  margin-bottom: 2.5rem;
+}
+
+/* min-width: 0 ist hier das Entscheidende: ohne das weigert sich ein
+   Flex-Kind, unter seine Inhaltsbreite zu schrumpfen, und lange
+   Überschriften schieben die Seite auf schmalen Schirmen auseinander. */
+.kopf > div {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.kopf .kicker {
+  margin-bottom: 0.5rem;
+  text-align: left;
+}
+
+.linie {
+  flex: 1 1 4rem;
+  height: 1px;
+  background: linear-gradient(90deg, var(--amethyst), var(--magenta), transparent);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 1.1s cubic-bezier(0.22, 1, 0.36, 1) 0.15s;
+}
+
+.sichtbar .linie {
+  transform: scaleX(1);
+}
+
+/* Ohne JavaScript steht die Linie einfach da. */
+html:not(.js-an) .linie {
+  transform: scaleX(1);
+}
+
+/* ── Zahlenreihe ─────────────────────────────────────────────── */
+
+.zahlen {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: 1px;
+  margin-top: 3rem;
+  background: var(--linie);
+  border: 1px solid var(--linie);
+  border-radius: var(--rundung);
+  overflow: hidden;
+}
+
+.zahl {
+  background: var(--grund);
+  padding: 1.5rem 1rem;
+  text-align: center;
+}
+
+.zahl__wert {
+  display: block;
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 1.9rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  color: var(--amethyst);
+  text-shadow: 0 0 22px rgba(169, 126, 240, 0.5);
+}
+
+.zahl__label {
+  display: block;
+  margin-top: 0.5rem;
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--leise);
+}
+
+/* ── Karten ──────────────────────────────────────────────────── */
+
+.raster {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: 1rem;
+  margin-top: 2.5rem;
+}
+
+.karte {
+  position: relative;
+  overflow: hidden;
+  padding: 1.6rem;
+  border: 1px solid var(--linie);
+  border-radius: var(--rundung);
+  background: var(--flaeche);
+  transition:
+    border-color 0.25s ease,
+    transform 0.25s ease;
+}
+
+/* Der Schein folgt dem Zeiger; ohne Zeiger sitzt er oben mittig. */
+.karte::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(340px circle at var(--mx, 50%) var(--my, 0%), var(--schein), transparent 62%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.karte:hover,
+.karte:focus-within {
+  border-color: rgba(169, 126, 240, 0.5);
+  transform: translateY(-3px);
+}
+
+.karte:hover::before,
+.karte:focus-within::before {
+  opacity: 1;
+}
+
+.karte > * {
+  position: relative;
+}
+
+.karte__nr {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--magenta);
+  margin-bottom: 0.9rem;
+}
+
+.karte p {
+  margin: 0.6rem 0 0;
+  font-size: 0.92rem;
+  line-height: 1.62;
+  color: #a9a5bb;
+}
+
+/* ── Liste ───────────────────────────────────────────────────── */
+
+.liste {
+  list-style: none;
+  padding: 0;
+  margin: 1.75rem 0 0;
+  max-width: var(--spalte);
+}
+
+.liste li {
+  position: relative;
+  padding: 0.75rem 0 0.75rem 1.9rem;
+  border-bottom: 1px solid var(--linie);
+}
+
+.liste li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 1.5em;
+  width: 0.7rem;
+  height: 2px;
+  background: linear-gradient(90deg, var(--amethyst), var(--magenta));
+}
+
+/* ── Fußzeile ────────────────────────────────────────────────── */
 
 footer {
-  background: var(--ink);
-  border-top: 1px solid #24242c;
-  padding: 3rem 1.5rem;
+  background: var(--grund);
+  border-top: 1px solid var(--linie);
+  padding: 3.5rem 1.5rem 2.5rem;
 }
 
 .fuss__raster {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
   gap: 2rem;
   max-width: var(--breite);
   margin: 0 auto;
 }
 
 footer h4 {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.72rem;
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  font-weight: 700;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: var(--auf-ink-leise);
+  color: var(--leise);
   margin: 0 0 0.9rem;
-  font-weight: 400;
 }
 
 footer ul {
@@ -615,61 +563,73 @@ footer li {
 }
 
 footer a {
-  color: var(--auf-ink);
+  color: var(--fg);
   text-decoration: none;
-  font-size: 0.95rem;
+  font-size: 0.94rem;
+  transition: color 0.18s ease;
 }
 
 footer a:hover {
-  color: var(--nova-hell);
-  text-decoration: underline;
-  text-underline-offset: 0.2em;
+  color: var(--amethyst);
 }
 
 .fuss__unten {
   max-width: var(--breite);
   margin: 2.5rem auto 0;
   padding-top: 1.5rem;
-  border-top: 1px solid #24242c;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.72rem;
-  color: var(--auf-ink-leise);
-  letter-spacing: 0.06em;
+  border-top: 1px solid var(--linie);
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  line-height: 1.6;
+  letter-spacing: 0.04em;
+  color: var(--leise);
 }
 
-/* ── Rechtstexte ─────────────────────────────────────────── */
+/* ── Rechtstexte ─────────────────────────────────────────────────
+   Ruhiger als der Rest: eine Spalte, kein Leuchten, nur die
+   Farbachse in Überschriften und Links. Wer hier landet, sucht
+   eine Auskunft und keine Atmosphäre. */
 
 .recht {
-  max-width: 48rem;
+  max-width: 46rem;
   margin: 0 auto;
-  padding: clamp(3rem, 8vw, 6rem) 1.5rem 5rem;
+  padding: clamp(3rem, 8vw, 5.5rem) 1.5rem 5rem;
 }
 
 .recht h1 {
-  font-size: clamp(2rem, 6vw, 3.4rem);
-  margin-bottom: 0.75rem;
+  font-size: clamp(2rem, 6vw, 3.2rem);
+  text-transform: uppercase;
+  margin-bottom: 1rem;
+  background: linear-gradient(97deg, #ffffff 10%, var(--amethyst) 70%, var(--magenta) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 .recht h2 {
-  font-size: 1.35rem;
+  font-size: 1.3rem;
+  text-transform: none;
+  letter-spacing: -0.02em;
   margin: 3rem 0 0.9rem;
-  font-variation-settings: 'wdth' 100, 'wght' 750;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--linie);
 }
 
 .recht dl {
   display: grid;
   grid-template-columns: auto 1fr;
-  gap: 0.4rem 1.5rem;
-  margin: 1.5rem 0;
-  padding: 1.25rem;
-  border: 1px solid #2c2c36;
-  background: var(--ink-2);
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.85rem;
+  gap: 0.5rem 1.5rem;
+  margin: 1.75rem 0;
+  padding: 1.4rem;
+  border: 1px solid var(--linie);
+  border-radius: var(--rundung);
+  background: var(--flaeche);
+  font-family: var(--mono);
+  font-size: 0.84rem;
 }
 
 .recht dt {
-  color: var(--auf-ink-leise);
+  color: var(--leise);
 }
 
 .recht dd {
@@ -682,28 +642,35 @@ footer a:hover {
 }
 
 .recht li {
-  margin-bottom: 0.4rem;
+  margin-bottom: 0.45rem;
 }
 
 .recht a {
-  color: var(--nova-hell);
+  color: var(--amethyst);
   text-underline-offset: 0.2em;
+}
+
+.recht a:hover {
+  color: var(--magenta);
 }
 
 .hinweis {
   margin-top: 3rem;
-  padding: 1rem 1.25rem;
-  border-left: 3px solid var(--nova);
-  background: var(--ink-2);
+  padding: 1.1rem 1.35rem;
+  border: 1px solid var(--linie);
+  border-left: 3px solid var(--amethyst);
+  border-radius: var(--rundung);
+  background: var(--flaeche);
   font-size: 0.92rem;
-  color: var(--auf-ink-leise);
+  color: var(--leise);
 }
 
-/* ── Barrierefreiheit ────────────────────────────────────── */
+/* ── Barrierefreiheit ────────────────────────────────────────── */
 
 a:focus-visible,
-.knopf:focus-visible {
-  outline: 3px solid var(--nova-hell);
+.knopf:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--cyan);
   outline-offset: 3px;
 }
 
@@ -715,18 +682,26 @@ a:focus-visible,
 .ueberspringen:focus {
   left: 1rem;
   top: 1rem;
-  z-index: 50;
-  background: var(--nova);
-  color: #fff;
+  z-index: 60;
+  background: var(--amethyst);
+  color: #0b0616;
   padding: 0.75rem 1.25rem;
+  border-radius: var(--rundung);
 }
 
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
   }
-  .laufband__inhalt {
+  .kern {
     animation: none;
+  }
+  .js-an .auf {
+    opacity: 1;
+    transform: none;
+  }
+  .linie {
+    transform: scaleX(1);
   }
   *,
   *::before,

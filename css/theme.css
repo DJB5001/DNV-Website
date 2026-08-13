@@ -1,33 +1,36 @@
 /* ═══════════════════════════════════════════════════════════════
-   OPSuchtWeb · Design DarkNova
+   OPSuchtWeb · Supernova
    ---------------------------------------------------------------
    Diese Datei wird NACH css/style.css geladen und überschreibt nur
    Aussehen und Layout. Kein Klassenname und keine ID wird verändert,
    damit script.js unverändert weiterläuft.
 
-   Grundgedanke: Die App zeigt Preise und Marktdaten. Statt der
-   bisherigen zierenden Gold-Optik bekommt sie den nüchternen Auftritt
-   eines Handelsterminals - scharfe Kanten, dichte Zeilen, Zahlen in
-   Monospace. Der Akzent ist das Amethyst des Clans.
+   Die App teilt sich die Farbachse mit der Clan-Seite — Amethyst
+   über Magenta ins Cyan —, bekommt aber bewusst kein bewegtes
+   Sternenfeld: Über Preistabellen wäre das Unruhe statt Atmosphäre.
+   Hier leuchtet nur, was etwas bedeutet: der aktive Reiter, die
+   Zahl unter dem Zeiger, der Rand einer angefassten Karte.
    ═══════════════════════════════════════════════════════════════ */
 
 /* ── 1. Farbwelt und Maße ─────────────────────────────────────── */
 
 :root {
-  --background: #0b0b0f;
-  --surface: #131319;
-  --surface-card: #15151c;
-  --surface-modal: #15151c;
+  --background: #06060b;
+  --surface: #10101b;
+  --surface-card: #10101b;
+  --surface-modal: #12121f;
   --border: rgba(255, 255, 255, 0.09);
 
-  --text-primary: #ebe9f1;
-  --text-secondary: #8e8a9c;
-  --text-dark: #0b0b0f;
+  --text-primary: #edebf5;
+  --text-secondary: #8c87a3;
+  /* Text auf Amethystflächen — muss dunkel bleiben, damit die
+     gefüllten Knöpfe und aktiven Menüpunkte lesbar sind. */
+  --text-dark: #0b0616;
 
-  /* Heller Amethyst: hell genug, dass dunkler Text darauf lesbar bleibt */
   --accent-color1: #a97ef0;
-  --accent-color2: #0b0b0f;
+  --accent-color2: #e85cd6;
   --accent-violet: #a97ef0;
+  --accent-cyan: #5be1ff;
 
   --accent-glow: rgba(169, 126, 240, 0.22);
   --accent-glow-weak: rgba(169, 126, 240, 0.08);
@@ -35,12 +38,11 @@
   --sell-color: #4fbf87;
   --buy-color: #e8636f;
 
-  /* Kanten statt Rundungen - der wichtigste Hebel für den neuen Charakter */
-  --border-radius: 3px;
-  --transition-speed: 0.15s;
+  --border-radius: 4px;
+  --transition-speed: 0.18s;
 
-  --schrift-display: 'Archivo', system-ui, sans-serif;
-  --schrift-text: 'Public Sans', system-ui, sans-serif;
+  --schrift-display: 'Sora', system-ui, sans-serif;
+  --schrift-text: 'Manrope', system-ui, sans-serif;
   --schrift-mono: 'JetBrains Mono', ui-monospace, monospace;
 }
 
@@ -52,13 +54,19 @@ body {
   letter-spacing: 0;
 }
 
+/* style.css legt goldene Lichtkegel hinter die Seite. Die gehören
+   zur alten Optik und werden hier durch den Nova-Himmel ersetzt. */
+body {
+  background-image: none !important;
+}
+
 h1,
 h2,
 h3,
 h4 {
   font-family: var(--schrift-display);
-  font-variation-settings: 'wdth' 108, 'wght' 750;
-  letter-spacing: -0.02em;
+  font-weight: 800;
+  letter-spacing: -0.03em;
   text-transform: uppercase;
 }
 
@@ -82,7 +90,58 @@ input[type='number'],
   letter-spacing: -0.01em;
 }
 
-/* ── 3. Kopfbereich und Reiter ────────────────────────────────── */
+/* ── 3. Der Himmel ────────────────────────────────────────────────
+   Zwei weiche Lichtwolken, die langsam atmen. Sie liegen fest hinter
+   der Seite, scrollen also nicht mit — das hält die Bewegung ruhig
+   und kostet nichts, weil nur ein Farbverlauf skaliert wird. */
+
+.nova-himmel {
+  position: fixed;
+  inset: 0;
+  z-index: -3;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.nova-himmel span {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  display: block;
+}
+
+.nova-himmel span:first-child {
+  top: -14rem;
+  left: 50%;
+  width: 52rem;
+  height: 34rem;
+  margin-left: -26rem;
+  background: radial-gradient(circle, rgba(169, 126, 240, 0.3), transparent 68%);
+  animation: nova-atmen 13s ease-in-out infinite;
+}
+
+.nova-himmel span:last-child {
+  bottom: -12rem;
+  right: -10rem;
+  width: 34rem;
+  height: 34rem;
+  background: radial-gradient(circle, rgba(232, 92, 214, 0.18), transparent 66%);
+  animation: nova-atmen 17s ease-in-out infinite reverse;
+}
+
+@keyframes nova-atmen {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.14);
+    opacity: 1;
+  }
+}
+
+/* ── 4. Kopfbereich und Reiter ────────────────────────────────── */
 
 .container {
   max-width: 82rem;
@@ -92,32 +151,31 @@ input[type='number'],
   position: sticky;
   top: 0;
   z-index: 40;
-  background: rgba(11, 11, 15, 0.92);
-  backdrop-filter: blur(12px);
+  background: rgba(6, 6, 11, 0.9);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   border-bottom: 1px solid var(--border);
   margin: 0 -1rem 1.5rem;
   padding: 0 1rem;
+  display: flex;
+  align-items: stretch;
+  gap: 0;
 }
 
 /* Wortmarke links neben den Reitern, ohne Eingriff ins HTML */
 .header-controls::before {
   content: 'DNV';
   font-family: var(--schrift-display);
-  font-variation-settings: 'wdth' 112, 'wght' 800;
+  font-weight: 800;
   font-size: 1rem;
-  letter-spacing: 0.04em;
+  letter-spacing: -0.02em;
   color: var(--accent-color1);
   padding-right: 1.1rem;
   margin-right: 0.4rem;
   border-right: 1px solid var(--border);
   align-self: center;
   white-space: nowrap;
-}
-
-.header-controls {
-  display: flex;
-  align-items: stretch;
-  gap: 0;
+  text-shadow: 0 0 18px rgba(169, 126, 240, 0.55);
 }
 
 #tabs.tabs {
@@ -145,14 +203,19 @@ input[type='number'],
   box-shadow: none !important;
   color: var(--text-secondary) !important;
   font-family: var(--schrift-mono);
-  font-size: 0.78rem;
+  font-size: 0.76rem;
+  font-weight: 500;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   padding: 1.15rem 1.05rem;
   white-space: nowrap;
-  transition: color var(--transition-speed) ease;
+  transition:
+    color var(--transition-speed) ease,
+    text-shadow var(--transition-speed) ease;
 }
 
+/* Der Unterstrich ist die einzige Stelle, an der der Verlauf in der
+   App vollständig auftritt — er markiert, wo man gerade ist. */
 #tabs.tabs button::after {
   content: '';
   position: absolute;
@@ -160,7 +223,8 @@ input[type='number'],
   right: 0.5rem;
   bottom: 0;
   height: 2px;
-  background: var(--accent-color1);
+  background: linear-gradient(90deg, var(--accent-color1), var(--accent-color2));
+  box-shadow: 0 0 14px rgba(169, 126, 240, 0.7);
   transform: scaleX(0);
   transition: transform var(--transition-speed) ease;
 }
@@ -171,8 +235,8 @@ input[type='number'],
 
 #tabs.tabs button.active,
 #tabs.tabs button[class*='active'] {
-  color: var(--text-primary) !important;
-  font-weight: 500;
+  color: #ffffff !important;
+  text-shadow: 0 0 18px rgba(169, 126, 240, 0.6);
 }
 
 #tabs.tabs button.active::after,
@@ -180,7 +244,7 @@ input[type='number'],
   transform: scaleX(1);
 }
 
-/* ── 4. Flächen und Karten ────────────────────────────────────── */
+/* ── 5. Flächen und Karten ────────────────────────────────────── */
 
 .card,
 .partner-card,
@@ -194,16 +258,41 @@ input[type='number'],
 }
 
 .card {
+  position: relative;
+  overflow: hidden;
   background: var(--surface-card);
   border: 1px solid var(--border);
   transition:
     border-color var(--transition-speed) ease,
-    background var(--transition-speed) ease;
+    transform var(--transition-speed) ease;
+}
+
+/* Schein unter dem Zeiger. Die Mittelpunkte setzt js/nova.js; ohne
+   Zeiger bleibt der Vorgabewert stehen und die Karte wirkt ruhig. */
+.card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(320px circle at var(--mx, 50%) var(--my, 0%), var(--accent-glow), transparent 62%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  z-index: 0;
 }
 
 .card:hover {
   border-color: rgba(169, 126, 240, 0.45);
-  background: #191921;
+  transform: translateY(-2px);
+}
+
+.card:hover::before {
+  opacity: 1;
+}
+
+/* Inhalt über den Schein heben, sonst liegt der Verlauf davor. */
+.card > * {
+  position: relative;
+  z-index: 1;
 }
 
 /* Dichtere Zeilen: bei Preislisten zählt Übersicht mehr als Luft */
@@ -211,7 +300,7 @@ input[type='number'],
   gap: 0.75rem;
 }
 
-/* ── 5. Eingabefelder und Knöpfe ──────────────────────────────── */
+/* ── 6. Eingabefelder und Knöpfe ──────────────────────────────── */
 
 input,
 select,
@@ -245,7 +334,38 @@ button {
   font-size: 0.78rem;
 }
 
-/* ── 6. Modale Fenster ────────────────────────────────────────── */
+/* Der eine gefüllte Knopf pro Ansicht trägt den Verlauf. */
+.auth-submit-btn {
+  background: linear-gradient(100deg, var(--accent-color1), var(--accent-color2)) !important;
+  border: 0 !important;
+  color: var(--text-dark) !important;
+  font-weight: 700;
+  box-shadow: 0 0 24px rgba(169, 126, 240, 0.32);
+  transition:
+    box-shadow var(--transition-speed) ease,
+    transform var(--transition-speed) ease;
+}
+
+.auth-submit-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 0 38px rgba(232, 92, 214, 0.45);
+}
+
+.auth-header-btn {
+  border: 1px solid var(--border) !important;
+  background: transparent !important;
+  color: var(--text-primary) !important;
+  transition:
+    border-color var(--transition-speed) ease,
+    color var(--transition-speed) ease;
+}
+
+.auth-header-btn:hover {
+  border-color: var(--accent-color1) !important;
+  color: var(--accent-color1) !important;
+}
+
+/* ── 7. Modale Fenster ────────────────────────────────────────── */
 
 .modal-content {
   background: var(--surface-modal) !important;
@@ -274,17 +394,17 @@ button {
   border-bottom-color: var(--accent-color1) !important;
 }
 
-/* ── 7. Zurückgenommene Effekte ───────────────────────────────── */
+/* ── 8. Zurückgenommene Effekte ───────────────────────────────────
+   Glitzer, Regen und Matrix bleiben als wählbare Hintergründe im
+   Einstellungsmenü erhalten, treten aber hinter dem Himmel zurück. */
 
-/* Die Glitzer- und Regenebenen gehören zur alten Optik.
-   Sie bleiben im HTML, treten aber nicht mehr in Erscheinung. */
 #glitter-canvas,
 #rain-container,
 #matrix-canvas {
-  opacity: 0.18;
+  opacity: 0.14;
 }
 
-/* ── 8. Verweis auf die Clan-Seite ────────────────────────────── */
+/* ── 9. Verweis auf die Clan-Seite ────────────────────────────── */
 
 .dnv-clanlink {
   display: inline-flex;
@@ -292,98 +412,26 @@ button {
   gap: 0.5rem;
   align-self: center;
   margin-left: 0.75rem;
-  padding: 0.5rem 0.9rem;
+  padding: 0.5rem 0.95rem;
   border: 1px solid var(--border);
-  border-radius: var(--border-radius);
+  border-radius: 100px;
   font-family: var(--schrift-mono);
-  font-size: 0.74rem;
-  letter-spacing: 0.08em;
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--text-secondary);
   text-decoration: none;
   white-space: nowrap;
   transition:
     color var(--transition-speed) ease,
-    border-color var(--transition-speed) ease;
+    border-color var(--transition-speed) ease,
+    box-shadow var(--transition-speed) ease;
 }
 
 .dnv-clanlink:hover {
   color: var(--accent-color1);
-  border-color: var(--accent-color1);
-}
-
-@media (max-width: 40rem) {
-  .header-controls::before {
-    font-size: 0.85rem;
-    padding-right: 0.7rem;
-  }
-  .dnv-clanlink span {
-    display: none;
-  }
-  #tabs.tabs button {
-    padding: 1rem 0.75rem;
-    font-size: 0.72rem;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  #tabs.tabs button::after {
-    transition: none;
-  }
-}
-
-/* ── 9. Nachträge: Regeln mit !important aus style.css überstimmen ──
-   style.css setzt für die Tab-Leiste und den Titel eigene !important-
-   Regeln. Höhere Spezifität über den body-Selektor löst das sauber,
-   ohne die Originaldatei zu verändern. */
-
-body #tabs.tabs,
-body .tabs {
-  background: transparent !important;
-  border: 0 !important;
-  border-radius: 0 !important;
-  backdrop-filter: none !important;
-  gap: 0 !important;
-}
-
-/* Der Unterstrich aus style.css wächst aus der Mitte. Hier wird er
-   durch die volle Breite ersetzt, passend zur nüchternen Optik. */
-body .tabs button::after {
-  left: 0.5rem !important;
-  right: 0.5rem !important;
-  bottom: 0 !important;
-  width: auto !important;
-  height: 2px !important;
-  background: var(--accent-color1) !important;
-  transform: scaleX(0);
-  transition: transform var(--transition-speed) ease !important;
-}
-
-body .tabs button.active::after {
-  transform: scaleX(1);
-  width: auto !important;
-  left: 0.5rem !important;
-}
-
-body .tabs button.active {
-  background-color: transparent !important;
-  border-color: transparent !important;
-  color: var(--text-primary) !important;
-}
-
-/* Seitentitel: war Cormorant Garamond in Gold, jetzt die Displayschrift */
-body > .container > h1,
-body > .container > h1 span {
-  font-family: var(--schrift-display) !important;
-  font-variation-settings: 'wdth' 116, 'wght' 850;
-  font-size: clamp(2.2rem, 6vw, 3.4rem) !important;
-  letter-spacing: -0.03em !important;
-  text-transform: uppercase;
-  background: none !important;
-  -webkit-text-fill-color: var(--text-primary) !important;
-  color: var(--text-primary) !important;
-  text-shadow: none !important;
-  margin-bottom: 0.25rem;
+  border-color: rgba(169, 126, 240, 0.5);
+  box-shadow: 0 0 20px var(--accent-glow-weak);
 }
 
 /* ── 10. Rechtliches am Seitenfuß ──────────────────────────────────
@@ -438,5 +486,68 @@ body > .container > h1 span {
     flex-direction: column;
     align-items: flex-start;
     gap: 0.9rem;
+  }
+}
+
+/* ── 11. Nachträge: Regeln mit !important aus style.css überstimmen ──
+   style.css setzt für die Tab-Leiste und den Titel eigene !important-
+   Regeln. Höhere Spezifität über den body-Selektor löst das sauber,
+   ohne die Originaldatei zu verändern. */
+
+body #tabs.tabs,
+body .tabs {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  backdrop-filter: none !important;
+  gap: 0 !important;
+}
+
+/* Der Unterstrich aus style.css wächst aus der Mitte. Hier wird er
+   durch die volle Breite ersetzt, passend zur ruhigen Optik. */
+body .tabs button::after {
+  transform: scaleX(0);
+  width: auto !important;
+  left: 0.5rem !important;
+}
+
+body .tabs button.active::after {
+  transform: scaleX(1);
+}
+
+body .tabs button.active {
+  background-color: transparent !important;
+  border-color: transparent !important;
+  color: #ffffff !important;
+}
+
+/* Seitentitel: war Cormorant Garamond in Gold, jetzt die Farbachse
+   der Marke. Der Verlauf sitzt auf dem span, weil dort der Text steht. */
+body > .container > h1 {
+  font-family: var(--schrift-display) !important;
+  font-weight: 800;
+  font-size: clamp(2.4rem, 6.5vw, 3.8rem) !important;
+  letter-spacing: -0.05em !important;
+  text-transform: uppercase;
+  margin-bottom: 0.25rem;
+  text-shadow: none !important;
+}
+
+body > .container > h1 span {
+  background: linear-gradient(97deg, #ffffff 8%, var(--accent-color1) 48%, var(--accent-color2) 82%, var(--accent-cyan) 100%) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  color: transparent !important;
+  text-shadow: none !important;
+  filter: drop-shadow(0 0 34px rgba(169, 126, 240, 0.45));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nova-himmel span {
+    animation: none;
+  }
+  #tabs.tabs button::after {
+    transition: none;
   }
 }
