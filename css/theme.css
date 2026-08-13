@@ -385,3 +385,58 @@ body > .container > h1 span {
   text-shadow: none !important;
   margin-bottom: 0.25rem;
 }
+
+/* ── 10. Rechtliches am Seitenfuß ──────────────────────────────────
+   § 5 DDG verlangt, dass die Anbieterkennzeichnung leicht erkennbar,
+   unmittelbar erreichbar und ständig verfügbar ist. Der Fuß erfüllt das
+   zurückhaltend: klein, grau, ganz unten — aber mit dem Wort "Impressum"
+   im Klartext, als echter Link und ohne Aufklappen oder Hover-Trick.
+   Genau diese drei Dinge wären der Punkt, an dem "dezent" zu "versteckt"
+   und damit angreifbar würde. */
+
+.dnv-fuss {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 2rem;
+  margin-top: 4rem;
+  padding: 1.4rem 0 0.5rem;
+  border-top: 1px solid var(--border);
+}
+
+.dnv-fuss__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.4rem;
+}
+
+.dnv-fuss__links a {
+  font-family: var(--schrift-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: color var(--transition-speed) ease;
+}
+
+.dnv-fuss__links a:hover,
+.dnv-fuss__links a:focus-visible {
+  color: var(--accent-color1);
+}
+
+.dnv-fuss__hinweis {
+  margin: 0;
+  font-size: 0.72rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+@media (max-width: 48rem) {
+  .dnv-fuss {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.9rem;
+  }
+}
