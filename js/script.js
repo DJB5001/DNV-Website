@@ -10,6 +10,10 @@ const App = {
   auctionCategoryFilter: "Alle",
   auctionItemFilter: "",
   historyItemFilter: "",
+  // Zusaetzlich zum Namen: die genaue Variante (Material + Lore). Sonst
+  // zeigt ein Sprung von "Bohrer V3 ✯✯✯" alle Bohrer V3 samt Sammelkarte.
+  auctionVarianteFilter: "",
+  historyVarianteFilter: "",
   auctionStarFilter: "Alle",
   dealsSortMode: "DISCOUNT_HIGH",
   dealsMinDiscount: 5,
@@ -157,6 +161,8 @@ function showSection(id) {
 function goToTab(id) {
   App.auctionItemFilter = '';
   App.historyItemFilter = '';
+  App.auctionVarianteFilter = '';
+  App.historyVarianteFilter = '';
   App.selectedPlayerUuid = null;
   showSection(id);
 }
@@ -1981,12 +1987,17 @@ function createMarketCard(material, itemInfo, orders) {
     if (o.orderSide === "SELL") sellPrice = o.price.toLocaleString('de-DE');
   });
 
-  const nameHtml = App.settings.market.name ? `<h3>${itemInfo.name}</h3>` : '';
+  // Die API hat schon unterschiedliche Feldnamen geliefert. Fehlt der
+  // Name ganz, ist der lesbare Materialname immer noch besser als
+  // "undefined" auf jeder Karte.
+  const anzeigeName =
+    itemInfo.name ?? itemInfo.displayName ?? itemInfo.germanName ?? materialLesbar(material);
+  const nameHtml = App.settings.market.name ? `<h3>${anzeigeName}</h3>` : '';
   const buyHtml = App.settings.market.buy ? `<div class="price-info">Kaufen: <span class="buy">${buyPrice}</span></div>` : '';
   const sellHtml = App.settings.market.sell ? `<div class="price-info">Verkaufen: <span class="sell">${sellPrice}</span></div>` : '';
 
   card.innerHTML += `
-    <img src="${icon}" alt="${itemInfo.name}">
+    <img src="${icon}" alt="${anzeigeName}">
     ${nameHtml}
     ${buyHtml}
     ${sellHtml}
@@ -2289,6 +2300,7 @@ function createPlayerCard(uuid, username) {
     };
     if (searchInput) searchInput.value = ''; // Leert das Suchfeld (falls vorhanden)
     App.auctionItemFilter = '';
+    App.auctionVarianteFilter = '';
     renderAuctions();
   };
   return card;
@@ -2388,6 +2400,9 @@ async function renderAuctions(isPagination = false) {
     const catKey = origCatKey.toUpperCase().replace(/ /g, "_");
     const matchesSearch = (a.item.displayName?.toLowerCase().includes(search) || a.item.material?.toLowerCase().includes(search) || getAuctionCategoryLabel(origCatKey).toLowerCase().includes(search));
     if (!matchesSearch) return false;
+
+    // Kam der Sprung aus der Item-Ansicht, gilt genau eine Variante.
+    if (App.auctionVarianteFilter && itemVariante(a.item) !== App.auctionVarianteFilter) return false;
     if (App.auctionCategoryFilter === 'Alle') return true;
     if (App.auctionCategoryFilter === 'Erinnerungen') {
       const id = a.id || (a.seller + "_" + (a.item.material || "") + "_" + a.endTime).replace(/[.#$[\]]/g, '-');
@@ -2545,15 +2560,18 @@ function variantenLabel(item) {
   const zustand = lore.match(/Zustand:\s*(\S+)/);
   if (zustand) teile.push(zustand[1]);
 
-  if (!teile.length && item?.material) {
-    teile.push(
-      String(item.material)
-        .toLowerCase()
-        .replace(/_/g, ' ')
-        .replace(/\b\w/g, c => c.toUpperCase())
-    );
-  }
+  if (!teile.length && item?.material) teile.push(materialLesbar(item.material));
   return teile.join(' · ');
+}
+
+// NETHERITE_PICKAXE wird zu "Netherite Pickaxe". Dient als Notnagel
+// überall dort, wo ein Anzeigename fehlt.
+function materialLesbar(material) {
+  if (!material) return '';
+  return String(material)
+    .toLowerCase()
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, c => c.toUpperCase());
 }
 
 function getMonthlyAveragePerUnit(auction) {
@@ -2912,6 +2930,9 @@ async function renderHistory(isPagination = false) {
     const matchesSearch = itemName.toLowerCase().includes(search) || getAuctionCategoryLabel(origCatKey).toLowerCase().includes(search);
     if (!matchesSearch) return false;
 
+    // Kam der Sprung aus der Item-Ansicht, gilt genau eine Variante.
+    if (App.historyVarianteFilter && itemVariante(a.item) !== App.historyVarianteFilter) return false;
+
     if (App.historyCategoryFilter === 'Alle') return true;
 
     if (App.historyCategoryFilter === 'Karten & Booster') {
@@ -3001,6 +3022,7 @@ async function renderHistory(isPagination = false) {
   animateCardsWave(document.getElementById('history'));
   renderFilterChip('historyContainer', App.historyItemFilter, () => {
     App.historyItemFilter = '';
+    App.historyVarianteFilter = '';
     renderHistory();
   });
 }
@@ -3097,6 +3119,7 @@ function createAuctionCard(auction, historyType = null, personalData = null) {
     ${discountHtml}
     <img src="${iconUrl}" alt="${displayName}" loading="lazy" data-material="${auction.item.material ?? ''}" onerror="bildRueckfall(this)">
     <h3 class="auction-name">${displayName}</h3>
+    ${variantenLabel(auction.item) ? `<div class="item-variante">${variantenLabel(auction.item)}</div>` : ''}
     <div class="price-info auction-startBid"><span class="buy">Start:</span> ${formatCardPrice(auction.startBid)}</div>
     <div class="price-info auction-currentBid"><span class="sell">${historyType ? 'Verkauft für:' : 'Aktuell:'}</span> ${formatCardPrice(auction.currentBid ?? auction.startBid)}</div>
     ${auction.instantBuyPrice ? `<div class="price-info auction-instantBuy"><span style="color: var(--accent-color1);">Sofortkauf:</span> ${formatCardPrice(auction.instantBuyPrice)}</div>` : ''}
@@ -3350,6 +3373,7 @@ async function openItemDetail(schluessel) {
   document.getElementById('itemGotoActive').onclick = () => {
     closeItemDetail();
     App.auctionItemFilter = itemName;
+    App.auctionVarianteFilter = itemVariante(repItem);
     App.selectedPlayerUuid = null;
     showSection('auctions');
     renderAuctions();
@@ -3357,6 +3381,7 @@ async function openItemDetail(schluessel) {
   document.getElementById('itemGotoHistory').onclick = () => {
     closeItemDetail();
     App.historyItemFilter = itemName;
+    App.historyVarianteFilter = itemVariante(repItem);
     App.selectedPlayerUuid = null;
     showSection('history');
     renderHistory();
