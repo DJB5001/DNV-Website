@@ -2040,6 +2040,40 @@ async function loadAuctions() {
   document.querySelector('#tab-history .loading-spinner')?.remove();
 }
 
+// Rückfallbild, wenn auch das Typ-Bild nicht geladen werden kann.
+const BARRIER_BILD = 'https://mcdf.wiki.gg/images/Barrier.png?ff8ff1';
+
+// Kleine Wörter bleiben im Dateinamen des Wikis klein:
+// TOTEM_OF_UNDYING wird zu Totem_of_Undying.png, nicht Totem_Of_Undying.png.
+const KLEINE_WOERTER = new Set(['of', 'and', 'the', 'a', 'an', 'in', 'on', 'with']);
+
+// Bild des Item-Typs. Items ohne eigenes Bild zeigten bisher das rote
+// Verbotsschild — obwohl der Typ (Netherit-Spitzhacke, Papier, Totem)
+// bekannt ist und ein brauchbares Bild hat.
+//
+// Die Adresse wird aus dem Materialnamen gebildet; die Basis steht in
+// config.js und lässt sich dort austauschen, ohne diese Datei
+// anzufassen. Trifft der Name daneben, greift über onerror weiterhin
+// das Verbotsschild — schlechter als heute wird es also nie.
+function materialBildUrl(material) {
+  if (!material) return null;
+  const basis =
+    typeof materialBildBasis === 'string' && materialBildBasis
+      ? materialBildBasis
+      : 'https://mcdf.wiki.gg/images/';
+
+  const name = String(material)
+    .toLowerCase()
+    .split('_')
+    .filter(Boolean)
+    .map((wort, i) =>
+      i > 0 && KLEINE_WOERTER.has(wort) ? wort : wort.charAt(0).toUpperCase() + wort.slice(1)
+    )
+    .join('_');
+
+  return name ? `${basis}${name}.png` : null;
+}
+
 function getAuctionItemIcon(item) {
   const displayName = item.displayName ?? item.material;
   const material = item.material;
@@ -2077,7 +2111,8 @@ function getAuctionItemIcon(item) {
       }
     }
   }
-  return iconUrl || 'https://mcdf.wiki.gg/images/Barrier.png?ff8ff1';
+  // Kein eigenes Bild gefunden: das Bild des Item-Typs nehmen.
+  return iconUrl || materialBildUrl(material) || BARRIER_BILD;
 }
 
 function getAuctionCategoryKey(auction) {
@@ -3036,7 +3071,7 @@ function createAuctionCard(auction, historyType = null, personalData = null) {
     ${badgeHtml}
     ${trendHtml}
     ${discountHtml}
-    <img src="${iconUrl}" alt="${displayName}" loading="lazy" onerror="this.src='https://mcdf.wiki.gg/images/Barrier.png?ff8ff1'">
+    <img src="${iconUrl}" alt="${displayName}" loading="lazy" onerror="this.onerror=null; this.src='https://mcdf.wiki.gg/images/Barrier.png?ff8ff1'">
     <h3 class="auction-name">${displayName}</h3>
     <div class="price-info auction-startBid"><span class="buy">Start:</span> ${formatCardPrice(auction.startBid)}</div>
     <div class="price-info auction-currentBid"><span class="sell">${historyType ? 'Verkauft für:' : 'Aktuell:'}</span> ${formatCardPrice(auction.currentBid ?? auction.startBid)}</div>
@@ -3218,7 +3253,7 @@ function renderItemSearch() {
     const iconUrl = getAuctionItemIcon(entry.item);
     const avg = getMonthlyAveragePerUnit({ item: entry.item });
     card.innerHTML = `
-      <img src="${iconUrl}" alt="${entry.name}" loading="lazy" onerror="this.src='https://mcdf.wiki.gg/images/Barrier.png?ff8ff1'">
+      <img src="${iconUrl}" alt="${entry.name}" loading="lazy" onerror="this.onerror=null; this.src='https://mcdf.wiki.gg/images/Barrier.png?ff8ff1'">
       <h3 class="auction-name">${entry.name}</h3>
       ${entry.label ? `<div class="item-variante">${entry.label}</div>` : ''}
       <div class="price-info"><span style="color:var(--text-secondary)">Ø 30 Tage:</span> ${avg !== null ? formatCardPrice(Math.round(avg)) : 'Keine Daten'}</div>
@@ -3272,7 +3307,7 @@ async function openItemDetail(schluessel) {
     ${label ? `<p class="item-variante item-variante--gross">${label}</p>` : ''}
     <div class="auction-info-box">
       <div class="info-item" style="text-align:center;">
-        <img src="${iconUrl}" alt="${itemName}" style="width:64px;height:64px;image-rendering:pixelated;" onerror="this.src='https://mcdf.wiki.gg/images/Barrier.png?ff8ff1'">
+        <img src="${iconUrl}" alt="${itemName}" style="width:64px;height:64px;image-rendering:pixelated;" onerror="this.onerror=null; this.src='https://mcdf.wiki.gg/images/Barrier.png?ff8ff1'">
       </div>
       <div class="info-item"><strong>Durchschnitt</strong>${avgAll !== null ? `<span class="sell">${avgAll.toLocaleString('de-DE')}</span>` : '<span>Keine Daten</span>'}</div>
       <div class="info-item"><strong>Durchschnitt (30 Tage)</strong>${avgMonth !== null ? `<span class="sell">${Math.round(avgMonth).toLocaleString('de-DE')}</span>` : '<span>Keine Daten</span>'}</div>
@@ -4969,14 +5004,14 @@ async function loadAds() {
 
       const customBtns = (ad.customButtons || []).map(btn => `
         <a href="${btn.link}" target="_blank" class="ad-card-btn custom-btn" title="Link besuchen" style="--hover-color: ${btn.color || 'var(--accent-color1)'}">
-          <img src="${btn.icon}" alt="Icon" onerror="this.src='https://mcdf.wiki.gg/images/Barrier.png?ff8ff1'">
+          <img src="${btn.icon}" alt="Icon" onerror="this.onerror=null; this.src='https://mcdf.wiki.gg/images/Barrier.png?ff8ff1'">
         </a>
       `).join('');
 
       return `
         <div class="partner-card">
           <div class="partner-image-container">
-            <img src="${ad.imageUrl}" alt="${ad.title}" class="partner-image" onerror="this.src='https://mcdf.wiki.gg/images/Barrier.png?ff8ff1'">
+            <img src="${ad.imageUrl}" alt="${ad.title}" class="partner-image" onerror="this.onerror=null; this.src='https://mcdf.wiki.gg/images/Barrier.png?ff8ff1'">
           </div>
           <div class="partner-content">
             <h3 class="partner-name">${ad.title}</h3>
@@ -5090,7 +5125,7 @@ async function renderAdsSettings() {
 
   container.innerHTML = myAds.map(ad => `
     <div class="ad-manage-card">
-      <img src="${ad.imageUrl}" class="ad-manage-img" onerror="this.src='https://mcdf.wiki.gg/images/Barrier.png?ff8ff1'">
+      <img src="${ad.imageUrl}" class="ad-manage-img" onerror="this.onerror=null; this.src='https://mcdf.wiki.gg/images/Barrier.png?ff8ff1'">
       <div class="ad-manage-info">
         <div class="ad-manage-title">${ad.title}</div>
         <div class="ad-manage-owner">${ad.ownerUid ? 'Besitzer: ' + ad.ownerUid : 'Kein Besitzer'}</div>
