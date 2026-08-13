@@ -1,3 +1,10 @@
+// Rückfallbild, wenn auch das Typ-Bild nicht geladen werden kann.
+const BARRIER_BILD = 'https://mcdf.wiki.gg/images/Barrier.png?ff8ff1';
+
+// Kleine Wörter bleiben im Dateinamen des Wikis klein:
+// TOTEM_OF_UNDYING wird zu Totem_of_Undying.png, nicht Totem_Of_Undying.png.
+const KLEINE_WOERTER = new Set(['of', 'and', 'the', 'a', 'an', 'in', 'on', 'with']);
+
 const App = {
   auctionSortMode: "END",
   auctionCategoryFilter: "Alle",
@@ -2040,13 +2047,6 @@ async function loadAuctions() {
   document.querySelector('#tab-history .loading-spinner')?.remove();
 }
 
-// Rückfallbild, wenn auch das Typ-Bild nicht geladen werden kann.
-const BARRIER_BILD = 'https://mcdf.wiki.gg/images/Barrier.png?ff8ff1';
-
-// Kleine Wörter bleiben im Dateinamen des Wikis klein:
-// TOTEM_OF_UNDYING wird zu Totem_of_Undying.png, nicht Totem_Of_Undying.png.
-const KLEINE_WOERTER = new Set(['of', 'and', 'the', 'a', 'an', 'in', 'on', 'with']);
-
 // Bild des Item-Typs. Items ohne eigenes Bild zeigten bisher das rote
 // Verbotsschild — obwohl der Typ (Netherit-Spitzhacke, Papier, Totem)
 // bekannt ist und ein brauchbares Bild hat.
@@ -2072,6 +2072,30 @@ function materialBildUrl(material) {
     .join('_');
 
   return name ? `${basis}${name}.png` : null;
+}
+
+// Rückfallkette für Item-Bilder, aufgerufen aus onerror.
+//
+// Der Grund: Viele Einträge in config.js zeigen auf hochgeladene Bilder,
+// die es nicht mehr gibt (etwa "Magnet" oder "Wasserwaage"). Bisher fiel
+// so ein toter Link direkt auf das Verbotsschild zurück, obwohl der
+// Item-Typ bekannt ist. Jetzt wird erst der Typ versucht:
+//
+//   eigenes Bild  →  Bild des Typs  →  Verbotsschild
+//
+// Die Marke am Element verhindert, dass eine Stufe zweimal probiert wird
+// und das Ereignis sich im Kreis dreht.
+function bildRueckfall(img) {
+  const typBild = materialBildUrl(img.dataset.material);
+
+  if (typBild && !img.dataset.typVersucht) {
+    img.dataset.typVersucht = '1';
+    img.src = typBild;
+    return;
+  }
+
+  img.onerror = null;
+  img.src = BARRIER_BILD;
 }
 
 function getAuctionItemIcon(item) {
@@ -3071,7 +3095,7 @@ function createAuctionCard(auction, historyType = null, personalData = null) {
     ${badgeHtml}
     ${trendHtml}
     ${discountHtml}
-    <img src="${iconUrl}" alt="${displayName}" loading="lazy" onerror="this.onerror=null; this.src='https://mcdf.wiki.gg/images/Barrier.png?ff8ff1'">
+    <img src="${iconUrl}" alt="${displayName}" loading="lazy" data-material="${auction.item.material ?? ''}" onerror="bildRueckfall(this)">
     <h3 class="auction-name">${displayName}</h3>
     <div class="price-info auction-startBid"><span class="buy">Start:</span> ${formatCardPrice(auction.startBid)}</div>
     <div class="price-info auction-currentBid"><span class="sell">${historyType ? 'Verkauft für:' : 'Aktuell:'}</span> ${formatCardPrice(auction.currentBid ?? auction.startBid)}</div>
@@ -3253,7 +3277,7 @@ function renderItemSearch() {
     const iconUrl = getAuctionItemIcon(entry.item);
     const avg = getMonthlyAveragePerUnit({ item: entry.item });
     card.innerHTML = `
-      <img src="${iconUrl}" alt="${entry.name}" loading="lazy" onerror="this.onerror=null; this.src='https://mcdf.wiki.gg/images/Barrier.png?ff8ff1'">
+      <img src="${iconUrl}" alt="${entry.name}" loading="lazy" data-material="${entry.item.material ?? ''}" onerror="bildRueckfall(this)">
       <h3 class="auction-name">${entry.name}</h3>
       ${entry.label ? `<div class="item-variante">${entry.label}</div>` : ''}
       <div class="price-info"><span style="color:var(--text-secondary)">Ø 30 Tage:</span> ${avg !== null ? formatCardPrice(Math.round(avg)) : 'Keine Daten'}</div>
@@ -3307,7 +3331,7 @@ async function openItemDetail(schluessel) {
     ${label ? `<p class="item-variante item-variante--gross">${label}</p>` : ''}
     <div class="auction-info-box">
       <div class="info-item" style="text-align:center;">
-        <img src="${iconUrl}" alt="${itemName}" style="width:64px;height:64px;image-rendering:pixelated;" onerror="this.onerror=null; this.src='https://mcdf.wiki.gg/images/Barrier.png?ff8ff1'">
+        <img src="${iconUrl}" alt="${itemName}" style="width:64px;height:64px;image-rendering:pixelated;" data-material="${repItem.material ?? ''}" onerror="bildRueckfall(this)">
       </div>
       <div class="info-item"><strong>Durchschnitt</strong>${avgAll !== null ? `<span class="sell">${avgAll.toLocaleString('de-DE')}</span>` : '<span>Keine Daten</span>'}</div>
       <div class="info-item"><strong>Durchschnitt (30 Tage)</strong>${avgMonth !== null ? `<span class="sell">${Math.round(avgMonth).toLocaleString('de-DE')}</span>` : '<span>Keine Daten</span>'}</div>
