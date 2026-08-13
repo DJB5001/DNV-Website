@@ -11,7 +11,7 @@
     <meta property="og:title" content="DarkNova [DNV]" />
     <meta property="og:description" content="Minecraft-Clan auf OPSUCHT. Aus Ideen entstehen Welten." />
     <meta property="og:type" content="website" />
-    <meta name="theme-color" content="#06060b" />
+    <meta name="theme-color" content="#0a0a10" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -28,66 +28,61 @@
   <body>
     <a class="ueberspringen" href="#inhalt">Zum Inhalt springen</a>
 
+    <!-- Hintergrund: Sternenfeld, Raster, Lichtkreise. Fest hinter allem. -->
+    <div class="himmel" aria-hidden="true">
+      <canvas id="sternenfeld"></canvas>
+      <div class="kern kern--1"></div>
+      <div class="kern kern--2"></div>
+    </div>
+    <div class="raster-schicht" aria-hidden="true"></div>
+
     <nav class="nav">
-      <a class="nav__marke" href="index.html">DNV</a>
+      <a class="nav__marke" href="index.html">
+        <span class="nav__zeichen" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 0l2.6 9.4L24 12l-9.4 2.6L12 24l-2.6-9.4L0 12l9.4-2.6z"/></svg></span>
+        DarkNova <span>[DNV]</span>
+      </a>
       <div class="nav__links">
-        <a href="index.html">OPSuchtWeb</a>
-        <a href="#clan">Clan</a>
+        <a href="clan.html" aria-current="page">Start</a>
+        <a href="#clan">Über uns</a>
         <a href="#projekte">Projekte</a>
-        <a href="#bot">Bot</a>
+        <a href="#bot">Infrastruktur</a>
         <a href="#mitmachen">Mitmachen</a>
+        <a href="index.html">OPSuchtWeb</a>
       </div>
+      <a class="knopf knopf--voll knopf--klein" href="#mitmachen">Bewerben</a>
     </nav>
 
     <!-- ══ Kopfbereich ══ -->
     <header class="hero" id="inhalt">
-      <canvas id="sternenfeld" aria-hidden="true"></canvas>
-      <div class="kern kern--1" aria-hidden="true"></div>
-      <div class="kern kern--2" aria-hidden="true"></div>
-
       <div class="innen">
-        <span class="kicker auf">Minecraft · OPSUCHT · CityBuild</span>
-        <h1 class="hero__titel auf" style="--i: 1">DarkNova</h1>
+        <span class="plakette auf">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 3l2.4 5.5 6 .5-4.5 4 1.3 5.9L12 15.8 6.8 18.9 8.1 13 3.6 9l6-.5z" />
+          </svg>
+          Minecraft-Clan auf OPSUCHT · CityBuild
+        </span>
+
+        <h1 class="hero__titel auf" style="--i: 1">
+          Willkommen bei
+          <span>DarkNova [DNV]</span>
+        </h1>
+
         <p class="hero__text auf" style="--i: 2">
           Aus Ideen entstehen Welten. Ein Clan, in dem niemand alleine grindet — eigene
-          Grundstücke, laufende Projekte und Werkzeuge, die es sonst nirgends gibt.
+          Grundstücke, laufende Bauprojekte und Werkzeuge, die es sonst nirgends gibt.
         </p>
+
         <div class="knopfreihe auf" style="--i: 3">
-          <a class="knopf" href="#mitmachen">Mitglied werden</a>
+          <a class="knopf knopf--voll" href="#mitmachen">
+            Mitglied werden
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M5 12h14M13 6l6 6-6 6" />
+            </svg>
+          </a>
           <a class="knopf knopf--leer" href="index.html">Zu OPSuchtWeb</a>
         </div>
-        <div class="hero__fuss auf" style="--i: 4">
-          <span>Tag · DNV</span>
-          <span>Aus Ideen entstehen Welten</span>
-          <span>Gegründet 2026</span>
-        </div>
-      </div>
-    </header>
 
-    <!-- ══ Wer wir sind ══ -->
-    <section class="band band--schimmer" id="clan">
-      <div class="innen">
-        <div class="kopf auf">
-          <div>
-            <span class="kicker">Wer wir sind</span>
-            <h2>Ein neuer Clan</h2>
-          </div>
-          <span class="linie"></span>
-        </div>
-
-        <p class="auf">
-          DarkNova ist auf OPSUCHT zu Hause. Wir sind noch am Anfang — und genau das ist der Punkt:
-          Wer jetzt einsteigt, entscheidet mit, wie dieser Clan aussieht. Bei etablierten Clans sind
-          die Plätze im Team seit Jahren vergeben. Bei uns zählt nicht, wer zuerst da war, sondern
-          wer mitzieht.
-        </p>
-        <p class="auf" style="--i: 1">
-          Wir setzen auf feste Abläufe statt auf Zurufe: Bewerbungen laufen über ein Formular,
-          Support über Tickets, Aufträge über ein System, das jeder einsehen kann. Das klingt
-          nüchtern, sorgt aber dafür, dass nichts an einer einzelnen Person hängt.
-        </p>
-
-        <div class="zahlen auf" style="--i: 2">
+        <div class="zahlen auf" style="--i: 4">
           <div class="zahl">
             <span class="zahl__wert" data-ziel="4">4</span>
             <span class="zahl__label">Systeme im Discord</span>
@@ -101,139 +96,256 @@
             <span class="zahl__label">Bereiche in der App</span>
           </div>
           <div class="zahl">
-            <span class="zahl__wert" data-ziel="13" data-anhang="+">13+</span>
-            <span class="zahl__label">Mindestalter</span>
+            <span class="zahl__wert">2026</span>
+            <span class="zahl__label">Gegründet</span>
           </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- ══ Über uns ══ -->
+    <section class="band" id="clan">
+      <div class="band__schein" aria-hidden="true"></div>
+      <div class="innen">
+        <div class="kopf auf">
+          <span class="plakette">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
+            </svg>
+            Wer wir sind
+          </span>
+          <h2>Mehr als nur ein <em>Minecraft-Clan</em></h2>
+          <p>
+            Wir sind noch am Anfang — und genau das ist der Punkt. Wer jetzt einsteigt,
+            entscheidet mit, wie dieser Clan aussieht.
+          </p>
+        </div>
+
+        <div class="raster raster--zwei">
+          <article class="karte auf" style="--i: 0">
+            <span class="karte__symbol" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path d="M12 2l9 5v10l-9 5-9-5V7z" />
+                <path d="M12 12l9-5M12 12v10M12 12L3 7" />
+              </svg>
+            </span>
+            <h3>Platz im Team, nicht nur in der Liste</h3>
+            <p>
+              Bei etablierten Clans sind die Plätze im Team seit Jahren vergeben. Bei uns zählt
+              nicht, wer zuerst da war, sondern wer mitzieht.
+            </p>
+            <span class="karte__chip">Seit 2026</span>
+          </article>
+
+          <article class="karte auf" style="--i: 1">
+            <span class="karte__symbol" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path d="M9 11l3 3L22 4" />
+                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+              </svg>
+            </span>
+            <h3>Feste Abläufe statt Zurufe</h3>
+            <p>
+              Bewerbungen laufen über ein Formular, Support über Tickets, Aufträge über ein
+              System, das jeder einsehen kann. So hängt nichts an einer einzelnen Person.
+            </p>
+            <span class="karte__chip">Nachvollziehbar</span>
+          </article>
         </div>
       </div>
     </section>
 
     <!-- ══ Projekte ══ -->
-    <section class="band band--schimmer" id="projekte">
+    <section class="band" id="projekte">
+      <div class="band__schein" aria-hidden="true"></div>
       <div class="innen">
         <div class="kopf auf">
-          <div>
-            <span class="kicker">Woran wir bauen</span>
-            <h2>Projekte</h2>
-          </div>
-          <span class="linie"></span>
+          <span class="plakette">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6" />
+            </svg>
+            Woran wir bauen
+          </span>
+          <h2>Unsere <em>Projekte</em></h2>
+          <p>Vier Vorhaben, unterschiedlich weit. Der Status steht dran, damit niemand raten muss.</p>
         </div>
 
         <div class="raster">
-          <article class="karte auf" data-schein style="--i: 0">
-            <span class="karte__nr">In Arbeit</span>
+          <article class="karte auf" style="--i: 0">
+            <span class="karte__symbol" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path d="M2 20h20M4 20V9l8-6 8 6v11" />
+                <path d="M10 20v-5h4v5M9 11h1M14 11h1" />
+              </svg>
+            </span>
             <h3>Hogwarts</h3>
             <p>
               Unser größtes Bauprojekt, Stück für Stück hochgezogen. Wer mitbauen will, bekommt
               einen Bereich, den er selbst gestaltet.
             </p>
+            <span class="karte__chip">In Arbeit</span>
           </article>
-          <article class="karte auf" data-schein style="--i: 1">
-            <span class="karte__nr">Laufend</span>
+
+          <article class="karte auf" style="--i: 1">
+            <span class="karte__symbol" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <rect x="3" y="3" width="7" height="7" rx="1" />
+                <rect x="14" y="3" width="7" height="7" rx="1" />
+                <rect x="3" y="14" width="7" height="7" rx="1" />
+                <rect x="14" y="14" width="7" height="7" rx="1" />
+              </svg>
+            </span>
             <h3>Clan-Grundstücke</h3>
             <p>
               Der Ausbau läuft. Jedes Mitglied bekommt eigene Fläche und darf sich dort austoben —
               inklusive Mitsprache bei der Gesamtplanung.
             </p>
+            <span class="karte__chip">Laufend</span>
           </article>
-          <article class="karte auf" data-schein style="--i: 2">
-            <span class="karte__nr">Geplant</span>
+
+          <article class="karte auf" style="--i: 2">
+            <span class="karte__symbol" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3z" />
+                <path d="M9 3v15M15 6v15" />
+              </svg>
+            </span>
             <h3>Mehrere CityBuilds</h3>
             <p>
-              Langfristig wollen wir nicht nur auf einem CityBuild aktiv sein, sondern auf mehreren
-              Spuren hinterlassen.
+              Langfristig wollen wir nicht nur auf einem CityBuild aktiv sein, sondern auf
+              mehreren Spuren hinterlassen.
             </p>
+            <span class="karte__chip">Geplant</span>
           </article>
-          <article class="karte auf" data-schein style="--i: 3">
-            <span class="karte__nr">Geplant</span>
+
+          <article class="karte auf" style="--i: 3">
+            <span class="karte__symbol" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path d="M3 9l1-4h16l1 4M4 9v11h16V9M4 9h16" />
+                <path d="M9 20v-6h6v6" />
+              </svg>
+            </span>
             <h3>Handelsplatz</h3>
             <p>
-              Ein fester Ort, an dem Mitglieder und Partnerclans untereinander handeln können, ohne
-              lange zu suchen.
+              Ein fester Ort, an dem Mitglieder und Partnerclans untereinander handeln können,
+              ohne lange zu suchen.
             </p>
+            <span class="karte__chip">Geplant</span>
           </article>
         </div>
       </div>
     </section>
 
-    <!-- ══ Der Clan-Bot ══ -->
-    <section class="band band--schimmer" id="bot">
+    <!-- ══ Infrastruktur ══ -->
+    <section class="band" id="bot">
+      <div class="band__schein" aria-hidden="true"></div>
       <div class="innen">
         <div class="kopf auf">
-          <div>
-            <span class="kicker">DNV | System</span>
-            <h2>Der Clan-Bot</h2>
-          </div>
-          <span class="linie"></span>
+          <span class="plakette">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 3v2M12 19v2M5 12H3M21 12h-2M6.3 6.3L4.9 4.9M19.1 19.1l-1.4-1.4M17.7 6.3l1.4-1.4M4.9 19.1l1.4-1.4" />
+              <circle cx="12" cy="12" r="4" />
+            </svg>
+            Was uns besonders macht
+          </span>
+          <h2>Eigene <em>Infrastruktur</em></h2>
+          <p>Kein Baukasten von der Stange — auf unsere Abläufe zugeschnitten und selbst gebaut.</p>
         </div>
 
-        <p class="auf">
-          Ein eigens gebauter Discord-Bot, der den Alltag im Clan trägt. Kein Baukasten von der
-          Stange, sondern auf unsere Abläufe zugeschnitten.
-        </p>
-
         <div class="raster">
-          <article class="karte auf" data-schein style="--i: 0">
-            <span class="karte__nr">Modul 01</span>
+          <article class="karte auf" style="--i: 0">
+            <span class="karte__symbol" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              </svg>
+            </span>
             <h3>Support-Tickets</h3>
             <p>
               Kategorie wählen, privater Channel öffnet sich. Nur du und das Team sehen ihn. Beim
               Schließen wird der Verlauf gesichert.
             </p>
+            <span class="karte__chip">DNV | System</span>
           </article>
-          <article class="karte auf" data-schein style="--i: 1">
-            <span class="karte__nr">Modul 02</span>
+
+          <article class="karte auf" style="--i: 1">
+            <span class="karte__symbol" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <path d="M14 2v6h6M9 13h6M9 17h6" />
+              </svg>
+            </span>
             <h3>Bewerbungen</h3>
             <p>
               Formular ausfüllen, das Team prüft, danach ein kurzes Gespräch im Voice. Erst dann
               wird über die Aufnahme entschieden.
             </p>
+            <span class="karte__chip">Mit Gespräch</span>
           </article>
-          <article class="karte auf" data-schein style="--i: 2">
-            <span class="karte__nr">Modul 03</span>
+
+          <article class="karte auf" style="--i: 2">
+            <span class="karte__symbol" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path d="M20 12v10H4V12M2 7h20v5H2zM12 22V7M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z" />
+              </svg>
+            </span>
             <h3>Gewinnspiele</h3>
             <p>
               Laufzeit und Gewinnerzahl festlegen, Teilnahme per Knopfdruck. Die Ziehung läuft
               automatisch, auch nach einem Neustart.
             </p>
+            <span class="karte__chip">Automatisch</span>
           </article>
-          <article class="karte auf" data-schein style="--i: 3">
-            <span class="karte__nr">Modul 04</span>
+
+          <article class="karte auf" style="--i: 3">
+            <span class="karte__symbol" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                <path d="M3.3 7L12 12l8.7-5M12 22V12" />
+              </svg>
+            </span>
             <h3>Item-Verleih</h3>
             <p>
-              31 Gegenstände im Clan-Bestand. Der Bot führt Buch darüber, was gerade draußen ist
-              und bei wem — mit Bild zu jedem Item.
+              Gegenstände im Clan-Bestand. Der Bot führt Buch darüber, was gerade draußen ist und
+              bei wem — mit Bild zu jedem Item.
             </p>
+            <span class="karte__chip">31 Items</span>
           </article>
         </div>
       </div>
     </section>
 
     <!-- ══ Mitmachen ══ -->
-    <section class="band band--schimmer" id="mitmachen">
+    <section class="band" id="mitmachen">
+      <div class="band__schein" aria-hidden="true"></div>
       <div class="innen">
         <div class="kopf auf">
-          <div>
-            <span class="kicker">Interesse?</span>
-            <h2>Werde Teil von DarkNova</h2>
-          </div>
-          <span class="linie"></span>
+          <span class="plakette">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <path d="M19 8v6M22 11h-6" />
+            </svg>
+            Interesse?
+          </span>
+          <h2>Werde Teil von <em>DarkNova</em></h2>
+          <p>
+            Die Bewerbung läuft über unser Discord und dauert keine zwei Minuten. Danach melden
+            wir uns für ein kurzes Kennenlerngespräch.
+          </p>
         </div>
 
-        <p class="auf">
-          Die Bewerbung läuft über unser Discord und dauert keine zwei Minuten. Danach melden wir
-          uns für ein kurzes Kennenlerngespräch.
-        </p>
-
-        <ul class="liste auf" style="--i: 1">
+        <ul class="liste auf">
           <li>Ab 13 Jahren — Ausnahmen nach Absprache</li>
           <li>Regelmäßig aktiv auf dem Server und im Discord</li>
           <li>Freundlicher, respektvoller Umgang</li>
           <li>Lust auf gemeinsame Projekte statt nur alleine farmen</li>
         </ul>
 
-        <div class="knopfreihe auf" style="--i: 2; justify-content: flex-start; margin-top: 2.5rem">
-          <a class="knopf" href="#" rel="noopener">Discord beitreten</a>
+        <div class="knopfreihe auf" style="--i: 1">
+          <a class="knopf knopf--voll" href="#" rel="noopener">Discord beitreten</a>
+          <a class="knopf knopf--leer" href="#clan">Erst mal umsehen</a>
         </div>
       </div>
     </section>

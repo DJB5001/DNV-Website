@@ -16,14 +16,25 @@
     <link rel="stylesheet" href="css/clan.css" />
   </head>
   <body>
+    <!-- Hintergrund: Sternenfeld, Raster, Lichtkreise. Fest hinter allem. -->
+    <div class="himmel" aria-hidden="true">
+      <canvas id="sternenfeld"></canvas>
+      <div class="kern kern--1"></div>
+      <div class="kern kern--2"></div>
+    </div>
+    <div class="raster-schicht" aria-hidden="true"></div>
     <nav class="nav">
-      <a class="nav__marke" href="index.html">DNV</a>
+      <a class="nav__marke" href="index.html">
+        <span class="nav__zeichen" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 0l2.6 9.4L24 12l-9.4 2.6L12 24l-2.6-9.4L0 12l9.4-2.6z"/></svg></span>
+        DarkNova <span>[DNV]</span>
+      </a>
       <div class="nav__links">
         <a href="index.html">OPSuchtWeb</a>
         <a href="clan.html">Clan</a>
         <a href="impressum.html">Impressum</a>
         <a href="datenschutz.html">Datenschutz</a>
       </div>
+      <a class="knopf knopf--leer knopf--klein" href="clan.html">Zum Clan</a>
     </nav>
 
     <main class="recht">
@@ -106,5 +117,6 @@
       </div>
       <p class="fuss__unten">DarkNova [DNV] · Aus Ideen entstehen Welten</p>
     </footer>
+    <script src="js/nova.js"></script>
   </body>
 </html>
