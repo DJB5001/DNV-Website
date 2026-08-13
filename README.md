@@ -6,9 +6,10 @@ Alles landet in **einem** Repo. Danach kannst du `opsucht-app` abschalten.
 
 | Datei | Was damit passiert |
 |---|---|
-| `index.html` | **ersetzt** deine bisherige App-Startseite (zwei kleine Ergänzungen, siehe unten) |
+| `index.html` | **ersetzt** deine bisherige App-Startseite (drei kleine Ergänzungen, siehe unten) |
 | `css/theme.css` | **neu** — das komplette Redesign der App |
 | `css/clan.css` | **neu** — Design der Clan- und Rechtsseiten |
+| `js/nova.js` | **neu** — die Bewegung, die sich beide Welten teilen |
 | `clan.html` | **neu** — Clan-Infos |
 | `impressum.html` | **neu** |
 | `datenschutz.html` | **neu** — deckt jetzt Website, Bot und App ab |
@@ -40,12 +41,12 @@ icons/
 
 ## Falls du index.html lieber selbst änderst
 
-Es sind nur zwei Stellen. Erstens im `<head>`, direkt nach dem letzten bestehenden Stylesheet:
+Es sind drei Stellen. Erstens im `<head>`, direkt nach dem letzten bestehenden Stylesheet:
 
 ```html
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=JetBrains+Mono:wght@400;500&family=Public+Sans:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;800&family=Manrope:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/theme.css">
 ```
 
@@ -55,17 +56,29 @@ Zweitens direkt hinter dem schließenden `</div>` der Tab-Leiste:
 <a class="dnv-clanlink" href="clan.html">DNV <span>Clan</span></a>
 ```
 
+Drittens am Anfang von `<body>` der Himmel und ganz unten, nach `script.js`, die Bewegung:
+
+```html
+<div class="nova-himmel" aria-hidden="true"><span></span><span></span></div>
+...
+<script src="js/nova.js"></script>
+```
+
 Wichtig ist nur, dass `theme.css` **nach** `style.css` steht — sonst greifen die Überschreibungen nicht.
 
-## Zum Redesign
+## Zum Redesign — „Supernova"
 
 Keine einzige ID und kein Klassenname wurde verändert. `script.js` greift auf 122 IDs und 43 Selektoren zu — deshalb läuft die gesamte Logik unverändert weiter.
 
-Der Umbau passiert über `theme.css`: Sie definiert die CSS-Variablen neu (deine App nutzt sie an 443 Stellen), tauscht die Schriften und formt Kopfleiste, Reiter, Karten und Eingabefelder um.
+Der Name des Clans ist ein Sternenereignis, und davon lebt die Gestaltung: ein Kern, der hinter dem Schriftzug glimmt, ein treibendes Sternenfeld, Licht das nach außen wandert. Gearbeitet wird mit einer einzigen hellen Achse — Amethyst über Magenta ins Cyan. Alles andere bleibt dunkel und ruhig, damit das Leuchten etwas zu bedeuten hat.
 
-Aus der goldenen Serifen-Optik wird ein nüchternes Handelsterminal: scharfe Kanten statt Rundungen, Zahlen in Monospace zum Untereinandervergleichen, Reiter als Unterstrich-Navigation, Amethyst als Akzent passend zum Clan.
+Schriften: **Sora** für Überschriften, **Manrope** für Fließtext, **JetBrains Mono** für alles Zahlenhafte — gleiche Ziffernbreite, dadurch lassen sich Preise untereinander vergleichen.
 
-Falls dir eine Farbe nicht gefällt, steht alles oben in `theme.css` unter `:root`.
+Der Umbau der App passiert über `theme.css`: Sie definiert die CSS-Variablen neu (die App nutzt sie an 443 Stellen) und formt Kopfleiste, Reiter, Karten und Eingabefelder um. Falls dir eine Farbe nicht gefällt, steht alles oben unter `:root` — in `theme.css` wie in `clan.css`.
+
+Ein Unterschied zwischen beiden Welten ist Absicht: Die Clan-Seite bekommt das bewegte Sternenfeld, die App nicht. Über Preistabellen wäre das Unruhe statt Atmosphäre. In der App leuchtet nur, was etwas bedeutet — der aktive Reiter, die Karte unter dem Zeiger.
+
+`js/nova.js` trägt die Bewegung für beide Seiten und fasst weder eine ID noch eine Klasse aus `script.js` an. Wer im Betriebssystem „Bewegung reduzieren" gesetzt hat, bekommt denselben Inhalt sofort und ohne Animation.
 
 ## Noch offen
 
