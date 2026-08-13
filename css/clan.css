@@ -1,43 +1,51 @@
 /* ═══════════════════════════════════════════════════════════════
-   DarkNova [DNV] · Supernova
+   DarkNova [DNV] · Clan- und Rechtsseiten
    ---------------------------------------------------------------
-   Gilt für clan.html und die drei Rechtsseiten.
+   Aufbau nach dem Vorbild moderner Clan-Seiten: dunkler Grund mit
+   feinem Raster und Sternenfeld, darüber große weiche Lichtkreise.
+   Jeder Abschnitt beginnt mittig mit einer Plakette, darunter eine
+   Überschrift, deren letztes Wort den Akzent trägt. Inhalte sitzen
+   in Karten mit Symbolkästchen oben und einem Merkmal-Chip unten.
 
-   Der Name des Clans ist ein Sternenereignis, und genau davon lebt
-   die Gestaltung: ein Kern, der hinter dem Schriftzug glimmt, ein
-   treibendes Sternenfeld, Licht das nach außen wandert. Gearbeitet
-   wird mit einer einzigen hellen Achse — Amethyst über Magenta ins
-   Cyan. Alles andere bleibt ruhig und dunkel, damit das Leuchten
-   etwas zu bedeuten hat.
+   Eine einzige Akzentfarbe trägt die Seite — Amethyst, die Farbe
+   des Clans. Sie erscheint nur dort, wo sie etwas bedeutet:
+   Plaketten, Symbole, Chips, das zweite Wort der Überschrift.
 
-   Die Klassennamen sind dieselben wie vorher. Die Rechtsseiten
-   ziehen ihr Aussehen komplett aus dieser Datei.
+   Die Rechtsseiten ziehen ihr Aussehen komplett aus dieser Datei.
    ═══════════════════════════════════════════════════════════════ */
 
 :root {
-  --grund: #06060b;
-  --flaeche: #10101b;
-  --flaeche-2: #16162447;
-  --linie: rgba(255, 255, 255, 0.09);
-  --linie-stark: rgba(255, 255, 255, 0.16);
+  --grund: #0a0a10;
+  --grund-tief: #07070c;
+  /* Karten liegen als hauchdünner heller Schleier auf dem Grund,
+     nicht als eigene Fläche — das hält die Tiefe zusammen. */
+  --karte-grund: rgba(255, 255, 255, 0.022);
+  --karte-grund-an: rgba(255, 255, 255, 0.04);
+  --linie: rgba(255, 255, 255, 0.075);
+  --linie-an: rgba(169, 126, 240, 0.35);
 
-  --fg: #edebf5;
-  --leise: #8c87a3;
+  --fg: #e8e6f2;
+  --fg-hell: #ffffff;
+  --leise: #8b87a3;
+  --leise-tief: #6f6b86;
 
-  --amethyst: #a97ef0;
-  --magenta: #e85cd6;
-  --cyan: #5be1ff;
-
-  --schein: rgba(169, 126, 240, 0.22);
-  --schein-schwach: rgba(169, 126, 240, 0.08);
+  --akzent: #a97ef0;
+  --akzent-hell: #c9adf7;
+  --akzent-tief: #7c4fd6;
+  --akzent-schleier: rgba(169, 126, 240, 0.12);
+  --akzent-rand: rgba(169, 126, 240, 0.28);
 
   --anzeige: 'Sora', system-ui, sans-serif;
   --text: 'Manrope', system-ui, sans-serif;
   --mono: 'JetBrains Mono', ui-monospace, monospace;
 
-  --breite: 72rem;
+  --breite: 74rem;
   --spalte: 62ch;
-  --rundung: 4px;
+
+  --r-karte: 16px;
+  --r-klein: 10px;
+  --r-chip: 7px;
+  --r-pille: 9999px;
 }
 
 *,
@@ -55,7 +63,7 @@ body {
   background: var(--grund);
   color: var(--fg);
   font-family: var(--text);
-  font-size: 1.0625rem;
+  font-size: 1rem;
   line-height: 1.65;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
@@ -76,38 +84,99 @@ h3 {
   font-family: var(--anzeige);
   font-weight: 800;
   letter-spacing: -0.035em;
-  line-height: 0.98;
+  line-height: 1.05;
   margin: 0;
   text-wrap: balance;
-}
-
-h2 {
-  font-size: clamp(1.7rem, 4.5vw, 2.6rem);
-  text-transform: uppercase;
-}
-
-h3 {
-  font-size: 1.15rem;
-  letter-spacing: -0.02em;
-  line-height: 1.25;
 }
 
 p {
   max-width: var(--spalte);
 }
 
+/* ── Der Hintergrund ─────────────────────────────────────────────
+   Drei feste Ebenen hinter allem: Raster, Sternenfeld, Lichtkreise.
+   Sie scrollen nicht mit — dadurch bleibt die Bewegung ruhig und
+   der Browser muss nichts neu zeichnen. */
+
+.himmel {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+#sternenfeld {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.raster-schicht {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  background-size: 64px 64px;
+  /* Zur Mitte hin sichtbar, zu den Rändern hin weg — sonst wirkt das
+     Raster wie ein Gitter über der Seite statt wie Tiefe. */
+  mask-image: radial-gradient(ellipse 80% 70% at 50% 40%, #000 30%, transparent 80%);
+  -webkit-mask-image: radial-gradient(ellipse 80% 70% at 50% 40%, #000 30%, transparent 80%);
+}
+
+.kern {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(90px);
+}
+
+.kern--1 {
+  top: -18rem;
+  left: 50%;
+  width: 52rem;
+  height: 36rem;
+  margin-left: -26rem;
+  background: radial-gradient(circle, rgba(169, 126, 240, 0.34), transparent 68%);
+  animation: atmen 13s ease-in-out infinite;
+}
+
+.kern--2 {
+  bottom: -14rem;
+  right: -12rem;
+  width: 36rem;
+  height: 36rem;
+  background: radial-gradient(circle, rgba(124, 79, 214, 0.24), transparent 66%);
+  animation: atmen 17s ease-in-out infinite reverse;
+}
+
+@keyframes atmen {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.82;
+  }
+  50% {
+    transform: scale(1.12);
+    opacity: 1;
+  }
+}
+
 /* ── Auftauchen beim Scrollen ────────────────────────────────────
-   Gesteuert von js/nova.js. Ohne JavaScript bleibt alles sichtbar,
-   weil der Ausgangszustand über .auf gesetzt wird und nur dann
-   greift, wenn die Datei tatsächlich läuft — siehe .js-an unten. */
+   Gesteuert von js/nova.js. Der Ausgangszustand hängt an .js-an,
+   damit ohne JavaScript alles schlicht sichtbar bleibt. */
 
 .js-an .auf {
   opacity: 0;
-  transform: translateY(26px);
+  transform: translateY(24px);
   transition:
-    opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
-    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
-  transition-delay: calc(var(--i, 0) * 85ms);
+    opacity 0.65s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+  transition-delay: calc(var(--i, 0) * 80ms);
 }
 
 .js-an .auf.sichtbar {
@@ -120,319 +189,297 @@ p {
 .nav {
   position: sticky;
   top: 0;
-  z-index: 30;
+  z-index: 40;
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 1rem;
-  padding: 0.9rem clamp(1rem, 4vw, 2rem);
-  background: rgba(6, 6, 11, 0.82);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  padding: 0.8rem clamp(1rem, 3vw, 1.75rem);
+  background: rgba(10, 10, 16, 0.78);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--linie);
 }
 
 .nav__marke {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
   font-family: var(--anzeige);
   font-weight: 800;
-  font-size: 1.05rem;
+  font-size: 1.02rem;
   letter-spacing: -0.02em;
-  text-transform: uppercase;
   text-decoration: none;
-  color: var(--fg);
+  color: var(--fg-hell);
+  white-space: nowrap;
+}
+
+.nav__marke span {
+  color: var(--akzent);
+}
+
+/* Das Zeichen links: eine Nova als Marke, solange es kein Logo gibt.
+   Drei Buchstaben wären in einem Kreis dieser Größe unleserlich. */
+.nav__zeichen {
+  display: grid;
+  place-items: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  flex: 0 0 auto;
+  border-radius: var(--r-pille);
+  background: linear-gradient(135deg, var(--akzent), var(--akzent-tief));
+  box-shadow: 0 0 18px rgba(169, 126, 240, 0.45);
+}
+
+.nav__zeichen svg {
+  width: 1.1rem;
+  height: 1.1rem;
+  fill: #150a20;
 }
 
 .nav__links {
   display: flex;
-  gap: 1.5rem;
-  font-family: var(--mono);
-  font-size: 0.74rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  align-items: center;
+  gap: 0.15rem;
+  margin: 0 auto;
+  font-size: 0.88rem;
 }
 
 .nav__links a {
+  padding: 0.45rem 0.75rem;
+  border-radius: var(--r-klein);
   color: var(--leise);
   text-decoration: none;
-  transition: color 0.18s ease;
+  white-space: nowrap;
+  transition:
+    color 0.18s ease,
+    background 0.18s ease;
 }
 
 .nav__links a:hover {
-  color: var(--amethyst);
+  color: var(--fg-hell);
+  background: rgba(255, 255, 255, 0.05);
 }
 
-@media (max-width: 46rem) {
+.nav__links a[aria-current] {
+  color: var(--fg-hell);
+  background: rgba(255, 255, 255, 0.07);
+}
+
+@media (max-width: 62rem) {
   .nav__links {
     display: none;
   }
+  .nav {
+    justify-content: space-between;
+  }
 }
 
-/* ── Kopfbereich ─────────────────────────────────────────────────
-   Drei Ebenen übereinander: Sternenfeld ganz hinten, darüber zwei
-   weiche Lichtwolken, ganz vorne der Text. */
+/* ── Knöpfe ──────────────────────────────────────────────────── */
 
-.hero {
-  position: relative;
-  overflow: hidden;
-  min-height: 88vh;
-  display: flex;
-  flex-direction: column;
+.knopf {
+  display: inline-flex;
+  align-items: center;
   justify-content: center;
-  text-align: center;
-  padding: clamp(4rem, 10vw, 7rem) 1.5rem 4rem;
+  gap: 0.5rem;
+  padding: 0.72rem 1.35rem;
+  border: 1px solid transparent;
+  border-radius: var(--r-klein);
+  font-family: var(--text);
+  font-weight: 700;
+  font-size: 0.9rem;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    transform 0.16s ease,
+    box-shadow 0.16s ease,
+    background 0.16s ease,
+    border-color 0.16s ease,
+    color 0.16s ease;
 }
 
-#sternenfeld {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 0;
-  display: block;
+.knopf--voll {
+  background: linear-gradient(135deg, var(--akzent), var(--akzent-tief));
+  color: #14091f;
+  box-shadow: 0 0 26px rgba(169, 126, 240, 0.32);
 }
 
-.kern {
-  position: absolute;
-  z-index: 1;
-  border-radius: 50%;
-  filter: blur(70px);
-  pointer-events: none;
+.knopf--voll:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 0 38px rgba(169, 126, 240, 0.5);
 }
 
-.kern--1 {
-  top: -10rem;
-  left: 50%;
-  width: 44rem;
-  height: 30rem;
-  margin-left: -22rem;
-  background: radial-gradient(circle, rgba(169, 126, 240, 0.4), transparent 68%);
-  animation: atmen 11s ease-in-out infinite;
+.knopf--leer {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: var(--linie);
+  color: var(--fg);
 }
 
-.kern--2 {
-  top: 8rem;
-  right: -8rem;
-  width: 28rem;
-  height: 28rem;
-  background: radial-gradient(circle, rgba(232, 92, 214, 0.26), transparent 66%);
-  animation: atmen 15s ease-in-out infinite reverse;
+.knopf--leer:hover {
+  border-color: var(--akzent-rand);
+  color: var(--akzent-hell);
 }
 
-@keyframes atmen {
-  0%,
-  100% {
-    transform: scale(1);
-    opacity: 0.85;
-  }
-  50% {
-    transform: scale(1.13);
-    opacity: 1;
-  }
-}
-
-.hero > .innen {
-  position: relative;
-  z-index: 2;
-}
-
-.kicker {
-  display: block;
-  font-family: var(--mono);
-  font-size: 0.72rem;
-  letter-spacing: 0.26em;
-  text-transform: uppercase;
-  color: var(--leise);
-  margin: 0 0 1.5rem;
-}
-
-/* Der Schriftzug trägt die ganze Farbachse der Seite. */
-.hero__titel {
-  font-family: var(--anzeige);
-  font-weight: 800;
-  font-size: clamp(3rem, 13vw, 8.5rem);
-  line-height: 0.88;
-  letter-spacing: -0.055em;
-  text-transform: uppercase;
-  margin: 0;
-  background: linear-gradient(97deg, #ffffff 8%, var(--amethyst) 45%, var(--magenta) 78%, var(--cyan) 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  filter: drop-shadow(0 0 44px rgba(169, 126, 240, 0.45));
-}
-
-.hero__text {
-  font-size: clamp(1.02rem, 2.2vw, 1.22rem);
-  color: #c5c1d6;
-  margin: 1.7rem auto 0;
-  max-width: 42ch;
+.knopf--klein {
+  padding: 0.5rem 0.95rem;
+  font-size: 0.82rem;
 }
 
 .knopfreihe {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 0.8rem;
-  margin-top: 2.4rem;
+  gap: 0.75rem;
+  margin-top: 2.2rem;
 }
 
-.knopf {
+/* ── Plakette ────────────────────────────────────────────────────
+   Die kleine Kapsel über jeder Überschrift. Sie sagt, worum es im
+   folgenden Abschnitt geht, bevor die Überschrift es ausspricht. */
+
+.plakette {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.85rem 1.7rem;
-  border-radius: 100px;
-  border: 1px solid transparent;
-  font-family: var(--text);
-  font-weight: 700;
-  font-size: 0.92rem;
-  text-decoration: none;
-  background: linear-gradient(100deg, var(--amethyst), var(--magenta));
-  color: #0b0616;
-  box-shadow: 0 0 30px rgba(169, 126, 240, 0.4);
-  transition:
-    transform 0.18s ease,
-    box-shadow 0.18s ease,
-    border-color 0.18s ease,
-    color 0.18s ease;
-}
-
-.knopf:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 0 44px rgba(232, 92, 214, 0.52);
-}
-
-.knopf--leer {
-  background: none;
-  border-color: var(--linie-stark);
+  padding: 0.4rem 0.9rem;
+  border: 1px solid var(--linie);
+  border-radius: var(--r-pille);
+  background: rgba(255, 255, 255, 0.03);
+  font-size: 0.78rem;
+  font-weight: 500;
   color: var(--fg);
-  box-shadow: none;
 }
 
-.knopf--leer:hover {
-  border-color: var(--cyan);
-  color: var(--cyan);
-  box-shadow: none;
+.plakette svg {
+  width: 0.95rem;
+  height: 0.95rem;
+  stroke: var(--akzent);
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex: 0 0 auto;
 }
 
-.hero__fuss {
-  margin-top: 3.5rem;
-  padding-top: 1.4rem;
-  border-top: 1px solid var(--linie);
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 1.5rem;
-  font-family: var(--mono);
-  font-size: 0.72rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--leise);
-}
+/* ── Kopfbereich ─────────────────────────────────────────────── */
 
-/* ── Abschnitte ──────────────────────────────────────────────── */
-
-.band {
+.hero {
   position: relative;
-  padding: clamp(3.5rem, 8vw, 6.5rem) 1.5rem;
-}
-
-/* Ein schwacher Schimmer am oberen Rand hält die Abschnitte
-   verbunden, ohne dass eine harte Kante nötig wird. */
-.band--schimmer::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 50%;
-  width: min(60rem, 90%);
-  height: 1px;
-  transform: translateX(-50%);
-  background: linear-gradient(90deg, transparent, var(--schein), transparent);
+  min-height: 92vh;
+  min-height: 92svh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-align: center;
+  padding: clamp(4rem, 9vw, 6rem) 1.5rem 3.5rem;
 }
 
 .innen {
+  width: 100%;
   max-width: var(--breite);
   margin: 0 auto;
 }
 
-/* Abschnittskopf: Überschrift links, danach eine Linie, die beim
-   Auftauchen von links nach rechts zündet. */
-.kopf {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 1.25rem;
-  margin-bottom: 2.5rem;
+.hero__titel {
+  font-size: clamp(2.6rem, 7.5vw, 5.2rem);
+  line-height: 1.02;
+  letter-spacing: -0.045em;
+  margin: 1.5rem 0 0;
 }
 
-/* min-width: 0 ist hier das Entscheidende: ohne das weigert sich ein
-   Flex-Kind, unter seine Inhaltsbreite zu schrumpfen, und lange
-   Überschriften schieben die Seite auf schmalen Schirmen auseinander. */
-.kopf > div {
-  flex: 1 1 auto;
-  min-width: 0;
+.hero__titel span {
+  display: block;
+  background: linear-gradient(97deg, var(--akzent) 15%, var(--akzent-hell) 55%, #f0e6ff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 38px rgba(169, 126, 240, 0.4));
 }
 
-.kopf .kicker {
-  margin-bottom: 0.5rem;
-  text-align: left;
-}
-
-.linie {
-  flex: 1 1 4rem;
-  height: 1px;
-  background: linear-gradient(90deg, var(--amethyst), var(--magenta), transparent);
-  transform: scaleX(0);
-  transform-origin: left;
-  transition: transform 1.1s cubic-bezier(0.22, 1, 0.36, 1) 0.15s;
-}
-
-.sichtbar .linie {
-  transform: scaleX(1);
-}
-
-/* Ohne JavaScript steht die Linie einfach da. */
-html:not(.js-an) .linie {
-  transform: scaleX(1);
+.hero__text {
+  font-size: clamp(1rem, 1.9vw, 1.14rem);
+  color: var(--leise);
+  margin: 1.5rem auto 0;
+  max-width: 52ch;
 }
 
 /* ── Zahlenreihe ─────────────────────────────────────────────── */
 
 .zahlen {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
-  gap: 1px;
-  margin-top: 3rem;
-  background: var(--linie);
-  border: 1px solid var(--linie);
-  border-radius: var(--rundung);
-  overflow: hidden;
+  grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+  gap: 1.5rem 1rem;
+  margin: 3.5rem auto 0;
+  max-width: 52rem;
 }
 
 .zahl {
-  background: var(--grund);
-  padding: 1.5rem 1rem;
   text-align: center;
 }
 
 .zahl__wert {
   display: block;
-  font-family: var(--mono);
-  font-weight: 700;
-  font-size: 1.9rem;
-  font-variant-numeric: tabular-nums;
+  font-family: var(--anzeige);
+  font-weight: 800;
+  font-size: clamp(1.7rem, 3.4vw, 2.3rem);
   line-height: 1;
-  color: var(--amethyst);
-  text-shadow: 0 0 22px rgba(169, 126, 240, 0.5);
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  color: var(--akzent);
 }
 
 .zahl__label {
   display: block;
-  margin-top: 0.5rem;
-  font-family: var(--mono);
-  font-size: 0.68rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  margin-top: 0.45rem;
+  font-size: 0.82rem;
+  color: var(--leise-tief);
+}
+
+/* ── Abschnitte ──────────────────────────────────────────────── */
+
+.band {
+  position: relative;
+  padding: clamp(4rem, 8vw, 7rem) 1.5rem;
+}
+
+/* Der weiche Lichtkreis hinter einem Abschnitt. Er sitzt hinter dem
+   Inhalt und gibt der Fläche Tiefe, ohne selbst aufzufallen. */
+.band__schein {
+  position: absolute;
+  top: 10%;
+  left: 50%;
+  width: min(46rem, 92%);
+  height: 30rem;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(169, 126, 240, 0.09), transparent 68%);
+  pointer-events: none;
+}
+
+.band > .innen {
+  position: relative;
+  z-index: 1;
+}
+
+.kopf {
+  text-align: center;
+  margin-bottom: 3.25rem;
+}
+
+.kopf h2 {
+  font-size: clamp(1.9rem, 4.4vw, 3rem);
+  margin: 1.1rem 0 0;
+}
+
+/* Das letzte Wort trägt die Akzentfarbe — es sagt, worum es geht. */
+.kopf h2 em {
+  font-style: normal;
+  color: var(--akzent);
+}
+
+.kopf p {
+  margin: 1rem auto 0;
+  max-width: 54ch;
   color: var(--leise);
 }
 
@@ -440,20 +487,27 @@ html:not(.js-an) .linie {
 
 .raster {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(15.5rem, 1fr));
   gap: 1rem;
-  margin-top: 2.5rem;
+}
+
+.raster--zwei {
+  grid-template-columns: repeat(auto-fit, minmax(21rem, 1fr));
 }
 
 .karte {
   position: relative;
   overflow: hidden;
-  padding: 1.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1.5rem;
   border: 1px solid var(--linie);
-  border-radius: var(--rundung);
-  background: var(--flaeche);
+  border-radius: var(--r-karte);
+  background: var(--karte-grund);
   transition:
     border-color 0.25s ease,
+    background 0.25s ease,
     transform 0.25s ease;
 }
 
@@ -462,7 +516,7 @@ html:not(.js-an) .linie {
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(340px circle at var(--mx, 50%) var(--my, 0%), var(--schein), transparent 62%);
+  background: radial-gradient(300px circle at var(--mx, 50%) var(--my, 0%), rgba(169, 126, 240, 0.14), transparent 62%);
   opacity: 0;
   transition: opacity 0.3s ease;
   pointer-events: none;
@@ -470,8 +524,9 @@ html:not(.js-an) .linie {
 
 .karte:hover,
 .karte:focus-within {
-  border-color: rgba(169, 126, 240, 0.5);
-  transform: translateY(-3px);
+  border-color: var(--linie-an);
+  background: var(--karte-grund-an);
+  transform: translateY(-2px);
 }
 
 .karte:hover::before,
@@ -483,22 +538,53 @@ html:not(.js-an) .linie {
   position: relative;
 }
 
-.karte__nr {
-  display: inline-block;
-  font-family: var(--mono);
-  font-size: 0.62rem;
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--magenta);
-  margin-bottom: 0.9rem;
+.karte__symbol {
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 1px solid var(--akzent-rand);
+  border-radius: var(--r-klein);
+  background: var(--akzent-schleier);
+}
+
+.karte__symbol svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  stroke: var(--akzent);
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.karte h3 {
+  font-size: 1.08rem;
+  letter-spacing: -0.02em;
+  color: var(--fg-hell);
 }
 
 .karte p {
-  margin: 0.6rem 0 0;
+  margin: 0;
   font-size: 0.92rem;
-  line-height: 1.62;
-  color: #a9a5bb;
+  line-height: 1.6;
+  color: var(--leise);
+}
+
+/* Der Chip unten schließt die Karte ab und trägt die harte Angabe:
+   Status, Anzahl, Zuständigkeit. */
+.karte__chip {
+  align-self: flex-start;
+  margin-top: auto;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid var(--akzent-rand);
+  border-radius: var(--r-chip);
+  background: var(--akzent-schleier);
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--akzent-hell);
+  white-space: nowrap;
 }
 
 /* ── Liste ───────────────────────────────────────────────────── */
@@ -506,32 +592,41 @@ html:not(.js-an) .linie {
 .liste {
   list-style: none;
   padding: 0;
-  margin: 1.75rem 0 0;
-  max-width: var(--spalte);
+  margin: 0 auto;
+  max-width: 40rem;
+  display: grid;
+  gap: 0.6rem;
 }
 
 .liste li {
-  position: relative;
-  padding: 0.75rem 0 0.75rem 1.9rem;
-  border-bottom: 1px solid var(--linie);
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.9rem 1.1rem;
+  border: 1px solid var(--linie);
+  border-radius: var(--r-klein);
+  background: var(--karte-grund);
+  text-align: left;
 }
 
 .liste li::before {
   content: '';
-  position: absolute;
-  left: 0;
-  top: 1.5em;
-  width: 0.7rem;
-  height: 2px;
-  background: linear-gradient(90deg, var(--amethyst), var(--magenta));
+  flex: 0 0 auto;
+  width: 0.45rem;
+  height: 0.45rem;
+  margin-top: 0.62rem;
+  border-radius: 50%;
+  background: var(--akzent);
+  box-shadow: 0 0 10px var(--akzent);
 }
 
 /* ── Fußzeile ────────────────────────────────────────────────── */
 
 footer {
-  background: var(--grund);
+  position: relative;
   border-top: 1px solid var(--linie);
-  padding: 3.5rem 1.5rem 2.5rem;
+  background: var(--grund-tief);
+  padding: 3.5rem 1.5rem 2rem;
 }
 
 .fuss__raster {
@@ -548,7 +643,7 @@ footer h4 {
   font-weight: 700;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: var(--leise);
+  color: var(--leise-tief);
   margin: 0 0 0.9rem;
 }
 
@@ -563,14 +658,14 @@ footer li {
 }
 
 footer a {
-  color: var(--fg);
+  color: var(--leise);
   text-decoration: none;
-  font-size: 0.94rem;
+  font-size: 0.92rem;
   transition: color 0.18s ease;
 }
 
 footer a:hover {
-  color: var(--amethyst);
+  color: var(--akzent-hell);
 }
 
 .fuss__unten {
@@ -578,39 +673,43 @@ footer a:hover {
   margin: 2.5rem auto 0;
   padding-top: 1.5rem;
   border-top: 1px solid var(--linie);
-  font-family: var(--mono);
-  font-size: 0.7rem;
+  font-size: 0.8rem;
   line-height: 1.6;
-  letter-spacing: 0.04em;
-  color: var(--leise);
+  color: var(--leise-tief);
 }
 
 /* ── Rechtstexte ─────────────────────────────────────────────────
-   Ruhiger als der Rest: eine Spalte, kein Leuchten, nur die
-   Farbachse in Überschriften und Links. Wer hier landet, sucht
-   eine Auskunft und keine Atmosphäre. */
+   Ruhiger als der Rest: eine Spalte, kein Leuchten. Wer hier landet,
+   sucht eine Auskunft und keine Atmosphäre. */
 
 .recht {
+  position: relative;
+  z-index: 1;
   max-width: 46rem;
   margin: 0 auto;
-  padding: clamp(3rem, 8vw, 5.5rem) 1.5rem 5rem;
+  padding: clamp(3rem, 7vw, 5rem) 1.5rem 5rem;
 }
 
 .recht h1 {
-  font-size: clamp(2rem, 6vw, 3.2rem);
-  text-transform: uppercase;
+  font-size: clamp(2rem, 5.5vw, 3rem);
   margin-bottom: 1rem;
-  background: linear-gradient(97deg, #ffffff 10%, var(--amethyst) 70%, var(--magenta) 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+}
+
+.recht .kicker,
+.kicker {
+  display: block;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--akzent);
+  margin: 0 0 0.75rem;
 }
 
 .recht h2 {
-  font-size: 1.3rem;
-  text-transform: none;
+  font-size: 1.25rem;
   letter-spacing: -0.02em;
-  margin: 3rem 0 0.9rem;
+  margin: 2.75rem 0 0.9rem;
   padding-top: 1.5rem;
   border-top: 1px solid var(--linie);
 }
@@ -622,8 +721,8 @@ footer a:hover {
   margin: 1.75rem 0;
   padding: 1.4rem;
   border: 1px solid var(--linie);
-  border-radius: var(--rundung);
-  background: var(--flaeche);
+  border-radius: var(--r-karte);
+  background: var(--karte-grund);
   font-family: var(--mono);
   font-size: 0.84rem;
 }
@@ -646,22 +745,22 @@ footer a:hover {
 }
 
 .recht a {
-  color: var(--amethyst);
+  color: var(--akzent-hell);
   text-underline-offset: 0.2em;
 }
 
 .recht a:hover {
-  color: var(--magenta);
+  color: var(--akzent);
 }
 
 .hinweis {
   margin-top: 3rem;
   padding: 1.1rem 1.35rem;
   border: 1px solid var(--linie);
-  border-left: 3px solid var(--amethyst);
-  border-radius: var(--rundung);
-  background: var(--flaeche);
-  font-size: 0.92rem;
+  border-left: 3px solid var(--akzent);
+  border-radius: var(--r-klein);
+  background: var(--karte-grund);
+  font-size: 0.9rem;
   color: var(--leise);
 }
 
@@ -670,7 +769,7 @@ footer a:hover {
 a:focus-visible,
 .knopf:focus-visible,
 button:focus-visible {
-  outline: 2px solid var(--cyan);
+  outline: 2px solid var(--akzent-hell);
   outline-offset: 3px;
 }
 
@@ -683,10 +782,10 @@ button:focus-visible {
   left: 1rem;
   top: 1rem;
   z-index: 60;
-  background: var(--amethyst);
-  color: #0b0616;
+  background: var(--akzent);
+  color: #14091f;
   padding: 0.75rem 1.25rem;
-  border-radius: var(--rundung);
+  border-radius: var(--r-klein);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -699,9 +798,6 @@ button:focus-visible {
   .js-an .auf {
     opacity: 1;
     transform: none;
-  }
-  .linie {
-    transform: scaleX(1);
   }
   *,
   *::before,
