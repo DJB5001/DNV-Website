@@ -2423,24 +2423,82 @@ function salePricePerUnit(sale) {
   return price / (sale.item?.amount || 1);
 }
 
-function getMonthlyAveragePerUnit(auction) {
-  const itemName = auction.item.displayName ?? auction.item.material;
-  const fullHistory = App.auctionHistory[itemName] || [];
-  const monthCutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
+// =====================================================================
+// ITEM-VARIANTEN
+// ---------------------------------------------------------------------
+// Zwei Dinge können denselben Anzeigenamen tragen und trotzdem nichts
+// miteinander zu tun haben. "Bohrer V3" etwa gibt es als Sammelkarte aus
+// Papier (Ø rund 590 Tsd) und als Netherit-Spitzhacke (Ø rund 870 Mio) —
+// Faktor 1500. Auch der Zustand eines Items (✯✩✩ bis ✯✯✯) steht nur in
+// der Lore und macht einen erheblichen Preisunterschied.
+//
+// Der Verlauf liegt aber unter EINEM Schlüssel je Anzeigename. Wer die
+// Verkäufe darunter ungefiltert mittelt, bekommt eine Zahl, die für
+// keine der beiden Varianten stimmt. Deshalb wird innerhalb eines Namens
+// zusätzlich nach Material und Lore getrennt.
+//
+// Verzauberungen gehen bewusst NICHT in den Schlüssel ein: Sie würden
+// die Gruppen auf einzelne Verkäufe zersplittern, und derselbe Bohrer
+// mit Glück statt Behutsamkeit ging für praktisch denselben Preis weg.
+// =====================================================================
 
-  const relevant = fullHistory.filter(sale => {
-    if (!sale.item) return false;
-    if (sale.item.material !== auction.item.material) return false;
-    if (auction.item.lore && sale.item.lore) {
-      const cur = Array.isArray(auction.item.lore) ? auction.item.lore.join('\n') : auction.item.lore;
-      const tgt = Array.isArray(sale.item.lore) ? sale.item.lore.join('\n') : sale.item.lore;
-      if (cur !== tgt) return false;
-    } else if (auction.item.lore || sale.item.lore) {
-      return false;
-    }
-    const t = new Date(sale.soldAt || sale.endTime).getTime();
-    return !isNaN(t) && t >= monthCutoff;
-  });
+function loreAlsText(item) {
+  const l = item?.lore;
+  if (!l) return '';
+  return Array.isArray(l) ? l.join('\n') : String(l);
+}
+
+// Stabiler Schlüssel einer Variante. Getrennt wird mit \u0000, weil das
+// Zeichen weder in einem Material noch in einer Lore vorkommen kann: mit
+// einem Leerzeichen als Trenner könnten Material und Lore ineinander
+// laufen und zwei verschiedene Varianten denselben Schlüssel ergeben.
+function itemVariante(item) {
+  return `${item?.material ?? ''}\u0000${loreAlsText(item)}`;
+}
+
+function gleicheVariante(a, b) {
+  return itemVariante(a) === itemVariante(b);
+}
+
+// Alle Verkäufe aus dem Verlauf, die wirklich dieselbe Variante sind.
+function verkaeufeZurVariante(item) {
+  const name = item?.displayName ?? item?.material;
+  const alle = App.auctionHistory[name] || [];
+  if (!Array.isArray(alle)) return [];
+  return alle.filter(sale => sale.item && gleicheVariante(sale.item, item));
+}
+
+function istInLetztenTagen(sale, tage) {
+  const t = new Date(sale.soldAt || sale.endTime).getTime();
+  return !isNaN(t) && t >= Date.now() - tage * 24 * 60 * 60 * 1000;
+}
+
+// Kurzes Unterscheidungsmerkmal für die Anzeige, damit zwei gleichnamige
+// Einträge auseinanderzuhalten sind: "Sammelkarte", "Zustand ✯✯✩", sonst
+// das Material.
+function variantenLabel(item) {
+  const lore = loreAlsText(item);
+  const teile = [];
+
+  const typ = lore.match(/Gewinntyp\s*»\s*(.+)/);
+  if (typ && typ[1].trim() && typ[1].trim() !== 'Item') teile.push(typ[1].trim());
+
+  const zustand = lore.match(/Zustand:\s*(\S+)/);
+  if (zustand) teile.push(zustand[1]);
+
+  if (!teile.length && item?.material) {
+    teile.push(
+      String(item.material)
+        .toLowerCase()
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, c => c.toUpperCase())
+    );
+  }
+  return teile.join(' · ');
+}
+
+function getMonthlyAveragePerUnit(auction) {
+  const relevant = verkaeufeZurVariante(auction.item).filter(sale => istInLetztenTagen(sale, 30));
 
   if (relevant.length === 0) return null;
   // Verkaufspreis: finalPrice ist der echte Endpreis (bei Sofortkauf der
@@ -2894,24 +2952,8 @@ function calculateAuctionPriceTrend(auction) {
   // Anzeige-Deckelung, damit einzelne Ausreißer keine absurden Prozente ergeben
   const CAP = 500;
 
-  const itemName = auction.item?.displayName ?? auction.item?.material;
-  const fullHistory = App.auctionHistory[itemName] || [];
-  const monthCutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
-
-  // Gleiche Item-Unterscheidung (material + lore) wie beim 30-Tage-Durchschnitt
-  const relevant = fullHistory.filter(sale => {
-    if (!sale.item) return false;
-    if (sale.item.material !== auction.item.material) return false;
-    if (auction.item.lore && sale.item.lore) {
-      const cur = Array.isArray(auction.item.lore) ? auction.item.lore.join('\n') : auction.item.lore;
-      const tgt = Array.isArray(sale.item.lore) ? sale.item.lore.join('\n') : sale.item.lore;
-      if (cur !== tgt) return false;
-    } else if (auction.item.lore || sale.item.lore) {
-      return false;
-    }
-    const t = new Date(sale.soldAt || sale.endTime).getTime();
-    return !isNaN(t) && t >= monthCutoff;
-  });
+  // Gleiche Varianten-Trennung wie beim 30-Tage-Durchschnitt
+  const relevant = verkaeufeZurVariante(auction.item).filter(sale => istInLetztenTagen(sale, 30));
 
   // Zu wenig Daten -> keinen Trend anzeigen
   if (relevant.length < MIN_SALES) return null;
@@ -3087,8 +3129,12 @@ async function refreshTab(tabId, btn) {
 // Jedes Item genau EINMAL, durchsuchbar. Klick -> Durchschnitt + Kurve + Aktionen.
 // =====================================================================
 
-// Baut eine Map aller eindeutigen Items: Schlüssel = Item-Name.
-// Wert = ein repräsentatives Item-Objekt + Zähler für aktive/verkaufte Vorkommen.
+// Baut eine Map aller eindeutigen Items. Schlüssel ist NICHT der Name,
+// sondern Name + Variante: "Bohrer V3" als Sammelkarte und "Bohrer V3"
+// als Spitzhacke sind zwei Einträge, weil sie zwei verschiedene Dinge
+// sind. Vorher landeten beide in einem Eintrag — die Zähler summierten
+// über beide, während der angezeigte Durchschnitt nur zu der Variante
+// gehörte, die zufällig als repräsentatives Objekt gespeichert war.
 function buildItemIndex() {
   const index = {};
 
@@ -3096,13 +3142,21 @@ function buildItemIndex() {
     if (!itemObj) return;
     const name = itemObj.displayName ?? itemObj.material;
     if (!name) return;
-    if (!index[name]) {
-      index[name] = { name, item: itemObj, activeCount: 0, soldCount: 0 };
+    const schluessel = `${name}\u0000${itemVariante(itemObj)}`;
+    if (!index[schluessel]) {
+      index[schluessel] = {
+        schluessel,
+        name,
+        label: variantenLabel(itemObj),
+        item: itemObj,
+        activeCount: 0,
+        soldCount: 0
+      };
     }
-    if (source === 'active') index[name].activeCount++;
-    if (source === 'history') index[name].soldCount++;
-    // Ein Item mit Icon/Lore bevorzugt als repräsentatives Objekt behalten
-    if (!index[name].item.icon && itemObj.icon) index[name].item = itemObj;
+    if (source === 'active') index[schluessel].activeCount++;
+    if (source === 'history') index[schluessel].soldCount++;
+    // Ein Item mit Icon bevorzugt als repräsentatives Objekt behalten
+    if (!index[schluessel].item.icon && itemObj.icon) index[schluessel].item = itemObj;
   };
 
   // Aus aktiven Auktionen
@@ -3166,10 +3220,11 @@ function renderItemSearch() {
     card.innerHTML = `
       <img src="${iconUrl}" alt="${entry.name}" loading="lazy" onerror="this.src='https://mcdf.wiki.gg/images/Barrier.png?ff8ff1'">
       <h3 class="auction-name">${entry.name}</h3>
+      ${entry.label ? `<div class="item-variante">${entry.label}</div>` : ''}
       <div class="price-info"><span style="color:var(--text-secondary)">Ø 30 Tage:</span> ${avg !== null ? formatCardPrice(Math.round(avg)) : 'Keine Daten'}</div>
       <div class="price-info" style="font-size:0.8rem; color:var(--text-secondary)">${entry.activeCount} aktiv · ${entry.soldCount} verkauft</div>
     `;
-    card.onclick = () => openItemDetail(entry.name);
+    card.onclick = () => openItemDetail(entry.schluessel);
     grid.appendChild(card);
   });
 
@@ -3182,37 +3237,39 @@ function renderItemSearch() {
 }
 
 // Öffnet die Detailansicht für ein Item (Durchschnitt + Kurve + Aktionen)
-async function openItemDetail(itemName) {
+// Erwartet den Variantenschlüssel aus buildItemIndex, nicht den blossen
+// Namen: Sonst würden Durchschnitt und Zähler wieder über Sammelkarte
+// und Werkzeug zusammen gerechnet.
+async function openItemDetail(schluessel) {
   const modal = document.getElementById('itemDetailModal');
   const body = document.getElementById('itemDetailBody');
   if (!modal || !body) return;
 
-  // Repräsentatives Item-Objekt finden (aus aktiven Auktionen bevorzugt, sonst Verlauf)
-  let repItem = null;
-  const active = (App.auctionsData || []).find(a => (a.item?.displayName ?? a.item?.material) === itemName);
-  if (active) repItem = active.item;
-  if (!repItem) {
-    const sales = App.auctionHistory[itemName];
-    if (Array.isArray(sales) && sales.length) repItem = sales[sales.length - 1].item || { material: itemName, displayName: itemName };
-  }
-  if (!repItem) repItem = { material: itemName, displayName: itemName };
+  const eintrag = buildItemIndex()[schluessel];
+  if (!eintrag) return;
+
+  const itemName = eintrag.name;
+  const repItem = eintrag.item;
+  const label = eintrag.label;
 
   const pseudoAuction = { item: repItem };
-  const avgAll = (() => {
-    const sales = App.auctionHistory[itemName] || [];
-    if (!sales.length) return null;
-    const sum = sales.reduce((acc, s) => acc + salePricePerUnit(s), 0);
-    return Math.round(sum / sales.length);
-  })();
+  const variantenVerkaeufe = verkaeufeZurVariante(repItem);
+
+  const avgAll = variantenVerkaeufe.length
+    ? Math.round(variantenVerkaeufe.reduce((acc, s) => acc + salePricePerUnit(s), 0) / variantenVerkaeufe.length)
+    : null;
   const avgMonth = getMonthlyAveragePerUnit(pseudoAuction);
 
-  const activeCount = (App.auctionsData || []).filter(a => (a.item?.displayName ?? a.item?.material) === itemName).length;
-  const soldCount = (App.auctionHistory[itemName] || []).length;
+  const activeCount = (App.auctionsData || []).filter(
+    a => a.item && (a.item.displayName ?? a.item.material) === itemName && gleicheVariante(a.item, repItem)
+  ).length;
+  const soldCount = variantenVerkaeufe.length;
 
   const iconUrl = getAuctionItemIcon(repItem);
 
   body.innerHTML = `
     <h2 style="padding-right:3rem;">${itemName}</h2>
+    ${label ? `<p class="item-variante item-variante--gross">${label}</p>` : ''}
     <div class="auction-info-box">
       <div class="info-item" style="text-align:center;">
         <img src="${iconUrl}" alt="${itemName}" style="width:64px;height:64px;image-rendering:pixelated;" onerror="this.src='https://mcdf.wiki.gg/images/Barrier.png?ff8ff1'">
@@ -3254,20 +3311,21 @@ async function openItemDetail(itemName) {
   modal.classList.add('show');
   document.body.classList.add('modal-open');
 
-  const sales = App.auctionHistory[itemName] || [];
-  if (sales.length >= 2) {
-    renderItemMiniChart(itemName, 'itemDetailChart');
+  if (variantenVerkaeufe.length >= 2) {
+    renderItemMiniChart(variantenVerkaeufe, 'itemDetailChart');
   } else {
     const chartDiv = document.getElementById('itemDetailChart');
     if (chartDiv) chartDiv.innerHTML = '<p style="text-align:center;color:var(--text-secondary);">Noch nicht genug Verkäufe für eine Kurve.</p>';
   }
 }
 
-// Kleine Preis-Kurve für ein Item (Verkaufspreis pro Stück über Zeit)
-function renderItemMiniChart(itemName, containerId) {
+// Kleine Preis-Kurve für ein Item (Verkaufspreis pro Stück über Zeit).
+// Bekommt die Verkäufe fertig übergeben statt nur den Namen — sonst
+// sprang die Kurve zwischen Sammelkarte und Werkzeug hin und her.
+function renderItemMiniChart(verkaeufe, containerId) {
   const container = document.getElementById(containerId);
   if (!container) return;
-  const sales = (App.auctionHistory[itemName] || [])
+  const sales = (verkaeufe || [])
     .slice()
     .sort((a, b) => new Date(a.soldAt || a.endTime) - new Date(b.soldAt || b.endTime));
   if (sales.length < 2) return;
@@ -3917,19 +3975,7 @@ async function openAuctionChart(auction) {
 
   // Durchschnittspreis für die Box berechnen
   // Filter history by material and lore to distinguish items with the same name
-  const fullHistory = App.auctionHistory[itemName] || [];
-  const filteredHistory = fullHistory.filter(sale => {
-    if (!sale.item) return true; // Legacy data
-    if (sale.item.material !== auction.item.material) return false;
-    if (auction.item.lore && sale.item.lore) {
-      const currentLore = Array.isArray(auction.item.lore) ? auction.item.lore.join('\n') : auction.item.lore;
-      const targetLore = Array.isArray(sale.item.lore) ? sale.item.lore.join('\n') : sale.item.lore;
-      if (currentLore !== targetLore) return false;
-    } else if (auction.item.lore || sale.item.lore) {
-      return false;
-    }
-    return true;
-  });
+  const filteredHistory = verkaeufeZurVariante(auction.item);
 
   let avgPrice = null;
   if (filteredHistory.length > 0) {
@@ -3938,11 +3984,7 @@ async function openAuctionChart(auction) {
   }
 
   // Durchschnitt der letzten 30 Tage
-  const monthCutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
-  const lastMonthSales = filteredHistory.filter(sale => {
-    const t = new Date(sale.soldAt || sale.endTime).getTime();
-    return !isNaN(t) && t >= monthCutoff;
-  });
+  const lastMonthSales = filteredHistory.filter(sale => istInLetztenTagen(sale, 30));
   let avgPriceMonth = null;
   if (lastMonthSales.length > 0) {
     const sumM = lastMonthSales.reduce((acc, sale) => acc + salePricePerUnit(sale), 0);

@@ -262,6 +262,10 @@ input[type='number'],
   overflow: hidden;
   background: var(--surface-card);
   border: 1px solid var(--border);
+  /* Erzeugt einen eigenen Stapelkontext. Dadurch darf der Schein unten
+     mit z-index: -1 arbeiten: Er liegt dann über der Kartenfläche, aber
+     unter dem Inhalt — ohne dass die Kinder positioniert werden müssen. */
+  isolation: isolate;
   transition:
     border-color var(--transition-speed) ease,
     transform var(--transition-speed) ease;
@@ -277,7 +281,7 @@ input[type='number'],
   opacity: 0;
   transition: opacity 0.3s ease;
   pointer-events: none;
-  z-index: 0;
+  z-index: -1;
 }
 
 .card:hover {
@@ -287,12 +291,6 @@ input[type='number'],
 
 .card:hover::before {
   opacity: 1;
-}
-
-/* Inhalt über den Schein heben, sonst liegt der Verlauf davor. */
-.card > * {
-  position: relative;
-  z-index: 1;
 }
 
 /* Dichtere Zeilen: bei Preislisten zählt Übersicht mehr als Luft */
@@ -550,4 +548,182 @@ body > .container > h1 span {
   #tabs.tabs button::after {
     transition: none;
   }
+}
+
+/* ── 12. Auktionskarten ────────────────────────────────────────────
+   Vorher: 160px schmale Spalten, alles zentriert, acht gleich
+   aussehende "Label: Wert"-Zeilen untereinander. Dadurch brachen die
+   Namen mitten im Wort ab und der wichtigste Wert — der aktuelle
+   Preis — ging zwischen den anderen unter.
+
+   Jetzt: breitere Karten, Werte rechtsbündig in Monospace unter-
+   einander, damit sich Beträge über Karten hinweg vergleichen lassen.
+   Der aktuelle Preis steht als einzige große Zahl heraus. */
+
+.grid {
+  grid-template-columns: repeat(auto-fill, minmax(15.5rem, 1fr));
+  gap: 1rem;
+}
+
+/* Angehängt an .grid statt an einzelne Container-IDs: Auktionen,
+   Schnäppchen, Verlauf, Items und Profil hängen ihre Karten alle in ein
+   .grid, und die IDs heißen uneinheitlich (auctionContainer im Singular,
+   dealsContainer im Plural). */
+.grid > .card {
+  display: flex;
+  flex-direction: column;
+  padding: 1.15rem 1.15rem 1rem;
+  text-align: left;
+  backdrop-filter: none;
+  box-shadow: none;
+}
+
+/* Das Bild bekommt eine schwache Scheibe als Grund — ohne sie schwimmt
+   das freigestellte Item-Bild im Nichts. */
+.grid > .card > img {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 0.9rem;
+  image-rendering: pixelated;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+}
+
+/* Namen dürfen zwei Zeilen brauchen. Vorher schnitt nowrap sie mitten
+   im Wort ab ("NETHERITE_U…"), was sie unlesbar machte. */
+.card h3.auction-name {
+  font-family: var(--schrift-display);
+  font-weight: 800;
+  font-size: 0.94rem;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  text-transform: none;
+  text-align: center;
+  white-space: normal;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  min-height: 2.35em;
+  margin: 0 0 0.85rem;
+}
+
+/* Variante unter dem Namen: trennt Sammelkarte von Werkzeug. */
+.item-variante {
+  margin: -0.6rem 0 0.85rem;
+  text-align: center;
+  font-family: var(--schrift-mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent-color1);
+}
+
+.item-variante--gross {
+  margin: -0.5rem 0 1rem;
+  font-size: 0.75rem;
+  text-align: left;
+}
+
+/* Eine Zeile = Beschriftung links, Wert rechts. Die Werte stehen in
+   Monospace mit gleicher Ziffernbreite genau untereinander. */
+.card .price-info {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.32rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.045);
+  font-family: var(--schrift-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.8rem;
+  color: var(--text-primary);
+}
+
+.card .price-info:last-child {
+  border-bottom: 0;
+}
+
+/* Beschriftungen einheitlich zurücknehmen. Das !important überstimmt
+   die inline gesetzten Farben im erzeugten HTML; die Unterscheidung
+   rot/grün trägt ohnehin schon das Rabatt-Schild oben rechts. */
+.card .price-info > span {
+  font-family: var(--schrift-text);
+  font-weight: 500;
+  font-size: 0.78rem;
+  color: var(--text-secondary) !important;
+  white-space: nowrap;
+}
+
+/* Der aktuelle Preis ist die eine Zahl, auf die es ankommt. */
+.card .price-info.auction-currentBid {
+  font-size: 1.12rem;
+  font-weight: 700;
+  color: var(--accent-color1);
+  padding: 0.5rem 0 0.6rem;
+  text-shadow: 0 0 20px rgba(169, 126, 240, 0.4);
+}
+
+.card .price-info.auction-instantBuy {
+  color: var(--accent-cyan);
+}
+
+/* Restzeit als eigener Fuß, abgesetzt vom Rest. */
+.card .price-info.auction-timer {
+  margin-top: auto;
+  padding-top: 0.7rem;
+  border-top: 1px solid var(--border);
+  border-bottom: 0;
+  justify-content: center;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+}
+
+/* Rabatt-Schild: als Kapsel statt als Ecke, damit es zur runderen
+   Kartenform passt. */
+.deal-badge {
+  top: 0.7rem;
+  right: 0.7rem;
+  border-radius: 100px;
+  font-family: var(--schrift-mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.22rem 0.55rem;
+  letter-spacing: 0.02em;
+  box-shadow: none;
+}
+
+.deal-badge.deal-cheaper {
+  background: rgba(79, 191, 135, 0.16);
+  border: 1px solid rgba(79, 191, 135, 0.45);
+  color: #7fe0ab;
+}
+
+.deal-badge.deal-pricier {
+  background: rgba(232, 99, 111, 0.16);
+  border: 1px solid rgba(232, 99, 111, 0.45);
+  color: #ff9aa3;
+}
+
+/* ── 13. Wortmarke über dem Titel ─────────────────────────────────── */
+
+.dnv-titelzeile {
+  margin: 0 0 1.5rem;
+  text-align: center;
+  font-family: var(--schrift-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.dnv-titelzeile a {
+  color: var(--accent-color1);
+  text-decoration: none;
+  transition: color var(--transition-speed) ease;
+}
+
+.dnv-titelzeile a:hover {
+  color: var(--accent-color2);
 }
