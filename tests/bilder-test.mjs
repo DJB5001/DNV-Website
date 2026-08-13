@@ -4,9 +4,19 @@ import vm from 'node:vm';
 const quelle = fs.readFileSync(new URL('../js/script.js', import.meta.url), 'utf8');
 const config = fs.readFileSync(new URL('../js/config.js', import.meta.url), 'utf8');
 
-const von = quelle.indexOf('// Rückfallbild, wenn auch das Typ-Bild');
-const bis = quelle.indexOf('function getAuctionCategoryKey');
-const block = quelle.slice(von, bis);
+// Zwei getrennte Stücke: Die Konstanten stehen am Dateianfang, die
+// Funktionen weiter unten. Alles dazwischen (App, localStorage …) darf
+// nicht mitkommen.
+const stueck = (von, bis) => {
+  const a = quelle.indexOf(von);
+  const b = quelle.indexOf(bis);
+  if (a < 0 || b < 0) throw new Error(`nicht gefunden: ${von}`);
+  return quelle.slice(a, b);
+};
+
+const block =
+  stueck('// Rückfallbild, wenn auch das Typ-Bild', 'const App = {') +
+  stueck('// Bild des Item-Typs.', 'function getAuctionCategoryKey');
 
 const kontext = { console };
 vm.createContext(kontext);
