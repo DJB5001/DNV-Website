@@ -21,6 +21,7 @@
     <link rel="stylesheet" href="css/clan.css" />
     <link rel="stylesheet" href="css/mitglieder.css" />
     <link rel="stylesheet" href="css/clan-inhalt.css" />
+    <link rel="stylesheet" href="css/hintergrund.css" />
     <!-- Markiert, dass JavaScript läuft. Ohne diese Klasse bleiben alle
          Inhalte sichtbar, statt auf ein Auftauchen zu warten. -->
     <script>
@@ -58,6 +59,9 @@
 
     <!-- ══ Kopfbereich ══ -->
     <header class="hero" id="inhalt">
+      <!-- Minecraft-Motiv hinter dem Kopfbereich, weich ausgeblendet.
+           Siehe css/hintergrund.css. -->
+      <div class="mc-hg mc-hg--hoehle mc-hg--stark" aria-hidden="true"></div>
       <div class="innen">
         <span class="plakette auf">
           <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -109,7 +113,11 @@
 
     <!-- ══ Mitglieder ══ -->
     <section class="band" id="mitglieder">
+      <!-- Reihenfolge beachten: .band__schein steht VOR der Bildebene.
+           Die Regel .mc-hg ~ * setzt nachfolgende Geschwister auf
+           position: relative — der Lichtkreis muss absolut bleiben. -->
       <div class="band__schein" aria-hidden="true"></div>
+      <div class="mc-hg mc-hg--ritt" aria-hidden="true"></div>
       <div class="innen">
         <div class="kopf auf">
           <span class="plakette">

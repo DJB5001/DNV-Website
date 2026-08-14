@@ -31,6 +31,7 @@ npx http-server . -p 8123      # abweichender Port über PORT=...
 | `anzeige-test.mjs` | Marktname ohne API-Feld, Variante auf der Auktionskarte | Browser |
 | `filter-test.mjs` | „Auktionsverlauf" zeigt nur die gewählte Variante | Browser + Verlauf |
 | `reiter-test.mjs` | Clan und Mitglieder laufen als Reiter, die Leiste bleibt stehen | Browser |
+| `hintergrund-test.mjs` | Jede Bildebene hat ein Motiv, die Datei wird ausgeliefert, der Inhalt liegt darüber | Browser |
 
 ## Warum diese Tests
 

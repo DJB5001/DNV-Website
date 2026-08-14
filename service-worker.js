@@ -5,7 +5,7 @@
 
 // Hochzählen, sobald sich die Liste ändert — beim Aktivieren wirft der
 // Worker alle Caches weg, die nicht mehr so heißen.
-const CACHE_NAME = 'opsucht-static-v7';
+const CACHE_NAME = 'opsucht-static-v8';
 const STATIC_ASSETS = [
   './',
   './index.html',
@@ -20,6 +20,7 @@ const STATIC_ASSETS = [
   './css/clan.css',
   './css/mitglieder.css',
   './css/clan-inhalt.css',
+  './css/hintergrund.css',
   './js/chart.js',
   './js/script.js',
   './js/config.js',
@@ -28,7 +29,11 @@ const STATIC_ASSETS = [
   './js/nova.js',
   './js/supabase-config.js',
   './js/supabase-compat.js',
-  './manifest.webmanifest'
+  './manifest.webmanifest',
+  './images/hintergrund/hoehle.webp',
+  './images/hintergrund/ritt.webp',
+  './images/hintergrund/weite.webp',
+  './images/hintergrund/bluete.webp'
 ];
 
 // Installation: statische Dateien cachen
