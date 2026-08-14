@@ -27,11 +27,12 @@ npx http-server . -p 8123      # abweichender Port über PORT=...
 | `varianten-test.mjs` | Sammelkarte und Werkzeug unter gleichem Namen werden getrennt | Verlauf |
 | `index-test.mjs` | Der Item-Index teilt Varianten auf, ohne Verkäufe zu verlieren | Verlauf |
 | `bilder-test.mjs` | Aus Materialnamen entstehen brauchbare Bildadressen. Mit `--abrufen` wird jede Adresse wirklich geholt (dauert Minuten) | Verlauf |
-| `kette-test.mjs` | Bild-Rückfall: eigenes Bild → Wiki → Spieltextur → Verbotsschild | Browser |
+| `kette-test.mjs` | Bild-Rückfall: eigenes Bild → Wiki → Spieltextur → Verbotsschild, und dass die Adresse, die es geschafft hat, gemerkt wird | Browser |
 | `anzeige-test.mjs` | Marktname ohne API-Feld, Variante auf der Auktionskarte | Browser |
 | `filter-test.mjs` | „Auktionsverlauf" zeigt nur die gewählte Variante | Browser + Verlauf |
 | `reiter-test.mjs` | Clan und Mitglieder laufen als Reiter, die Leiste bleibt stehen | Browser |
 | `hintergrund-test.mjs` | Jede Bildebene hat ein Motiv, die Datei wird ausgeliefert, der Inhalt liegt darüber | Browser |
+| `spieler-test.mjs` | Bestenliste, alle sieben Sortierarten, Profil und Rückweg | Browser |
 
 ## Warum diese Tests
 

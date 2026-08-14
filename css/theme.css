@@ -936,7 +936,68 @@ body .dnv-karte__titel {
   padding-right: 0;
 }
 
-/* ── 17. Handy ─────────────────────────────────────────────────────
+/* ── 17. Spieler-Reiter ────────────────────────────────────────────
+   Die Bestenliste nutzt dieselben Karten wie überall, bekommt aber eine
+   Platzziffer und hebt den Wert hervor, nach dem gerade sortiert wird —
+   sonst muss man raten, warum jemand auf Platz drei steht. */
+
+.spieler-kopfzeile {
+  margin: 0 0 1.2rem;
+  font-family: var(--schrift-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.spieler-karte__rang {
+  position: absolute;
+  top: 0.6rem;
+  left: 0.7rem;
+  font-family: var(--schrift-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+/* Die ersten drei Plätze bekommen die Akzentfarbe. */
+.grid > .spieler-karte:nth-child(-n + 3) .spieler-karte__rang {
+  color: var(--accent-color1);
+}
+
+/* Eingefärbt wird die ganze Zeile, nicht der Wert: die Regel weiter oben
+   (.card .price-info > span) setzt jedes span in einer Preiszeile mit
+   !important auf Grau. Die Beschriftung bleibt dadurch zurückgenommen,
+   und die Zahl daneben nimmt die Farbe der Zeile an. */
+.card .price-info.spieler-karte__wert {
+  color: var(--accent-color1);
+  font-weight: 700;
+}
+
+.card .price-info.spieler-karte__ein {
+  color: var(--sell-color);
+}
+
+.card .price-info.spieler-karte__aus {
+  color: var(--buy-color);
+}
+
+/* ── 18. Lange Raster ──────────────────────────────────────────────
+   Karten ausserhalb des Sichtfelds werden nicht gesetzt und nicht
+   gezeichnet. Bei mehreren hundert Kacheln spart das den grössten Teil
+   der Arbeit beim Aufbau und beim Scrollen.
+
+   contain-intrinsic-size gibt der Karte eine angenommene Höhe, solange
+   sie übersprungen wird — mit auto merkt sich der Browser die zuletzt
+   wirklich gemessene, dadurch springt die Bildlaufleiste nicht. */
+
+.grid > .card {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 230px;
+}
+
+/* ── 19. Handy ─────────────────────────────────────────────────────
    Auf schmalen Schirmen war die Leiste zweizeilig: style.css setzt
    flex-wrap: wrap, wodurch der Home-Knopf über die Reiter rutschte
    statt daneben zu stehen. Die Reiter scrollen ohnehin waagerecht,
