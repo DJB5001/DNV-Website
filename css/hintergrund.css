@@ -49,6 +49,16 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
+  /* Oben zeigen Grund und Kopfband dasselbe Motiv — das eine fest, das
+     andere mitscrollend. Beim Scrollen lag dadurch das Bild doppelt und
+     versetzt übereinander. Der Grund blendet sich deshalb erst ein,
+     wenn das Band nach oben verschwindet; den Wert setzt js/nova.js
+     beim Scrollen. Ohne JavaScript bleibt er auf 1.
+
+     Bewusst hier und nicht an den Ebenen darunter: die tragen den
+     weichen Motivwechsel als Übergang, und der würde die
+     Scrollbewegung um über eine Sekunde nachziehen. */
+  opacity: var(--mc-grund-ein, 1);
 }
 
 .mc-grund__bild {

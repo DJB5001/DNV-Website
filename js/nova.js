@@ -222,32 +222,52 @@
     if (treffer) motivSetzen(treffer.dataset.mcMotiv, false);
   }
 
+  /* Solange das Kopfband im Bild ist, bleibt der Grund weg: beide zeigen
+     oben dasselbe Motiv, das eine fest und das andere mitscrollend —
+     übereinander sah man das Bild doppelt und versetzt. Erst wenn das
+     Band nach oben wegwandert, kommt der Grund dahinter hervor. */
+
+  function grundEinblenden() {
+    if (!kopfband) return;
+    var hoehe = kopfband.offsetHeight || 1;
+    var anteil = (window.pageYOffset - hoehe * 0.35) / (hoehe * 0.45);
+    anteil = Math.max(0, Math.min(1, anteil));
+    document.documentElement.style.setProperty('--mc-grund-ein', anteil.toFixed(3));
+  }
+
   bereicheSammeln();
 
-  // Nur ohne Reiterleiste, also auf der Clan-Seite. In der App würde
-  // das Scrollen dem Reiter sein Motiv wieder wegnehmen.
-  if (!document.getElementById('tabs')) {
-    window.addEventListener(
-      'scroll',
-      function () {
-        if (offenePruefung) return;
-        offenePruefung = true;
-        requestAnimationFrame(function () {
-          motivPruefen();
-          offenePruefung = false;
-        });
-      },
-      { passive: true }
-    );
+  // Das Motiv folgt dem Scrollen nur ohne Reiterleiste, also auf der
+  // Clan-Seite. In der App würde es dem offenen Reiter sein Bild wieder
+  // wegnehmen. Das Einblenden des Grundes gilt dagegen überall.
+  var motivFolgtScrollen = !document.getElementById('tabs');
 
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', function () {
-        bereicheSammeln();
-        motivPruefen();
+  window.addEventListener(
+    'scroll',
+    function () {
+      if (offenePruefung) return;
+      offenePruefung = true;
+      requestAnimationFrame(function () {
+        grundEinblenden();
+        if (motivFolgtScrollen) motivPruefen();
+        offenePruefung = false;
       });
-    }
-    motivPruefen();
+    },
+    { passive: true }
+  );
+
+  window.addEventListener('resize', grundEinblenden, { passive: true });
+
+  function nachtragen() {
+    bereicheSammeln();
+    grundEinblenden();
+    if (motivFolgtScrollen) motivPruefen();
   }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', nachtragen);
+  }
+  nachtragen();
 
   /* App: jeder Reiter bekommt sein eigenes Bild. Was nicht in der
      Liste steht, behält das Motiv des Kopfbereichs. */

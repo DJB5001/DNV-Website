@@ -893,6 +893,17 @@ body > .container > h1 span {
   border-radius: 50%;
 }
 
+/* Die kleine Fassung in der Verkäuferzeile des Auktionsfensters. Stand
+   vorher als style-Angabe im Markup — dort war für das Kopfbild kein
+   Platz, weil der Kreis keine eigene Regel hatte. */
+.player-initial-avatar--klein {
+  width: 24px;
+  height: 24px;
+  font-size: 1rem;
+  margin: 0;
+  flex: 0 0 auto;
+}
+
 /* ── 16. Clan-Inhalte in der App ───────────────────────────────────
    style.css setzt für h2 eine Serifenschrift mit !important. Die
    Abschnittstitel der Clan-Inhalte sollen aber dieselbe Anzeigeschrift
