@@ -1,5 +1,5 @@
 {
-  "stand": "2026-08-14T18:03:27.201Z",
+  "stand": "2026-08-14T18:04:31.190Z",
   "anzahl": 15,
   "hinweis": "Automatisch vom DNV-Bot aus den Discord-Rollen erzeugt. Änderungen hier werden überschrieben.",
   "mitglieder": [
@@ -134,14 +134,14 @@
       "uuid": "f7aeadd0-af67-44ce-b28f-9e0c6d3f8d4c"
     },
     {
-      "name": "DavidCraft8080",
+      "name": ".DavidCraft8080",
       "rolle": "Farmer",
       "farbe": "farmer",
       "rang": 12,
       "seit": "2026-08-14",
       "verifiziert": true,
-      "plattform": "java",
-      "uuid": null
+      "plattform": "bedrock",
+      "uuid": "00000000-0000-0000-0009-01f2502e1546"
     },
     {
       "name": "TentieMC",
