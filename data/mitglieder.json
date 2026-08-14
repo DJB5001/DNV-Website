@@ -1,5 +1,5 @@
 {
-  "stand": "2026-08-14T18:01:36.951Z",
+  "stand": "2026-08-14T18:03:27.201Z",
   "anzahl": 15,
   "hinweis": "Automatisch vom DNV-Bot aus den Discord-Rollen erzeugt. Änderungen hier werden überschrieben.",
   "mitglieder": [
@@ -64,14 +64,14 @@
       "uuid": "00000000-0000-0000-0009-01f34aff6147"
     },
     {
-      "name": "EagleoneHD",
+      "name": "EagleOneHD123",
       "rolle": "Farmer",
       "farbe": "farmer",
       "rang": 12,
       "seit": "2026-08-09",
       "verifiziert": true,
       "plattform": "java",
-      "uuid": "3283a31f-af44-443b-848d-22b392fcc178"
+      "uuid": "ba1b26db-4afc-4a36-aa0d-c52cbf95fa7c"
     },
     {
       "name": "Starfisch_",
