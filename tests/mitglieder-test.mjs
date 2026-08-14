@@ -122,12 +122,39 @@ try {
     route.abort();
   });
 
+  // So antwortet Geyser wirklich (gekürzt, echte Antwort für einen
+  // OPSucht-Spieler). Wichtig: Die Adresse im value-Block beginnt mit http —
+  // auf einer https-Seite verwirft der Browser so ein Bild.
+  const echteAntwort = {
+    hash: '1211fb447057ebc5e96154301a55fe881a5ed61a2617e51325b9daf5934961e7',
+    is_steve: true,
+    last_update: 1786556594955,
+    texture_id: '7ca2e98e2a5af3113feedb35c1d521ef633142142cad935b8fb4f68b1f23d5c8',
+    value: Buffer.from(
+      JSON.stringify({
+        textures: {
+          SKIN: { url: 'http://textures.minecraft.net/texture/7ca2e98e2a5af3113feedb35c1d521ef633142142cad935b8fb4f68b1f23d5c8' },
+        },
+      })
+    ).toString('base64'),
+  };
+
   let geyserAbfragen = 0;
   await seite.route('**/api.geysermc.org/v2/skin/**', (route) => {
     geyserAbfragen += 1;
-    // Kein Skin für die 999 — dort muss der Buchstabe übrig bleiben
-    if (route.request().url().endsWith('/999')) return route.fulfill({ status: 404, body: '{}' });
-    route.fulfill({ status: 200, contentType: 'application/json', body: '{"texture_id":"abc123"}' });
+    const url = route.request().url();
+
+    // Unbekannte Xbox-ID: Geyser antwortet mit einem leeren Objekt, nicht
+    // mit einem Fehler. Dort muss der Buchstabe übrig bleiben.
+    if (url.endsWith('/999')) {
+      return route.fulfill({ status: 200, contentType: 'application/json', body: '{}' });
+    }
+    // Ohne texture_id muss der Weg über value greifen
+    if (url.endsWith('/2535428814673622')) {
+      const ohneKennung = { ...echteAntwort, texture_id: undefined };
+      return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(ohneKennung) });
+    }
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(echteAntwort) });
   });
   await seite.route('**/textures.minecraft.net/texture/**', (route) =>
     route.fulfill({ status: 200, contentType: 'image/png', body: Buffer.alloc(0) })
@@ -136,7 +163,7 @@ try {
   fs.writeFileSync(
     DATEI,
     JSON.stringify({
-      anzahl: 4,
+      anzahl: 5,
       mitglieder: [
         // Verifizierter Bedrock-Spieler: Geyser-UUID, daraus die Xbox-ID
         { name: '.BedrockHans', rolle: 'Farmer', rang: 12, seit: '2026-08-11',
@@ -147,6 +174,9 @@ try {
         // Bedrock ohne Verifizierung: keine UUID, also nur der Buchstabe
         { name: '.NochNichtVerifiziert', rolle: 'Farmer', rang: 12, seit: '2026-08-12',
           verifiziert: false, plattform: null, uuid: null },
+        // Antwort ohne texture_id — die Adresse steckt dann nur im value-Block
+        { name: '.NurValue', rolle: 'Farmer', rang: 12, seit: '2026-08-12',
+          verifiziert: true, plattform: 'bedrock', uuid: '00000000-0000-0000-0009-01f585da16d6' },
         { name: 'JavaSpieler', rolle: 'Farmer', rang: 12, seit: '2026-08-13',
           verifiziert: true, plattform: 'java', uuid: 'aaaa-bbbb' },
       ],
@@ -154,7 +184,7 @@ try {
   );
 
   await seite.reload({ waitUntil: 'domcontentloaded' });
-  await seite.waitForFunction(() => document.querySelectorAll('.mitglied__name').length === 4, null, {
+  await seite.waitForFunction(() => document.querySelectorAll('.mitglied__name').length === 5, null, {
     timeout: 5000,
   });
   await seite.waitForTimeout(600);
@@ -183,7 +213,7 @@ try {
   pruefe('Bedrock bekommt den Skin-Ausschnitt', nach('.BedrockHans').hatSkin === true);
   pruefe(
     'Skin-Adresse aus der Textur-Kennung gebaut',
-    nach('.BedrockHans').hintergrund.includes('textures.minecraft.net/texture/abc123'),
+    nach('.BedrockHans').hintergrund.includes(`https://textures.minecraft.net/texture/${echteAntwort.texture_id}`),
     nach('.BedrockHans').hintergrund.slice(0, 70)
   );
   pruefe(
@@ -193,7 +223,17 @@ try {
   pruefe('Ohne Punkt erkennt die Plattform es trotzdem', nach('OhnePunkt').hatSkin === true);
   pruefe('Ohne UUID bleibt nur der Buchstabe', nach('.NochNichtVerifiziert').hatSkin === false);
   pruefe('Und der Buchstabe stimmt', nach('.NochNichtVerifiziert').initial === 'N');
-  pruefe('Geyser wurde für beide gefragt', geyserAbfragen === 2, String(geyserAbfragen));
+  pruefe('Geyser wurde für alle drei mit UUID gefragt', geyserAbfragen === 3, String(geyserAbfragen));
+
+  // Der Rueckfall ueber value: Adresse steckt dort mit http drin und muss
+  // auf https umgeschrieben werden, sonst blockt der Browser das Bild.
+  pruefe('Ohne texture_id greift der value-Block', nach('.NurValue').hatSkin === true);
+  pruefe(
+    'Und die Adresse wird auf https gehoben',
+    nach('.NurValue').hintergrund.includes('https://textures.minecraft.net/') &&
+      !nach('.NurValue').hintergrund.includes('http://'),
+    nach('.NurValue').hintergrund.slice(0, 70)
+  );
 
   // Antwortet Geyser nicht, darf keine leere Fläche stehen bleiben
   fs.writeFileSync(

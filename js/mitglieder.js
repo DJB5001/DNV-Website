@@ -79,9 +79,15 @@ let dnvMitglieder = [
     }
   }
 
-  /* Geyser antwortet je nach Fassung entweder mit einer Textur-Kennung oder
-     mit dem base64-Wert, wie ihn Mojang verschickt. Beides wird akzeptiert;
-     passt nichts davon, gibt es null und es bleibt beim Buchstaben. */
+  /* Geyser antwortet mit texture_id und zusätzlich mit value — dem
+     base64-Block, wie Mojang ihn verschickt. Bevorzugt wird texture_id:
+     kurz, und die Adresse wird selbst gebaut.
+
+     Der Weg über value ist der Rückfall, falls das Feld einmal fehlt. Die
+     Adresse darin beginnt mit http, und ein unverschlüsseltes Bild würde
+     der Browser auf einer https-Seite verwerfen — deshalb wird sie
+     umgeschrieben. Kennt Geyser die Xbox-ID nicht, kommt ein leeres Objekt;
+     dann gibt es null und es bleibt beim Anfangsbuchstaben. */
   async function skinAdresse(xuid) {
     const antwort = await fetch(`https://api.geysermc.org/v2/skin/${xuid}`);
     if (!antwort.ok) return null;
@@ -92,7 +98,8 @@ let dnvMitglieder = [
     }
     if (daten && daten.value) {
       const roh = JSON.parse(atob(daten.value));
-      return roh?.textures?.SKIN?.url || null;
+      const adresse = roh?.textures?.SKIN?.url;
+      return adresse ? adresse.replace(/^http:/, 'https:') : null;
     }
     return null;
   }
