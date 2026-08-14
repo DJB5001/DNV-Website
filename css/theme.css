@@ -603,7 +603,10 @@ body > .container > h1 span {
   height: 56px;
   margin: 0 auto 0.9rem;
   image-rendering: pixelated;
-  border-radius: 50%;
+  object-fit: contain;
+  /* Kein border-radius: Das schnitt quadratische Block-Texturen zu einer
+     Scheibe zu — der Knochenblock sah dadurch aus wie ein cremefarbener
+     Kreis. Der Verlauf dahinter wirkt von selbst rund. */
   background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
 }
 
@@ -868,4 +871,48 @@ body > .container > h1 span {
 /* Der Clan-Knopf leuchtet, solange sein Reiter offen ist. */
 .dnv-clanlink.active {
   box-shadow: 0 0 34px rgba(169, 126, 240, 0.6);
+}
+
+/* ── 15. Spielerköpfe bei Geboten und Spielern ─────────────────────
+   Der Anfangsbuchstabe bleibt als Grundlage liegen; das Kopfbild legt
+   sich darüber. Lädt es nicht, blendet js/mitglieder.js es aus und der
+   Buchstabe steht wieder da — so entsteht nie ein leerer Kreis. */
+
+.player-initial-avatar {
+  position: relative;
+  overflow: hidden;
+}
+
+.player-kopf {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  image-rendering: pixelated;
+  border-radius: 50%;
+}
+
+/* ── 16. Clan-Inhalte in der App ───────────────────────────────────
+   style.css setzt für h2 eine Serifenschrift mit !important. Die
+   Abschnittstitel der Clan-Inhalte sollen aber dieselbe Anzeigeschrift
+   tragen wie überall sonst — hier über den body-Selektor
+   zurückgeholt, ohne die Originaldatei anzufassen. */
+
+body .dnv-titel {
+  font-family: var(--schrift-display) !important;
+  font-weight: 800 !important;
+  font-size: clamp(1.7rem, 4vw, 2.6rem) !important;
+  letter-spacing: -0.035em !important;
+}
+
+body .dnv-karte__titel {
+  font-family: var(--schrift-display);
+  letter-spacing: -0.02em;
+}
+
+/* Die Abschnitte laufen im Reiter über die volle Breite des Containers. */
+#clan [data-clan-inhalt] .dnv-band {
+  padding-left: 0;
+  padding-right: 0;
 }

@@ -42,7 +42,7 @@ const App = {
   previousState: null, // Merkt sich den Zustand vor dem Aufruf eines Spielerprofils
   scheduledNotifications: {}, // Speichert geplante Auktions-Benachrichtigungen
   settings: {
-    auctions: { name: true, startBid: true, currentBid: true, bids: true, amount: true, timer: true, 'bid-amount': true },
+    auctions: { name: true, startBid: false, currentBid: true, bids: true, amount: false, timer: true, 'bid-amount': true },
     market: { name: true, buy: true, sell: true },
     shards: { name: true, rate: true },
     players: { name: true, auctions: true, bids: true, 'bid-amount': true },
@@ -451,7 +451,7 @@ function showConfirmModal(title, message, confirmText = 'Bestätigen', showCance
 
 async function resetSettings(category) {
   const defaults = {
-    auctions: { name: true, startBid: true, currentBid: true, bids: true, amount: true, timer: true, 'bid-amount': true },
+    auctions: { name: true, startBid: false, currentBid: true, bids: true, amount: false, timer: true, 'bid-amount': true },
     market: { name: true, buy: true, sell: true },
     shards: { name: true, rate: true },
     players: { name: true, auctions: true, bids: true, 'bid-amount': true },
@@ -1203,7 +1203,7 @@ function applyVisibilitySettings() {
 
 function resetVisibilitySettings() {
   // Reset App.settings to defaults
-  App.settings.auctions = { name: true, startBid: true, currentBid: true, bids: true, amount: true, timer: true, 'bid-amount': true };
+  App.settings.auctions = { name: true, startBid: false, currentBid: true, bids: true, amount: false, timer: true, 'bid-amount': true };
   App.settings.market = { name: true, buy: true, sell: true };
   App.settings.shards = { name: true, rate: true };
   App.settings.players = { name: true, auctions: true, bids: true, 'bid-amount': true };
@@ -2346,7 +2346,20 @@ function createPlayerCard(uuid, username) {
   const ownedAuctions = App.auctionsData.filter(a => a.seller === uuid).length;
   const bids = App.auctionsData.filter(a => a.bids && uuid in a.bids).length;
   const initial = (username.match(/[a-zA-Z]/) || ['?'])[0].toUpperCase();
-  card.innerHTML = `<div class="player-initial-avatar">${initial}</div><h3 class="players-name">${username}</h3><div class="price-info players-auctions"><span>Auktionen:</span> ${ownedAuctions}</div><div class="price-info players-bids"><span>Gebote:</span> ${bids}</div>`;
+
+  // Kopfbild über dem Anfangsbuchstaben. Abgefragt wird über die UUID —
+  // die ist eindeutig, anders als der Name, der sich ändern kann.
+  // Lädt keiner der Dienste, blendet dnvKopfFehler das Bild aus und der
+  // Buchstabe darunter kommt zum Vorschein.
+  const kopf = [
+    `https://mc-heads.net/avatar/${encodeURIComponent(uuid)}/96`,
+    `https://minotar.net/avatar/${encodeURIComponent(uuid)}/96`
+  ];
+  const kopfBild = typeof dnvKopfFehler === 'function'
+    ? `<img class="player-kopf" src="${kopf[0]}" alt="" loading="lazy" data-kopfkette='${JSON.stringify(kopf.slice(1))}' onerror="dnvKopfFehler(this)">`
+    : '';
+
+  card.innerHTML = `<div class="player-initial-avatar">${initial}${kopfBild}</div><h3 class="players-name">${username}</h3><div class="price-info players-auctions"><span>Auktionen:</span> ${ownedAuctions}</div><div class="price-info players-bids"><span>Gebote:</span> ${bids}</div>`;
   card.onclick = () => {
     App.selectedPlayerUuid = uuid;
     const searchInput = document.getElementById("searchAuctions");

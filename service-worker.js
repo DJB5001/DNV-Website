@@ -5,7 +5,7 @@
 
 // Hochzählen, sobald sich die Liste ändert — beim Aktivieren wirft der
 // Worker alle Caches weg, die nicht mehr so heißen.
-const CACHE_NAME = 'opsucht-static-v4';
+const CACHE_NAME = 'opsucht-static-v5';
 const STATIC_ASSETS = [
   './',
   './index.html',
@@ -19,9 +19,11 @@ const STATIC_ASSETS = [
   './css/theme.css',
   './css/clan.css',
   './css/mitglieder.css',
+  './css/clan-inhalt.css',
   './js/chart.js',
   './js/script.js',
   './js/config.js',
+  './js/clan-inhalt.js',
   './js/mitglieder.js',
   './js/nova.js',
   './js/supabase-config.js',
