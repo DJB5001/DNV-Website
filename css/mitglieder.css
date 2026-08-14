@@ -100,12 +100,32 @@
   text-transform: uppercase;
 }
 
-/* Die Rolle trägt die Farbe: Führung im Amethyst, Allrounder im Cyan,
-   Farmer im Grün. Damit ist der Aufbau des Clans ohne Legende lesbar. */
+/* Die Rolle trägt die Farbe, und die Farben folgen der Hierarchie von oben
+   nach unten: Führung im Amethyst, die Leitungen im Magenta, das Team im
+   Gold, dann die Clan-Ränge in Cyan, Kupfer und Grün. Damit ist der Aufbau
+   des Clans ohne Legende lesbar. */
 .mitglied__rolle--fuehrung {
   border-color: rgba(169, 126, 240, 0.32);
   background: rgba(169, 126, 240, 0.12);
   color: var(--m-akzent-hell);
+}
+
+.mitglied__rolle--leitung {
+  border-color: rgba(240, 126, 200, 0.32);
+  background: rgba(240, 126, 200, 0.1);
+  color: #f5a3d4;
+}
+
+.mitglied__rolle--team {
+  border-color: rgba(240, 200, 100, 0.32);
+  background: rgba(240, 200, 100, 0.1);
+  color: #f2d183;
+}
+
+.mitglied__rolle--builder {
+  border-color: rgba(235, 150, 100, 0.32);
+  background: rgba(235, 150, 100, 0.1);
+  color: #f0ab84;
 }
 
 .mitglied__rolle--allround {
