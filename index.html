@@ -1153,6 +1153,7 @@
         <button id="tab-history" onclick="goToTab('history')">Verlauf<span class="loading-spinner"></span></button>
         <button id="tab-shards" onclick="goToTab('shards')">Shards<span class="loading-spinner"></span></button>
         <button id="tab-items" onclick="goToTab('items')">Items</button>
+        <button id="tab-players" onclick="goToTab('players')">Spieler</button>
         <button id="tab-profile" onclick="goToTab('profile')">Profil</button>
       </div>
     </div>
@@ -1272,6 +1273,33 @@
       <input type="text" id="searchItems" class="search-input" placeholder="🔍 Item suchen (alle je gesehenen Items) …" oninput="renderItemSearch()">
       <button class="refresh-btn" onclick="refreshTab('items', this)" title="Item-Liste neu laden">⟳ Aktualisieren</button>
       <div id="itemsContainer"></div>
+    </div>
+
+    <div id="players" class="section">
+      <div class="market-controls">
+        <div class="search-wrapper" style="flex: 1;">
+          <input type="text" id="searchPlayers" class="search-input"
+                 placeholder="🔍 Minecraft-Namen suchen …"
+                 oninput="renderPlayers()"
+                 onkeydown="if (event.key === 'Enter') spielerNachschlagen()">
+        </div>
+        <button class="filter-btn" onclick="spielerNachschlagen()" title="Spieler nachschlagen">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        </button>
+      </div>
+      <div class="auction-controls">
+        <select id="playerSortSelect" class="auction-sort" onchange="setPlayerSort(this.value)">
+          <option value="SUM">Höchste Summe</option>
+          <option value="EARNED">Meiste Einnahmen</option>
+          <option value="SPENT">Meiste Ausgaben</option>
+          <option value="WON">Meiste Gewonnen</option>
+          <option value="SOLD">Meiste Verkauft</option>
+          <option value="ACTIVE">Aktive Auktionen</option>
+          <option value="NAME">Name: A-Z</option>
+        </select>
+      </div>
+      <button class="refresh-btn" onclick="refreshTab('players', this)" title="Spielerliste neu aufbauen">⟳ Aktualisieren</button>
+      <div id="playersContainer"></div>
     </div>
 
     <!-- Item-Detail Modal -->

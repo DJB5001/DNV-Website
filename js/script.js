@@ -12,6 +12,37 @@ const BARRIER_BILD = 'https://mcdf.wiki.gg/images/Barrier.png?ff8ff1';
 // TOTEM_OF_UNDYING wird zu Totem_of_Undying.png, nicht Totem_Of_Undying.png.
 const KLEINE_WOERTER = new Set(['of', 'and', 'the', 'a', 'an', 'in', 'on', 'with']);
 
+// Alles Folgende steht aus demselben Grund hier oben wie partnerInterval:
+// Es sind Bindungen auf oberster Ebene, die aus Funktionen heraus benutzt
+// werden. Lägen sie in der Dateimitte und bräche die Datei davor ab, wären
+// sie in der zeitlichen Totzone — jede Kachel und jeder Reiterwechsel
+// liefe dann in einen ReferenceError.
+
+// Namensspeicher: gesammeltes Schreiben und laufende Abfragen.
+let uuidCacheGeplant = false;
+const uuidLaufend = new Map();
+
+// Bildgedächtnis: welche Adresse für welches Item zuletzt geladen hat.
+const BILD_SPEICHER = 'opsucht_bild_gedaechtnis_v1';
+let bildSchreibenGeplant = false;
+let bildGedaechtnis = {};
+try {
+  bildGedaechtnis = JSON.parse(localStorage.getItem(BILD_SPEICHER) || '{}') || {};
+} catch {
+  bildGedaechtnis = {};
+}
+
+// Sortierarten im Spieler-Reiter. Die Schlüssel stehen so im <select>.
+const SPIELER_SORTIERUNG = {
+  SUM: { titel: 'Höchste Summe', wert: (k) => k.summe },
+  EARNED: { titel: 'Meiste Einnahmen', wert: (k) => k.einnahmen },
+  SPENT: { titel: 'Meiste Ausgaben', wert: (k) => k.ausgaben },
+  WON: { titel: 'Meiste Gewonnen', wert: (k) => k.gewonnen },
+  SOLD: { titel: 'Meiste Verkauft', wert: (k) => k.verkauft },
+  ACTIVE: { titel: 'Aktive Auktionen', wert: (k) => k.aktiv },
+  NAME: { titel: 'Name: A-Z', wert: () => 0 }
+};
+
 const App = {
   auctionSortMode: "END",
   auctionCategoryFilter: "Alle",
@@ -58,6 +89,12 @@ const App = {
   donationDisplayCount: 10,
   marketItemsMap: {}, // Cache für schnellen Zugriff auf Markt-Items
   playerStatsCache: {}, // Cache für Spieler-Statistiken
+
+  // Spieler-Reiter: die einmal ausgewertete Bestenliste, die gewählte
+  // Sortierung und wie viele Karten davon gerade stehen.
+  spielerListe: null,
+  playerSortMode: 'SUM',
+  playerDisplayCount: 48,
   profileRefreshInterval: null, // Interval für Profil-Aktualisierung
   userReminders: {}, // IDs der aktiven Erinnerungen
   profileFilter: "Alles", // Aktueller Filter im Profil
@@ -161,6 +198,7 @@ function showSection(id) {
   if (id === 'history') renderHistory();
   if (id === 'shards') renderShards();
   if (id === 'items') renderItemSearch();
+  if (id === 'players') renderPlayers();
 }
 
 // Tab-Wechsel über die obere Leiste: hebt einen aktiven Item-Filter auf,
@@ -1513,12 +1551,37 @@ async function loadUserReminders(user) {
   }
 }
 
-async function uuidToUsername(uuid) {
-  if (!uuid) return "-";
-  // Check cache first
+// Der Namensspeicher wird gesammelt geschrieben statt bei jedem Treffer.
+// Vorher kostete das Auflösen von dreihundert Spielern dreihundert Mal
+// JSON.stringify über ein immer größeres Objekt — und localStorage ist
+// synchron, das blockiert also die Anzeige.
+function uuidCacheSichern() {
+  if (uuidCacheGeplant) return;
+  uuidCacheGeplant = true;
+  setTimeout(() => {
+    uuidCacheGeplant = false;
+    try {
+      localStorage.setItem('opsucht_uuid_cache', JSON.stringify(App.uuidCache));
+    } catch {
+      // Speicher voll oder gesperrt — dann eben nur für diese Sitzung.
+    }
+  }, 1500);
+}
+
+function uuidToUsername(uuid) {
+  if (!uuid) return Promise.resolve("-");
   if (App.uuidCache[uuid] && App.uuidCache[uuid] !== 'Unbekannt') {
-    return App.uuidCache[uuid];
+    return Promise.resolve(App.uuidCache[uuid]);
   }
+  const offen = uuidLaufend.get(uuid);
+  if (offen) return offen;
+
+  const abfrage = uuidNameHolen(uuid).finally(() => uuidLaufend.delete(uuid));
+  uuidLaufend.set(uuid, abfrage);
+  return abfrage;
+}
+
+async function uuidNameHolen(uuid) {
 
   // --- 1. Versuch: playerdb.co (für Java-UUIDs) ---
   try {
@@ -1528,7 +1591,7 @@ async function uuidToUsername(uuid) {
       if (data.success && data.data.player.username) {
         const username = data.data.player.username;
         App.uuidCache[uuid] = username;
-        localStorage.setItem('opsucht_uuid_cache', JSON.stringify(App.uuidCache));
+        uuidCacheSichern();
         return username;
       }
     }
@@ -1544,7 +1607,7 @@ async function uuidToUsername(uuid) {
       if (data && data.username) {
         const username = data.username;
         App.uuidCache[uuid] = username;
-        localStorage.setItem('opsucht_uuid_cache', JSON.stringify(App.uuidCache));
+        uuidCacheSichern();
         return username;
       }
     }
@@ -1563,7 +1626,7 @@ async function uuidToUsername(uuid) {
         if (gamertagData.gamertag) {
           const username = `.${gamertagData.gamertag}`;
           App.uuidCache[uuid] = username;
-          localStorage.setItem('opsucht_uuid_cache', JSON.stringify(App.uuidCache));
+          uuidCacheSichern();
           return username;
         }
       }
@@ -1574,7 +1637,7 @@ async function uuidToUsername(uuid) {
 
   // --- Finaler Fallback ---
   App.uuidCache[uuid] = "Unbekannt";
-  localStorage.setItem('opsucht_uuid_cache', JSON.stringify(App.uuidCache));
+  uuidCacheSichern();
   return "Unbekannt";
 }
 
@@ -1996,7 +2059,7 @@ function createMarketCard(material, itemInfo, orders) {
   const sellHtml = App.settings.market.sell ? `<div class="price-info">Verkaufen: <span class="sell">${sellPrice}</span></div>` : '';
 
   card.innerHTML += `
-    <img src="${icon}" alt="${anzeigeName}">
+    ${itemBildTag(material, icon, anzeigeName)}
     ${nameHtml}
     ${buyHtml}
     ${sellHtml}
@@ -2050,6 +2113,7 @@ async function loadAuctions() {
   }
 
   App.playerStatsCache = {}; // Cache leeren wenn neue Daten geladen werden
+  App.spielerListe = null;   // dasselbe für die Bestenliste im Spieler-Reiter
   setupAuctionFilters();
   setupHistoryFilters();
 
@@ -2139,12 +2203,53 @@ function materialLesbar(material) {
     .replace(/\b\w/g, c => c.toUpperCase());
 }
 
+// ── Bildgedächtnis ───────────────────────────────────────────────
+//
+// Ohne das beginnt jede Kachel wieder bei der ersten Adresse der Kette.
+// Für viele Materialien existiert die gar nicht: die Wiki-Seite heißt
+// anders, oder der Eintrag in config.js zeigt auf ein hochgeladenes Bild,
+// das es nicht mehr gibt. Jede einzelne Kachel kostete dann bis zu sechs
+// fehlschlagende Anfragen — bei jedem Rendern aufs Neue, und bei einem
+// Raster mit 50 Karten sind das schnell dreihundert.
+//
+// Deshalb wird gemerkt, welche Adresse am Ende wirklich geladen hat.
+// Beim nächsten Mal startet das Bild direkt dort. Der Speicher überlebt
+// den Seitenwechsel, also zahlt sich das auch beim zweiten Besuch aus.
+// Der Schlüssel enthält beides: die gewünschte Startadresse UND das
+// Material. Zwei Items können sich dieselbe tote Bildadresse teilen und
+// trotzdem bei verschiedenen Texturen landen.
+function bildSchluessel(material, adresse) {
+  return `${adresse || ''}|${material || ''}`;
+}
+
+function bildMerken(schluessel, adresse) {
+  if (!schluessel || !adresse || adresse === BARRIER_BILD) return;
+  if (bildGedaechtnis[schluessel] === adresse) return;
+  bildGedaechtnis[schluessel] = adresse;
+
+  // Gesammelt schreiben: localStorage ist synchron, und beim Aufbau
+  // eines Rasters melden sich dutzende Bilder fast gleichzeitig.
+  if (bildSchreibenGeplant) return;
+  bildSchreibenGeplant = true;
+  setTimeout(() => {
+    bildSchreibenGeplant = false;
+    try {
+      localStorage.setItem(BILD_SPEICHER, JSON.stringify(bildGedaechtnis));
+    } catch {
+      // Speicher voll oder gesperrt — dann eben nur für diese Sitzung.
+    }
+  }, 1500);
+}
+
+// Hängt an onload jedes Item-Bildes.
+function bildGeladen(img) {
+  bildMerken(img.dataset.bildschluessel, img.src);
+}
+
 // Rückfallkette für Item-Bilder, aufgerufen aus onerror.
 //
-// Viele Einträge in config.js zeigen auf hochgeladene Bilder, die es
-// nicht mehr gibt (etwa "Magnet" oder "Wasserwaage"). Statt sofort auf
-// das Verbotsschild zu fallen, wird die Kette Stufe für Stufe
-// abgearbeitet; der Zähler am Element merkt sich, wo sie steht.
+// Statt sofort auf das Verbotsschild zu fallen, wird die Kette Stufe für
+// Stufe abgearbeitet; der Zähler am Element merkt sich, wo sie steht.
 function bildRueckfall(img) {
   let kette = [];
   try {
@@ -2162,6 +2267,32 @@ function bildRueckfall(img) {
 
   img.onerror = null;
   img.src = BARRIER_BILD;
+}
+
+// Baut das <img> für ein Item — eine Stelle für alle Raster, damit
+// Ladeverhalten und Rückfallkette überall gleich sind.
+//
+// adresse ist der Wunsch (aus der API oder aus config.js), kette die
+// Kandidaten aus dem Materialnamen. Ist für diese Kombination schon ein
+// funktionierendes Bild bekannt, wird direkt dort begonnen.
+function itemBildTag(material, adresse, alt, zusatz = '') {
+  const schluessel = bildSchluessel(material, adresse);
+  const kette = materialBildKandidaten(material);
+  const gemerkt = bildGedaechtnis[schluessel];
+  const start = gemerkt || adresse || kette[0] || BARRIER_BILD;
+
+  // Die Kette bleibt auch bei gemerktem Bild dran: Texturen können sich
+  // mit einer neuen Spielversion verschieben, dann greift wieder der
+  // gewohnte Rückfall. Nur der Start fliegt raus — ihn gleich noch
+  // einmal zu versuchen wäre eine Anfrage, deren Ausgang schon feststeht.
+  const rest = kette.filter(u => u !== start);
+
+  const sicher = (t) => String(t ?? '').replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+
+  return `<img src="${start}" alt="${sicher(alt)}" loading="lazy" decoding="async"
+    data-bildschluessel="${sicher(schluessel)}"
+    data-bildkette='${JSON.stringify(rest)}'
+    onload="bildGeladen(this)" onerror="bildRueckfall(this)"${zusatz ? ' ' + zusatz : ''}>`;
 }
 
 function getAuctionItemIcon(item) {
@@ -2771,6 +2902,14 @@ async function renderPlayerProfile(playerUuid, containerId, search, sectionId) {
     document.body.classList.remove('player-profile-view');
     App.selectedPlayerUuid = null;
 
+    // Aus dem Spieler-Reiter geht es zurück in die Bestenliste, nicht in
+    // die Auktionen.
+    if (sectionId === 'players') {
+      App.previousState = null;
+      renderPlayers();
+      return;
+    }
+
     if (state?.type === 'auction_modal') {
       const prevAuction = state.auction;
       const prevOrigin = state.origin;
@@ -2879,6 +3018,275 @@ async function renderPlayerProfile(playerUuid, containerId, search, sectionId) {
   }
 
   animateCardsWave(document.getElementById(sectionId));
+}
+
+// =====================================================================
+// SPIELER-REITER
+// Suche nach einem Minecraft-Namen plus eine Bestenliste darunter.
+//
+// Der Kern ist ein EINZIGER Durchlauf durch den Verlauf, der alle Konten
+// zugleich füllt. Vorher lief renderPlayerProfile für jeden geöffneten
+// Spieler noch einmal komplett durch dieselben Daten — bei tausenden
+// Verkäufen jedes Mal aufs Neue.
+// =====================================================================
+
+// UUIDs kommen mal mit, mal ohne Bindestriche. Für Vergleiche zählt nur
+// die nackte Form.
+function uuidNackt(uuid) {
+  return String(uuid || '').toLowerCase().replace(/-/g, '');
+}
+
+function spielerBestenliste() {
+  if (App.spielerListe) return App.spielerListe;
+
+  const konten = new Map();
+  const konto = (uuid) => {
+    let k = konten.get(uuid);
+    if (!k) {
+      k = { uuid, einnahmen: 0, ausgaben: 0, verkauft: 0, gewonnen: 0, aktiv: 0, gebote: 0 };
+      konten.set(uuid, k);
+    }
+    return k;
+  };
+
+  for (const itemName in App.auctionHistory) {
+    const verkaeufe = App.auctionHistory[itemName];
+    if (!Array.isArray(verkaeufe)) continue;
+    for (const verkauf of verkaeufe) {
+      const preis = verkauf.currentBid || 0;
+      if (verkauf.seller) {
+        const k = konto(verkauf.seller);
+        k.einnahmen += preis;
+        k.verkauft++;
+      }
+      if (verkauf.highestBidder) {
+        const k = konto(verkauf.highestBidder);
+        k.ausgaben += preis;
+        k.gewonnen++;
+      }
+    }
+  }
+
+  for (const auktion of App.auctionsData || []) {
+    if (auktion.seller) konto(auktion.seller).aktiv++;
+    for (const uuid of Object.keys(auktion.bids || {})) konto(uuid).gebote++;
+  }
+
+  const liste = Array.from(konten.values());
+  for (const k of liste) {
+    k.summe = k.einnahmen + k.ausgaben;
+    // Der Profil-Cache fällt nebenbei ab: wer gleich ein Profil öffnet,
+    // bekommt seine Zahlen ohne einen zweiten Durchlauf.
+    App.playerStatsCache[k.uuid] = {
+      earned: k.einnahmen,
+      spent: k.ausgaben,
+      sold: k.verkauft,
+      won: k.gewonnen
+    };
+  }
+
+  App.spielerListe = liste;
+  return liste;
+}
+
+// Namen für eine Menge UUIDs holen, aber nicht alle auf einmal: ein
+// Schwung von tausend gleichzeitigen Anfragen bringt jeden Namensdienst
+// dazu, mit 429 zu antworten.
+async function namenAufloesen(uuids, gleichzeitig = 10) {
+  const offen = uuids.filter((u) => u && !App.uuidCache[u]);
+  for (let i = 0; i < offen.length; i += gleichzeitig) {
+    await Promise.all(offen.slice(i, i + gleichzeitig).map((u) => uuidToUsername(u)));
+  }
+}
+
+function spielerName(uuid) {
+  return App.uuidCache[uuid] || '';
+}
+
+function setPlayerSort(modus) {
+  App.playerSortMode = SPIELER_SORTIERUNG[modus] ? modus : 'SUM';
+  App.playerDisplayCount = 48;
+  renderPlayers();
+}
+
+function spielerKarte(konto, rang) {
+  const name = spielerName(konto.uuid) || konto.uuid.slice(0, 8) + '…';
+  const buchstabe = (name.match(/[a-zA-Z]/) || ['?'])[0].toUpperCase();
+  const art = SPIELER_SORTIERUNG[App.playerSortMode] || SPIELER_SORTIERUNG.SUM;
+
+  const karte = document.createElement('div');
+  karte.className = 'card spieler-karte';
+  karte.style.cursor = 'pointer';
+
+  // Der Wert bleibt ein nackter Textknoten, die Beschriftung steht im
+  // span — genau wie überall sonst in der App. Grund: die Regel
+  // .card .price-info > span färbt JEDES span in einer Preiszeile mit
+  // !important grau. Eingefärbt wird deshalb die Zeile, nicht der Wert.
+  const zeile = (bezeichnung, wert, klasse = '') =>
+    `<div class="price-info${klasse ? ' ' + klasse : ''}"><span>${bezeichnung}:</span> ${wert.toLocaleString('de-DE')}</div>`;
+
+  // Die Zeile, nach der gerade sortiert wird, steht oben und farbig —
+  // sonst muss man raten, warum jemand auf Platz drei liegt.
+  const hervor =
+    App.playerSortMode === 'NAME'
+      ? ''
+      : zeile(art.titel.replace(/^(Höchste|Meiste) /, ''), art.wert(konto), 'spieler-karte__wert');
+
+  karte.innerHTML = `
+    <div class="spieler-karte__rang">#${rang}</div>
+    <div class="player-initial-avatar">${buchstabe}${spielerKopfBild(konto.uuid)}</div>
+    <h3 class="players-name">${name}</h3>
+    ${hervor}
+    ${zeile('Verkauft', konto.verkauft)}
+    ${zeile('Gewonnen', konto.gewonnen)}
+    ${zeile('Eingenommen', konto.einnahmen, 'spieler-karte__ein')}
+    ${zeile('Ausgegeben', konto.ausgaben, 'spieler-karte__aus')}
+    ${konto.aktiv ? zeile('Aktive Auktionen', konto.aktiv) : ''}
+  `;
+
+  karte.onclick = () => {
+    App.selectedPlayerUuid = konto.uuid;
+    App.previousState = { type: 'player_list', section: 'players', category: 'Alle', search: '' };
+    renderPlayers();
+  };
+
+  return karte;
+}
+
+async function renderPlayers() {
+  const container = document.getElementById('playersContainer');
+  if (!container) return;
+
+  const suchfeld = document.getElementById('searchPlayers');
+  const suche = (suchfeld?.value || '').toLowerCase().replace(/^\./, '').trim();
+
+  if (App.selectedPlayerUuid) {
+    await renderPlayerProfile(App.selectedPlayerUuid, 'playersContainer', '', 'players');
+    return;
+  }
+
+  document.body.classList.remove('player-profile-view');
+
+  const liste = spielerBestenliste();
+  if (!liste.length) {
+    container.innerHTML = `<div class="content-loader"><span>Noch keine Spielerdaten — der Verlauf wird geladen.</span></div>`;
+    return;
+  }
+
+  const art = SPIELER_SORTIERUNG[App.playerSortMode] || SPIELER_SORTIERUNG.SUM;
+  let sortiert;
+  if (App.playerSortMode === 'NAME') {
+    // Nach Namen kann nur sortiert werden, was einen Namen hat. Alles
+    // noch nicht Aufgelöste hängt hinten dran und rutscht an seinen
+    // Platz, sobald der Name da ist.
+    sortiert = liste.slice().sort((a, b) => {
+      const na = spielerName(a.uuid);
+      const nb = spielerName(b.uuid);
+      if (na && nb) return na.replace(/^\./, '').localeCompare(nb.replace(/^\./, ''), 'de');
+      if (na) return -1;
+      if (nb) return 1;
+      return 0;
+    });
+  } else {
+    sortiert = liste.slice().sort((a, b) => art.wert(b) - art.wert(a));
+  }
+
+  // Gesucht wird in den Namen, die schon bekannt sind. Wer einen ganz
+  // bestimmten Spieler sucht, nimmt die Lupe — die fragt nach.
+  if (suche) {
+    sortiert = sortiert.filter((k) => spielerName(k.uuid).toLowerCase().replace(/^\./, '').includes(suche));
+  }
+
+  const zeigen = sortiert.slice(0, App.playerDisplayCount);
+
+  container.innerHTML = `<div class="content-loader"><span class="loading-spinner"></span><span>Lade Spieler…</span></div>`;
+  await namenAufloesen(zeigen.map((k) => k.uuid));
+
+  // Zwischenzeitlich könnte der Reiter gewechselt worden sein.
+  if (App.selectedPlayerUuid || !document.getElementById('players')?.classList.contains('active')) return;
+
+  container.innerHTML = '';
+
+  const kopf = document.createElement('p');
+  kopf.className = 'spieler-kopfzeile';
+  kopf.textContent = `${sortiert.length.toLocaleString('de-DE')} Spieler · sortiert nach ${art.titel}`;
+  container.appendChild(kopf);
+
+  const raster = document.createElement('div');
+  raster.className = 'grid';
+  const stapel = document.createDocumentFragment();
+  zeigen.forEach((k, i) => stapel.appendChild(spielerKarte(k, i + 1)));
+  raster.appendChild(stapel);
+  container.appendChild(raster);
+
+  if (sortiert.length > App.playerDisplayCount) {
+    const mehr = document.createElement('button');
+    mehr.className = 'auth-submit-btn';
+    mehr.style.width = 'auto';
+    mehr.style.padding = '0.75rem 2rem';
+    mehr.textContent = `Mehr Spieler anzeigen (${(sortiert.length - App.playerDisplayCount).toLocaleString('de-DE')} weitere)`;
+    mehr.onclick = () => {
+      App.playerDisplayCount += 48;
+      renderPlayers();
+    };
+    const huelle = document.createElement('div');
+    huelle.className = 'load-more-container';
+    huelle.style.textAlign = 'center';
+    huelle.appendChild(mehr);
+    container.appendChild(huelle);
+  }
+
+  animateCardsWave(document.getElementById('players'));
+}
+
+// Die Lupe: einen Namen wirklich nachschlagen, auch wenn der Spieler in
+// unseren Daten noch gar nicht vorkommt.
+async function spielerNachschlagen() {
+  const feld = document.getElementById('searchPlayers');
+  const container = document.getElementById('playersContainer');
+  const name = (feld?.value || '').trim();
+  if (!name || !container) return;
+
+  // Steht der Name schon im Speicher, ist nichts zu holen.
+  const bekannt = Object.keys(App.uuidCache).find(
+    (u) => String(App.uuidCache[u]).toLowerCase() === name.toLowerCase()
+  );
+  if (bekannt) {
+    App.selectedPlayerUuid = bekannt;
+    renderPlayers();
+    return;
+  }
+
+  container.innerHTML = `<div class="content-loader"><span class="loading-spinner"></span><span>Suche ${name}…</span></div>`;
+
+  let uuid = null;
+  try {
+    const antwort = await fetch(`https://playerdb.co/api/player/minecraft/${encodeURIComponent(name)}`);
+    if (antwort.ok) {
+      const daten = await antwort.json();
+      if (daten.success && daten.data?.player?.id) {
+        uuid = daten.data.player.id;
+        App.uuidCache[uuid] = daten.data.player.username || name;
+        uuidCacheSichern();
+      }
+    }
+  } catch (e) {
+    console.warn('Spielersuche fehlgeschlagen', e);
+  }
+
+  if (!uuid) {
+    container.innerHTML = `<div class="content-loader"><span>Kein Spieler namens „${name}" gefunden.</span></div>`;
+    return;
+  }
+
+  // Der Namensdienst liefert die UUID mit Bindestrichen, der Verlauf
+  // führt sie womöglich anders. Gesucht wird deshalb über die nackte
+  // Form — sonst stünde ein Profil ohne einen einzigen Verkauf da.
+  const nackt = uuidNackt(uuid);
+  const treffer = spielerBestenliste().find((k) => uuidNackt(k.uuid) === nackt);
+
+  App.selectedPlayerUuid = treffer ? treffer.uuid : uuid;
+  renderPlayers();
 }
 
 async function setHistoryFilter(category) {
@@ -3181,7 +3589,7 @@ function createAuctionCard(auction, historyType = null, personalData = null) {
     ${badgeHtml}
     ${trendHtml}
     ${discountHtml}
-    <img src="${iconUrl}" alt="${displayName}" loading="lazy" data-bildkette='${JSON.stringify(materialBildKandidaten(auction.item.material))}' onerror="bildRueckfall(this)">
+    ${itemBildTag(auction.item.material, iconUrl, displayName)}
     <h3 class="auction-name">${displayName}</h3>
     ${variantenLabel(auction.item) ? `<div class="item-variante">${variantenLabel(auction.item)}</div>` : ''}
     <div class="price-info auction-startBid"><span class="buy">Start:</span> ${formatCardPrice(auction.startBid)}</div>
@@ -3254,6 +3662,11 @@ async function refreshTab(tabId, btn) {
       case 'items':
         await loadAuctions(); // Item-Liste basiert auf Verlauf + aktiven Auktionen
         renderItemSearch();
+        break;
+      case 'players':
+        await loadAuctions(); // Die Bestenliste kommt aus Verlauf + aktiven Auktionen
+        App.spielerListe = null;
+        renderPlayers();
         break;
     }
   } catch (e) {
@@ -3364,7 +3777,7 @@ function renderItemSearch() {
     const iconUrl = getAuctionItemIcon(entry.item);
     const avg = getMonthlyAveragePerUnit({ item: entry.item });
     card.innerHTML = `
-      <img src="${iconUrl}" alt="${entry.name}" loading="lazy" data-bildkette='${JSON.stringify(materialBildKandidaten(entry.item.material))}' onerror="bildRueckfall(this)">
+      ${itemBildTag(entry.item.material, iconUrl, entry.name)}
       <h3 class="auction-name">${entry.name}</h3>
       ${entry.label ? `<div class="item-variante">${entry.label}</div>` : ''}
       <div class="price-info"><span style="color:var(--text-secondary)">Ø 30 Tage:</span> ${avg !== null ? formatCardPrice(Math.round(avg)) : 'Keine Daten'}</div>
@@ -3418,7 +3831,7 @@ async function openItemDetail(schluessel) {
     ${label ? `<p class="item-variante item-variante--gross">${label}</p>` : ''}
     <div class="auction-info-box">
       <div class="info-item" style="text-align:center;">
-        <img src="${iconUrl}" alt="${itemName}" style="width:64px;height:64px;image-rendering:pixelated;" data-bildkette='${JSON.stringify(materialBildKandidaten(repItem.material))}' onerror="bildRueckfall(this)">
+        ${itemBildTag(repItem.material, iconUrl, itemName, 'width="64" height="64" style="image-rendering:pixelated;"')}
       </div>
       <div class="info-item"><strong>Durchschnitt</strong>${avgAll !== null ? `<span class="sell">${avgAll.toLocaleString('de-DE')}</span>` : '<span>Keine Daten</span>'}</div>
       <div class="info-item"><strong>Durchschnitt (30 Tage)</strong>${avgMonth !== null ? `<span class="sell">${Math.round(avgMonth).toLocaleString('de-DE')}</span>` : '<span>Keine Daten</span>'}</div>
@@ -3602,22 +4015,19 @@ async function renderShards() {
   for (const rate of filteredRates) {
     const itemInfo = rate.parsed;
 
-    // Dieselbe Rückfallkette wie bei den Auktionen. Vorher blieb hier das
-    // Verbotsschild stehen, sobald ein Item nicht im Markt geführt wird —
-    // und es gab kein onerror, das hätte nachfassen können.
-    const kandidaten = materialBildKandidaten(itemInfo.material);
+    // Wunschbild: erst der eigene Eintrag, dann das aus dem Markt. Fehlt
+    // beides, sucht itemBildTag sich seinen Start aus dem Materialnamen.
     let icon = null;
     if (itemInfo.isCustom) icon = customAuctionIcons[itemInfo.name] || null;
     if (!icon) {
       const materialKey = itemInfo.material ? itemInfo.material.toLowerCase() : '';
       icon = App.marketItemsMap[materialKey]?.icon || null;
     }
-    if (!icon) icon = kandidaten.shift() || BARRIER_BILD;
 
     const card = document.createElement("div");
     card.className = "card";
     card.style.cursor = "pointer";
-    card.innerHTML = `<img src="${icon}" alt="${itemInfo.name}" data-bildkette='${JSON.stringify(kandidaten)}' onerror="bildRueckfall(this)"><h3 class="shards-name">${itemInfo.name}</h3><div class="price-info shards-rate">Wert: <span style="color: #34D399; font-weight: bold;">${parseFloat(rate.exchangeRate).toFixed(2)}</span> Shards</div>`;
+    card.innerHTML = `${itemBildTag(itemInfo.material, icon, itemInfo.name)}<h3 class="shards-name">${itemInfo.name}</h3><div class="price-info shards-rate">Wert: <span style="color: #34D399; font-weight: bold;">${parseFloat(rate.exchangeRate).toFixed(2)}</span> Shards</div>`;
     card.onclick = () => openChart(itemInfo.name, 'shards');
     fragment.appendChild(card);
   }
@@ -4559,10 +4969,15 @@ Verbuggte Jobspitzhacke: IronPickaxe#1e73`;
     
     // Sort bidders: Highest bid (latest) at top
     const biddersToShow = Object.entries(bids).sort((a, b) => b[1] - a[1]);
-    
+
+    // Namen vorab und gemeinsam holen. Einzeln in der Schleife wartete
+    // jede Abfrage auf die vorige — bei zwölf Bietern zwölf Rundreisen
+    // nacheinander, statt einer Wartezeit für alle.
+    const namen = await Promise.all(biddersToShow.map(([uuid]) => uuidToUsername(uuid)));
+
     for (let i = 0; i < biddersToShow.length; i++) {
       const [uuid, amount] = biddersToShow[i];
-      const username = await uuidToUsername(uuid);
+      const username = namen[i];
       const card = createPlayerCard(uuid, username);
       
       // Highlight current (highest) bidder

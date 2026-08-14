@@ -104,6 +104,81 @@ for (const [name, e] of Object.entries(r)) {
   pruefe(e.onerrorDanach, `${name}: onerror abgeschaltet, kein Kreisel`);
 }
 
+// ── Bildgedächtnis ───────────────────────────────────────────────
+// Hier laufen echte Ladevorgänge, aber nur gegen Dateien aus dem Repo —
+// externe Adressen sind in der Sandbox ohnehin nicht erreichbar, und
+// jeder Fehlversuch würde in eine Zeitüberschreitung laufen.
+console.log('\n── Bildgedächtnis');
+
+const g = await p.evaluate(async () => {
+  const gut = '/images/hintergrund/hoehle.webp';
+  const kaputt = '/gibt-es-nicht.png';
+
+  localStorage.removeItem('opsucht_bild_gedaechtnis_v1');
+  for (const k of Object.keys(bildGedaechtnis)) delete bildGedaechtnis[k];
+
+  const einhaengen = (html) => {
+    const huelle = document.createElement('div');
+    huelle.innerHTML = html;
+    const img = huelle.querySelector('img');
+    document.body.appendChild(img);
+    return img;
+  };
+
+  const warten = (img) =>
+    new Promise((fertig) => {
+      if (img.complete && img.naturalWidth) return fertig(true);
+      const ende = setTimeout(() => fertig(false), 4000);
+      img.addEventListener('load', () => { clearTimeout(ende); fertig(true); }, { once: true });
+    });
+
+  const erg = {};
+
+  // 1. Ein Bild, das gleich beim ersten Versuch lädt.
+  const a = einhaengen(itemBildTag('PRUEF_GUT', gut, 'gut'));
+  // img.src liefert die aufgelöste Adresse, getAttribute die geschriebene.
+  // Gemerkt wird die aufgelöste — deshalb hier auch damit vergleichen.
+  erg.ersterStart = a.src;
+  erg.hatLazy = a.getAttribute('loading') === 'lazy' && a.getAttribute('decoding') === 'async';
+  erg.geladen = await warten(a);
+  erg.gemerkt = bildGedaechtnis[bildSchluessel('PRUEF_GUT', gut)] || null;
+  a.remove();
+
+  // 2. Dasselbe Item noch einmal — jetzt muss es direkt richtig starten.
+  const b2 = einhaengen(itemBildTag('PRUEF_GUT', gut, 'gut'));
+  erg.zweiterStart = b2.getAttribute('src');
+  b2.remove();
+
+  // 3. Wunschadresse tot: die Kette übernimmt, das Ergebnis wird gemerkt.
+  const c = einhaengen(itemBildTag('PRUEF_KAPUTT', kaputt, 'kaputt'));
+  erg.kaputtStart = c.getAttribute('src');
+  c.onerror = null;
+  c.src = gut;                       // steht für die Stufe, die es schafft
+  bildGeladen(c);
+  erg.kaputtGemerkt = bildGedaechtnis[bildSchluessel('PRUEF_KAPUTT', kaputt)] || null;
+  c.remove();
+
+  // 4. Der Start darf nicht noch einmal in der Kette stehen.
+  const d = einhaengen(itemBildTag('PRUEF_GUT', gut, 'gut'));
+  erg.ketteOhneStart = !JSON.parse(d.dataset.bildkette || '[]').includes(d.getAttribute('src'));
+  d.remove();
+
+  return erg;
+});
+
+console.log(JSON.stringify(g, null, 1));
+
+pruefe(g.hatLazy, 'Item-Bilder laden verzögert und dekodieren nebenläufig');
+pruefe(g.geladen, 'das Prüfbild wurde wirklich geladen');
+pruefe(g.gemerkt === g.ersterStart, 'die geladene Adresse wird gemerkt');
+pruefe(g.zweiterStart === g.gemerkt, 'beim zweiten Mal beginnt das Bild direkt dort');
+pruefe(g.kaputtStart === '/gibt-es-nicht.png', 'ohne Gedächtnis gilt weiter die Wunschadresse');
+pruefe(
+  g.kaputtGemerkt && g.kaputtGemerkt.endsWith('hoehle.webp'),
+  'nach dem Rückfall wird die Stufe gemerkt, die es geschafft hat'
+);
+pruefe(g.ketteOhneStart, 'die Startadresse steht nicht noch einmal in der Kette');
+
 console.log(fehler === 0 ? '\nAlle Prüfungen bestanden.' : `\n${fehler} fehlgeschlagen.`);
 await b.close();
 process.exit(fehler === 0 ? 0 : 1);
