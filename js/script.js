@@ -1,3 +1,10 @@
+// Steht bewusst ganz oben: stopPartnersAutoScroll() wird aus
+// showSection() heraus aufgerufen, also bei JEDEM Reiterwechsel. Lag die
+// Deklaration wie zuvor in der Dateimitte, genügte ein Abbruch weiter
+// oben (etwa weil ein CDN klemmt), um sie in der zeitlichen Totzone zu
+// lassen — und damit die gesamte Reiternavigation lahmzulegen.
+let partnerInterval;
+
 // Rückfallbild, wenn auch das Typ-Bild nicht geladen werden kann.
 const BARRIER_BILD = 'https://mcdf.wiki.gg/images/Barrier.png?ff8ff1';
 
@@ -5062,7 +5069,6 @@ document.addEventListener('DOMContentLoaded', () => { animateHeadline(); init();
 // --- PARTNERS CAROUSEL LOGIC ---
 
 let partnerIndex = 0;
-let partnerInterval;
 const partnerDelay = 6000;
 
 async function loadAds() {

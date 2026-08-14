@@ -21,6 +21,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;800&family=Manrope:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <!-- Redesign: wird nach style.css geladen und ueberschreibt nur das Aussehen -->
   <link rel="stylesheet" href="css/theme.css">
+  <link rel="stylesheet" href="css/mitglieder.css">
   <link rel="stylesheet" href="css/auth.css">
 </head>
 
@@ -1120,7 +1121,7 @@
     </div>
 
     <div class="header-controls">
-      <a class="dnv-clanlink" href="clan.html">
+      <a class="dnv-clanlink" id="tab-clan" href="clan.html" onclick="return dnvClanReiter(event)">
         <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path fill="currentColor" d="M12 0l2.6 9.4L24 12l-9.4 2.6L12 24l-2.6-9.4L0 12l9.4-2.6z"/></svg>
         DNV <span>Clan</span>
       </a>
@@ -1131,6 +1132,7 @@
         <button id="tab-history" onclick="goToTab('history')">Verlauf<span class="loading-spinner"></span></button>
         <button id="tab-shards" onclick="goToTab('shards')">Shards<span class="loading-spinner"></span></button>
         <button id="tab-items" onclick="goToTab('items')">Items</button>
+        <button id="tab-mitglieder" onclick="goToTab('mitglieder')">Mitglieder</button>
         <button id="tab-profile" onclick="goToTab('profile')">Profil</button>
       </div>
     </div>
@@ -1266,6 +1268,45 @@
     </div>
 
 
+
+    <!-- Der Clan als Reiter statt als eigene Seite: So bleibt die Leiste
+         mit Markt, Auktionen und dem Rest stehen. Die ausführliche
+         Fassung liegt weiterhin unter clan.html. -->
+    <div id="clan" class="section">
+      <div class="clan-tab">
+        <p class="clan-tab__kicker">Minecraft-Clan auf OPSUCHT · CityBuild</p>
+        <h2 class="clan-tab__titel">DarkNova <span>[DNV]</span></h2>
+        <p class="clan-tab__text">
+          Aus Ideen entstehen Welten. Ein Clan, in dem niemand alleine grindet — eigene
+          Grundstücke, laufende Bauprojekte und Werkzeuge, die es sonst nirgends gibt.
+          OPSucht Auctions ist eines davon.
+        </p>
+
+        <div class="clan-tab__zahlen">
+          <div><b data-mitglieder-anzahl>0</b><span>Mitglieder</span></div>
+          <div><b>4</b><span>Systeme im Discord</span></div>
+          <div><b>31</b><span>Items im Verleih</span></div>
+          <div><b>2026</b><span>Gegründet</span></div>
+        </div>
+
+        <div class="clan-tab__knoepfe">
+          <a class="clan-tab__knopf clan-tab__knopf--voll" href="https://discord.gg/CD4VWsjBqw" target="_blank" rel="noopener noreferrer">Discord beitreten</a>
+          <button type="button" class="clan-tab__knopf" onclick="goToTab('mitglieder')">Mitglieder ansehen</button>
+          <a class="clan-tab__knopf" href="clan.html">Zur ganzen Clan-Seite</a>
+        </div>
+      </div>
+    </div>
+
+    <div id="mitglieder" class="section">
+      <div class="clan-tab">
+        <p class="clan-tab__kicker"><span data-mitglieder-anzahl>0</span> im Clan</p>
+        <h2 class="clan-tab__titel">Unsere <span>Mitglieder</span></h2>
+        <p class="clan-tab__text">
+          Wer mitzieht, steht hier. Die Rolle sagt, wo jemand im Clan anpackt.
+        </p>
+      </div>
+      <div class="mitglieder" data-mitglieder></div>
+    </div>
 
     <div id="profile" class="section">
       <div id="profileContainer"></div>
@@ -1513,6 +1554,7 @@
   <script src="js/script.js"></script>
   <!-- Bewegung des Redesigns. Laeuft eigenstaendig und fasst weder eine
        ID noch eine Klasse aus script.js an. -->
+  <script src="js/mitglieder.js"></script>
   <script src="js/nova.js"></script>
 
   <div id="custom-cursor"></div>

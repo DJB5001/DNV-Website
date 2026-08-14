@@ -153,6 +153,44 @@
     { passive: true }
   );
 
+  /* ── Clan-Knopf als Reiter ──────────────────────────────────────
+     In der App ist der Clan-Knopf ein Reiter wie Markt oder Auktionen,
+     liegt aber außerhalb von #tabs. showSection räumt beim Wechsel nur
+     die Knöpfe INNERHALB von #tabs auf — der Clan-Knopf bliebe also für
+     immer hervorgehoben. Statt script.js anzufassen, wird die Funktion
+     hier umschlossen: erst das Original, dann die eine Ergänzung. */
+
+  /* Klick auf den Clan-Knopf. Klappt der Reiterwechsel, bleibt man auf
+     der Seite; scheitert er, führt der Link wie früher auf clan.html.
+     Ein blosses "return false" im onclick wäre riskant: Wirft goToTab,
+     wird es nie erreicht — und der Knopf täte gar nichts. */
+  window.dnvClanReiter = function (ereignis) {
+    try {
+      if (typeof goToTab !== 'function' || !document.getElementById('clan')) return true;
+      goToTab('clan');
+      if (ereignis && ereignis.preventDefault) ereignis.preventDefault();
+      return false;
+    } catch (e) {
+      // Rückfall: dem Link folgen
+      return true;
+    }
+  };
+
+  if (typeof window.showSection === 'function') {
+    var urspruenglich = window.showSection;
+    window.showSection = function (id) {
+      urspruenglich.apply(this, arguments);
+      var clanKnopf = document.getElementById('tab-clan');
+      if (clanKnopf) clanKnopf.classList.toggle('active', id === 'clan');
+      // Die Mitglieder stehen fest im HTML, brauchen also keinen
+      // Neuaufbau — nur beim ersten Betreten, falls das Zeichnen vor dem
+      // Einfügen der Abschnitte lief.
+      if (id === 'mitglieder' && typeof window.dnvMitgliederZeichnen === 'function') {
+        window.dnvMitgliederZeichnen();
+      }
+    };
+  }
+
   /* ── Sternenfeld ────────────────────────────────────────────────
      Nur auf der Clan-Seite. Die App bekommt bewusst kein bewegtes
      Feld: Über Preistabellen wäre es Unruhe statt Atmosphäre. */

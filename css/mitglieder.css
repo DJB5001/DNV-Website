@@ -1,0 +1,127 @@
+/* ═══════════════════════════════════════════════════════════════
+   DarkNova · Mitglieder-Karten
+   ---------------------------------------------------------------
+   Wird von der Clan-Seite UND von OPSuchtWeb geladen. Beide Seiten
+   führen eigene Farbnamen (die Clan-Seite --akzent, die App
+   --accent-color1), deshalb holt sich jede Angabe hier ihren Wert
+   über eine Kette: erst die Clan-Seite, dann die App, zuletzt ein
+   fester Wert. So sieht die Karte überall gleich aus, ohne dass die
+   Regeln doppelt gepflegt werden müssen.
+   ═══════════════════════════════════════════════════════════════ */
+
+.mitglieder {
+  --m-akzent: var(--akzent, var(--accent-color1, #a97ef0));
+  --m-akzent-hell: var(--akzent-hell, #c9adf7);
+  --m-rand: var(--linie, var(--border, rgba(255, 255, 255, 0.09)));
+  --m-flaeche: var(--karte-grund, var(--surface-card, rgba(255, 255, 255, 0.022)));
+  --m-flaeche-an: var(--karte-grund-an, rgba(255, 255, 255, 0.05));
+  --m-text: var(--fg-hell, var(--text-primary, #fff));
+  --m-leise: var(--leise-tief, var(--text-secondary, #8b87a3));
+  --m-anzeige: var(--anzeige, var(--schrift-display, 'Sora', system-ui, sans-serif));
+  --m-mono: var(--mono, var(--schrift-mono, 'JetBrains Mono', ui-monospace, monospace));
+
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+  gap: 1rem;
+}
+
+.mitglied {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 1.5rem 1rem 1.25rem;
+  border: 1px solid var(--m-rand);
+  border-radius: 16px;
+  background: var(--m-flaeche);
+  text-align: center;
+  transition:
+    border-color 0.25s ease,
+    background 0.25s ease,
+    transform 0.25s ease;
+}
+
+.mitglied:hover {
+  border-color: rgba(169, 126, 240, 0.35);
+  background: var(--m-flaeche-an);
+  transform: translateY(-2px);
+}
+
+/* Der Kopf liegt über dem Anfangsbuchstaben. Lädt kein Bild, blendet
+   js/mitglieder.js es aus und der Buchstabe kommt zum Vorschein — so
+   entsteht kein Loch in der Karte. */
+.mitglied__kopf {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 4.5rem;
+  height: 4.5rem;
+  border-radius: 50%;
+  background: rgba(169, 126, 240, 0.14);
+  border: 1px solid rgba(169, 126, 240, 0.28);
+  overflow: hidden;
+}
+
+.mitglied__initial {
+  font-family: var(--m-anzeige);
+  font-weight: 800;
+  font-size: 1.6rem;
+  color: var(--m-akzent-hell);
+}
+
+.mitglied__kopf img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  image-rendering: pixelated;
+}
+
+.mitglied__name {
+  margin: 0;
+  font-family: var(--m-anzeige);
+  font-weight: 800;
+  font-size: 0.98rem;
+  letter-spacing: -0.02em;
+  text-transform: none;
+  color: var(--m-text);
+  word-break: break-word;
+}
+
+.mitglied__rolle {
+  padding: 0.22rem 0.6rem;
+  border-radius: 9999px;
+  border: 1px solid;
+  font-family: var(--m-mono);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* Die Rolle trägt die Farbe: Führung im Amethyst, Allrounder im Cyan,
+   Farmer im Grün. Damit ist der Aufbau des Clans ohne Legende lesbar. */
+.mitglied__rolle--fuehrung {
+  border-color: rgba(169, 126, 240, 0.32);
+  background: rgba(169, 126, 240, 0.12);
+  color: var(--m-akzent-hell);
+}
+
+.mitglied__rolle--allround {
+  border-color: rgba(91, 225, 255, 0.32);
+  background: rgba(91, 225, 255, 0.1);
+  color: #8ce9ff;
+}
+
+.mitglied__rolle--farmer {
+  border-color: rgba(79, 191, 135, 0.32);
+  background: rgba(79, 191, 135, 0.1);
+  color: #7fe0ab;
+}
+
+.mitglied__seit {
+  margin: 0;
+  font-size: 0.76rem;
+  color: var(--m-leise);
+}

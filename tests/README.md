@@ -30,6 +30,7 @@ npx http-server . -p 8123      # abweichender Port über PORT=...
 | `kette-test.mjs` | Bild-Rückfall: eigenes Bild → Wiki → Spieltextur → Verbotsschild | Browser |
 | `anzeige-test.mjs` | Marktname ohne API-Feld, Variante auf der Auktionskarte | Browser |
 | `filter-test.mjs` | „Auktionsverlauf" zeigt nur die gewählte Variante | Browser + Verlauf |
+| `reiter-test.mjs` | Clan und Mitglieder laufen als Reiter, die Leiste bleibt stehen | Browser |
 
 ## Warum diese Tests
 

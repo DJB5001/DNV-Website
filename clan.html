@@ -19,6 +19,7 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="css/clan.css" />
+    <link rel="stylesheet" href="css/mitglieder.css" />
     <!-- Markiert, dass JavaScript läuft. Ohne diese Klasse bleiben alle
          Inhalte sichtbar, statt auf ein Auftauchen zu warten. -->
     <script>
@@ -44,6 +45,7 @@
       <div class="nav__links">
         <a href="clan.html" aria-current="page">Start</a>
         <a href="#clan">Über uns</a>
+        <a href="#mitglieder">Mitglieder</a>
         <a href="#projekte">Projekte</a>
         <a href="#bot">Infrastruktur</a>
         <a href="#mitmachen">Mitmachen</a>
@@ -154,6 +156,27 @@
             <span class="karte__chip">Nachvollziehbar</span>
           </article>
         </div>
+      </div>
+    </section>
+
+    <!-- ══ Mitglieder ══ -->
+    <section class="band" id="mitglieder">
+      <div class="band__schein" aria-hidden="true"></div>
+      <div class="innen">
+        <div class="kopf auf">
+          <span class="plakette">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
+            </svg>
+            <span data-mitglieder-anzahl>0</span>&nbsp;im Clan
+          </span>
+          <h2>Unsere <em>Mitglieder</em></h2>
+          <p>Wer mitzieht, steht hier. Die Rolle sagt, wo jemand im Clan anpackt.</p>
+        </div>
+
+        <div class="mitglieder auf" data-mitglieder></div>
       </div>
     </section>
 
@@ -341,6 +364,7 @@
           <h4>DarkNova</h4>
           <ul>
             <li><a href="#clan">Über den Clan</a></li>
+            <li><a href="#mitglieder">Mitglieder</a></li>
             <li><a href="#projekte">Projekte</a></li>
             <li><a href="#mitmachen">Bewerbung</a></li>
           </ul>
@@ -366,6 +390,7 @@
       </p>
     </footer>
 
+    <script src="js/mitglieder.js"></script>
     <script src="js/nova.js"></script>
   </body>
 </html>
