@@ -1190,6 +1190,9 @@
     </div>
 
     <div id="auctions" class="section">
+      <input type="text" id="searchAuctions" class="search-input"
+             placeholder="🔍 Item, Material oder Verzauberung suchen …"
+             oninput="setAuctionSearch(this.value)">
       <div class="auction-controls">
         <div class="filter-group">
           <select id="auction-filters" class="auction-sort" onchange="setAuctionFilter(this.value)"></select>

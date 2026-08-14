@@ -35,6 +35,7 @@ npx http-server . -p 8123      # abweichender Port über PORT=...
 | `spieler-test.mjs` | Bestenliste, alle sieben Sortierarten, Profil und Rückweg | Browser |
 | `verlaengerung-test.mjs` | Verlängerte Auktionen zählen nur einmal — gegen die echten Daten | Verlauf |
 | `mitglieder-test.mjs` | Die Mitgliederliste kommt aus `data/mitglieder.json`; fehlt oder klemmt sie, trägt die hinterlegte Liste | Browser |
+| `auktionsfilter-test.mjs` | Suchleiste über den Auktionen, Filter nach Item-Art, Verzauberungen auf den Karten | Browser |
 
 ## Zwei Auktionen, die keine sind
 

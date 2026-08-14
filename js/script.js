@@ -2283,6 +2283,62 @@ function bildRueckfall(img) {
 }
 
 // Baut das <img> für ein Item — eine Stelle für alle Raster, damit
+// ── Verzauberungen ───────────────────────────────────────────────────
+//
+// Die API liefert sie als "minecraft:silk_touch": 3. Vorher stand daraus
+// "Minecraft:silk_touch 3" auf der Seite — der Namensraum wurde nicht
+// abgeschnitten, weil nur an Unterstrichen getrennt wurde.
+//
+// Deutsche Namen für alle, die im Verlauf vorkommen. OPSUCHT hat eigene
+// dazuerfunden (etwa "lunge"), die es in Minecraft nicht gibt; für die und
+// alles Künftige greift der Rückfall weiter unten.
+const verzauberungsNamen = {
+  aqua_affinity: 'Wasseraffinität', bane_of_arthropods: 'Nemesis der Gliederfüßer',
+  binding_curse: 'Fluch der Bindung', blast_protection: 'Explosionsschutz',
+  breach: 'Bruch', channeling: 'Entladung', density: 'Wucht',
+  depth_strider: 'Tiefenläufer', efficiency: 'Effizienz', feather_falling: 'Federfall',
+  fire_aspect: 'Verbrennung', fire_protection: 'Feuerschutz', flame: 'Flamme',
+  fortune: 'Glück', frost_walker: 'Eisläufer', impaling: 'Harpune',
+  infinity: 'Unendlichkeit', knockback: 'Rückstoß', looting: 'Plünderung',
+  loyalty: 'Treue', luck_of_the_sea: 'Glück des Meeres', lure: 'Köder',
+  mending: 'Reparatur', multishot: 'Mehrfachschuss', piercing: 'Durchdringung',
+  power: 'Stärke', projectile_protection: 'Geschossschutz', protection: 'Schutz',
+  punch: 'Schlag', quick_charge: 'Schnellladen', respiration: 'Atmung',
+  riptide: 'Sog', sharpness: 'Schärfe', silk_touch: 'Behutsamkeit',
+  smite: 'Bann', soul_speed: 'Seelenläufer', sweeping_edge: 'Schwungkraft',
+  swift_sneak: 'Schleicher', thorns: 'Dornen', unbreaking: 'Haltbarkeit',
+  vanishing_curse: 'Fluch des Verschwindens', wind_burst: 'Windstoß'
+};
+
+const ROEMISCH = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
+
+/* Minecraft schreibt Stufen römisch — aber nur bis zehn. Auf OPSUCHT gibt es
+   Haltbarkeit 160, und "CLX" liest niemand. */
+function stufenZeichen(stufe) {
+  const n = Number(stufe);
+  return n >= 1 && n <= 10 ? ROEMISCH[n] : String(stufe);
+}
+
+function verzauberungName(schluessel) {
+  const ohneRaum = String(schluessel).split(':').pop();
+  if (verzauberungsNamen[ohneRaum]) return verzauberungsNamen[ohneRaum];
+  // Unbekannt: wenigstens lesbar machen, statt den rohen Schlüssel zu zeigen
+  return ohneRaum
+    .split('_')
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ');
+}
+
+/** ["Behutsamkeit III", "Haltbarkeit 160"] — stärkste Verzauberung zuerst. */
+function verzauberungenListe(item) {
+  const roh = item?.enchantments;
+  if (!roh || typeof roh !== 'object') return [];
+
+  return Object.entries(roh)
+    .sort((a, b) => Number(b[1]) - Number(a[1]))
+    .map(([schluessel, stufe]) => `${verzauberungName(schluessel)} ${stufenZeichen(stufe)}`);
+}
+
 // Ladeverhalten und Rückfallkette überall gleich sind.
 //
 // adresse ist der Wunsch (aus der API oder aus config.js), kette die
@@ -2387,9 +2443,56 @@ async function setAuctionFilter(category) {
   renderAuctions();
 }
 
+/* Suchfeld über den Auktionen.
+   App.auctionItemFilter gab es schon — gesetzt wurde er bisher nur beim
+   Sprung aus der Item-Ansicht. Ein Eingabefeld dafür fehlte, obwohl der
+   Filter danach längst suchte. */
+function setAuctionSearch(text) {
+  App.auctionItemFilter = text;
+  // Ein Sprung aus der Item-Ansicht hatte die Auswahl auf eine Variante
+  // verengt. Wer selbst tippt, will wieder alles durchsuchen.
+  App.auctionVarianteFilter = '';
+  renderAuctions();
+}
+
 function setStarFilter(star) {
   App.auctionStarFilter = star;
   renderAuctions();
+}
+
+/* ── Filter nach Item-Art ──────────────────────────────────────────────
+   Die Kategorien oben kommen von der API und heißen, wie OPSUCHT sie
+   gerade nennt. Wonach man tatsächlich sucht, steht dort aber nicht drin:
+   Spawn-Eier erkennt man am Material, OP-Items am Namen, Verzauberte an
+   ihren Verzauberungen.
+
+   Deshalb hier eine zweite Achse, die nur auf den Item-Daten selbst
+   beruht — die ändert sich nicht, wenn die API ihre Kategorien umbenennt.
+   Die Werte tragen "art:" davor, damit sie nie mit einem Kategorieschlüssel
+   zusammenfallen. */
+const auktionsArten = [
+  { id: 'op', label: 'OP-Items', passt: (i, n) => /\bOP\b/i.test(n) },
+  { id: 'verzaubert', label: 'Verzauberte Items', passt: (i) => verzauberungenListe(i).length > 0 },
+  { id: 'spawnegg', label: 'Spawn-Eier', passt: (i, n, m) => m.includes('SPAWN_EGG') },
+  { id: 'talisman', label: 'Talismane', passt: (i, n) => n.toLowerCase().includes('talisman') },
+  { id: 'kopf', label: 'Spielerköpfe', passt: (i, n, m) => m === 'PLAYER_HEAD' },
+  { id: 'shulker', label: 'Shulker-Kisten', passt: (i, n, m) => m.includes('SHULKER') },
+  {
+    id: 'elytra',
+    label: 'Elytren & Schwingen',
+    passt: (i, n, m) => m.includes('ELYTRA') || /schwing/i.test(n),
+  },
+  { id: 'trank', label: 'Tränke', passt: (i, n, m) => m.includes('POTION') },
+  { id: 'platte', label: 'Musikplatten', passt: (i, n, m) => m.includes('MUSIC_DISC') },
+];
+
+/** Gehört diese Auktion zur gewählten Art? */
+function passtZurArt(auktion, artId) {
+  const art = auktionsArten.find(a => a.id === artId);
+  if (!art) return true;
+
+  const item = auktion.item || {};
+  return Boolean(art.passt(item, item.displayName || '', (item.material || '').toUpperCase()));
 }
 
 function setupAuctionFilters() {
@@ -2437,6 +2540,29 @@ function setupAuctionFilters() {
     if (catKey === App.auctionCategoryFilter) option.selected = true;
     filterContainer.appendChild(option);
   });
+
+  // Zweite Achse, abgesetzt in einer eigenen Gruppe: Sie beschreibt, was ein
+  // Item ist, nicht wo die API es einsortiert. Nur Arten, zu denen es gerade
+  // auch etwas gibt — eine Auswahl, die null Treffer liefert, hilft niemandem.
+  const vorhanden = auktionsArten.filter(art =>
+    App.auctionsData.some(a => passtZurArt(a, art.id))
+  );
+
+  if (vorhanden.length > 0) {
+    const gruppe = document.createElement('optgroup');
+    gruppe.label = 'Nach Art';
+
+    vorhanden.forEach(art => {
+      const anzahl = App.auctionsData.filter(a => passtZurArt(a, art.id)).length;
+      const option = document.createElement('option');
+      option.value = `art:${art.id}`;
+      option.textContent = `${art.label} (${anzahl})`;
+      if (option.value === App.auctionCategoryFilter) option.selected = true;
+      gruppe.appendChild(option);
+    });
+
+    filterContainer.appendChild(gruppe);
+  }
 }
 
 function animateCardsWave(sectionElement, immediate = false) {
@@ -2616,12 +2742,20 @@ async function renderAuctions(isPagination = false) {
   const filteredAuctions = App.auctionsData.filter(a => {
     const origCatKey = getAuctionCategoryKey(a);
     const catKey = origCatKey.toUpperCase().replace(/ /g, "_");
-    const matchesSearch = (a.item.displayName?.toLowerCase().includes(search) || a.item.material?.toLowerCase().includes(search) || getAuctionCategoryLabel(origCatKey).toLowerCase().includes(search));
+    // Gesucht wird über Name, Material, Kategorie — und über die
+    // Verzauberungen, damit "Behutsamkeit" auch findet, was so heißt.
+    const matchesSearch = (a.item.displayName?.toLowerCase().includes(search)
+      || a.item.material?.toLowerCase().includes(search)
+      || getAuctionCategoryLabel(origCatKey).toLowerCase().includes(search)
+      || verzauberungenListe(a.item).some(v => v.toLowerCase().includes(search)));
     if (!matchesSearch) return false;
 
     // Kam der Sprung aus der Item-Ansicht, gilt genau eine Variante.
     if (App.auctionVarianteFilter && itemVariante(a.item) !== App.auctionVarianteFilter) return false;
     if (App.auctionCategoryFilter === 'Alle') return true;
+    if (String(App.auctionCategoryFilter).startsWith('art:')) {
+      return passtZurArt(a, App.auctionCategoryFilter.slice(4));
+    }
     if (App.auctionCategoryFilter === 'Erinnerungen') {
       const id = a.id || (a.seller + "_" + (a.item.material || "") + "_" + a.endTime).replace(/[.#$[\]]/g, '-');
       return !!App.userReminders[id];
@@ -2684,10 +2818,24 @@ async function renderAuctions(isPagination = false) {
 
 
   animateCardsWave(document.getElementById('auctions'));
-  renderFilterChip('auctionContainer', App.auctionItemFilter, () => {
-    App.auctionItemFilter = '';
-    renderAuctions();
-  });
+
+  // Suchfeld und Filter im Gleichschritt halten: Der Sprung aus der
+  // Item-Ansicht setzt den Filter, ohne dass jemand getippt hat.
+  const suchfeld = document.getElementById('searchAuctions');
+  if (suchfeld && suchfeld.value !== (App.auctionItemFilter || '')) {
+    suchfeld.value = App.auctionItemFilter || '';
+  }
+
+  // Der Chip erscheint nur noch bei der Variantenauswahl aus der
+  // Item-Ansicht. Was jemand selbst getippt hat, steht ja schon im
+  // Suchfeld — ein zweites Mal darunter ist nur Lärm.
+  if (App.auctionVarianteFilter) {
+    renderFilterChip('auctionContainer', App.auctionItemFilter, () => {
+      App.auctionItemFilter = '';
+      App.auctionVarianteFilter = '';
+      renderAuctions();
+    });
+  }
 }
 
 
@@ -3633,6 +3781,24 @@ function formatCardPrice(price) {
   return Math.floor(price).toLocaleString('de-DE');
 }
 
+/* Verzauberungen auf der Karte.
+   Bewusst knapp: Die Karte soll Preis und Restzeit zeigen, nicht zur Liste
+   werden. Ab vier Verzauberungen steht nur noch "+n", die vollständige
+   Aufstellung gibt es beim Klick im Fenster darunter. */
+function verzauberungenHtml(item, hoechstens = 3) {
+  const liste = verzauberungenListe(item);
+  if (liste.length === 0) return '';
+
+  const sichtbar = liste.slice(0, hoechstens);
+  const rest = liste.length - sichtbar.length;
+  const titel = liste.join(' · ').replace(/"/g, '&quot;');
+
+  return `<div class="auction-enchants" title="${titel}">
+    ${sichtbar.map(v => `<span class="enchant-badge enchant-badge--klein">${v}</span>`).join('')}
+    ${rest > 0 ? `<span class="enchant-badge enchant-badge--klein enchant-badge--rest">+${rest}</span>` : ''}
+  </div>`;
+}
+
 function createAuctionCard(auction, historyType = null, personalData = null) {
   const displayName = auction.item.displayName ?? auction.item.material;
   const iconUrl = getAuctionItemIcon(auction.item);
@@ -3688,6 +3854,7 @@ function createAuctionCard(auction, historyType = null, personalData = null) {
     ${itemBildTag(auction.item.material, iconUrl, displayName)}
     <h3 class="auction-name">${displayName}</h3>
     ${variantenLabel(auction.item) ? `<div class="item-variante">${variantenLabel(auction.item)}</div>` : ''}
+    ${verzauberungenHtml(auction.item)}
     <div class="price-info auction-startBid"><span class="buy">Start:</span> ${formatCardPrice(auction.startBid)}</div>
     <div class="price-info auction-currentBid"><span class="sell">${historyType ? 'Verkauft für:' : 'Aktuell:'}</span> ${formatCardPrice(auction.currentBid ?? auction.startBid)}</div>
     ${auction.instantBuyPrice ? `<div class="price-info auction-instantBuy"><span style="color: var(--accent-color1);">Sofortkauf:</span> ${formatCardPrice(auction.instantBuyPrice)}</div>` : ''}
@@ -4757,11 +4924,12 @@ async function openAuctionChart(auction) {
 
       const enchantList = document.createElement("div");
       enchantList.className = "enchant-list";
-      for (const [key, level] of Object.entries(item.enchantments)) {
+      // Derselbe Formatierer wie auf den Karten - vorher stand hier
+      // "Minecraft:mending 1" statt "Reparatur I".
+      for (const beschriftung of verzauberungenListe(item)) {
         const badge = document.createElement("span");
         badge.className = "enchant-badge";
-        const formattedKey = key.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ');
-        badge.textContent = `${formattedKey} ${level}`;
+        badge.textContent = beschriftung;
         enchantList.appendChild(badge);
       }
       enchantBox.appendChild(enchantList);
