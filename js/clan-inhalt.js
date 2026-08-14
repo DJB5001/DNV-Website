@@ -45,13 +45,6 @@
     return `<svg viewBox="0 0 24 24" aria-hidden="true">${symbole[name] || ''}</svg>`;
   }
 
-  /* Die Bildebene eines Abschnitts. Sie steht als erstes Kind im
-     <section> und wird von css/hintergrund.css gestaltet — hier
-     entscheidet nur, welches Motiv hinter welchem Abschnitt liegt. */
-  function hintergrund(motiv) {
-    return `<div class="mc-hg mc-hg--${motiv}" aria-hidden="true"></div>`;
-  }
-
   function kopf(plakette, symbol, titel, akzent, text) {
     return `
       <div class="dnv-kopf">
@@ -73,8 +66,7 @@
 
   var abschnitte = [
     // ── Wer wir sind ──────────────────────────────────────────────
-    `<section class="dnv-band" id="dnv-ueberuns">
-      ${hintergrund('weite')}
+    `<section class="dnv-band" id="dnv-ueberuns" data-mc-motiv="weite">
       ${kopf(
         'Wer wir sind',
         'leute',
@@ -99,8 +91,7 @@
     </section>`,
 
     // ── Projekte ──────────────────────────────────────────────────
-    `<section class="dnv-band" id="dnv-projekte">
-      ${hintergrund('bluete')}
+    `<section class="dnv-band" id="dnv-projekte" data-mc-motiv="bluete">
       ${kopf(
         'Woran wir bauen',
         'bau',
@@ -131,8 +122,7 @@
     </section>`,
 
     // ── Infrastruktur ─────────────────────────────────────────────
-    `<section class="dnv-band" id="dnv-bot">
-      ${hintergrund('ritt')}
+    `<section class="dnv-band" id="dnv-bot" data-mc-motiv="ritt">
       ${kopf(
         'Was uns besonders macht',
         'zahnrad',
@@ -169,8 +159,7 @@
     </section>`,
 
     // ── Mitmachen ─────────────────────────────────────────────────
-    `<section class="dnv-band" id="dnv-mitmachen">
-      ${hintergrund('hoehle')}
+    `<section class="dnv-band" id="dnv-mitmachen" data-mc-motiv="hoehle">
       ${kopf(
         'Interesse?',
         'beitritt',

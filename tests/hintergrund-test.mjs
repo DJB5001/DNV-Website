@@ -1,12 +1,13 @@
-// Prüft die Minecraft-Bildebenen (css/hintergrund.css).
+// Prüft die beiden Hintergrundebenen (css/hintergrund.css, js/nova.js).
 //
-// Drei Dinge können hier schiefgehen, und alle drei sind unsichtbar, bis
-// jemand die Seite von Hand anschaut:
-//   1. Ein Motiv-Name im Markup passt zu keiner Regel — die Ebene bleibt
-//      leer, ohne dass irgendwo ein Fehler auftaucht.
+// Was hier unbemerkt kaputtgehen kann:
+//   1. Ein Motivname im Markup passt zu keiner CSS-Regel — die Ebene
+//      bleibt leer, ohne dass irgendwo ein Fehler auftaucht.
 //   2. Eine Bilddatei fehlt oder ist umbenannt worden.
-//   3. Die Regel ".mc-hg ~ *" setzt ein Geschwister auf position: relative,
-//      das absolut bleiben muss (der Lichtkreis .band__schein).
+//   3. Das Umblenden greift nicht: beim Scrollen (Clan-Seite) oder beim
+//      Reiterwechsel (App) bleibt immer dasselbe Bild stehen.
+//   4. Es ist mehr als ein Bild gleichzeitig sichtbar — dann liegen zwei
+//      Motive übereinander und der Hintergrund wird matschig.
 //
 // Voraussetzungen: Playwright, und die Seite muss ausgeliefert werden:
 //   npx http-server . -p 8123     (abweichender Port über PORT=...)
@@ -34,66 +35,127 @@ const pruefe = (bed, t, zusatz = '') => {
   if (!bed) fehlschlag++;
 };
 
-// Die Ebene malt ihr Bild im ::before. Die Adresse steht deshalb nicht am
-// Element selbst, sondern nur im berechneten Stil des Pseudo-Elements.
-async function ebenen(seite) {
-  return seite.evaluate(() =>
-    [...document.querySelectorAll('.mc-hg')].map((el) => {
-      const stil = getComputedStyle(el, '::before');
-      const treffer = /url\("?([^")]+)"?\)/.exec(stil.backgroundImage);
+// Die Adresse steht im berechneten Stil, nicht im Markup — beim Kopfband
+// sogar erst im ::before.
+const ebenenLesen = () =>
+  p.evaluate(() => {
+    const adresse = (stil) => (/url\("?([^")]+)"?\)/.exec(stil.backgroundImage) || [])[1] || '';
+    const grund = [...document.querySelectorAll('.mc-grund__bild')].map((el) => {
+      const s = getComputedStyle(el);
       return {
-        klasse: el.className,
-        adresse: treffer ? treffer[1] : '',
-        deckkraft: parseFloat(stil.opacity),
-        versteckt: el.getAttribute('aria-hidden') === 'true'
+        motiv: el.dataset.motiv,
+        adresse: adresse(s),
+        an: el.classList.contains('an'),
+        deckkraft: parseFloat(s.opacity)
       };
-    })
-  );
-}
+    });
+    const band = document.querySelector('.mc-kopfband');
+    const bandStil = band && getComputedStyle(band, '::before');
+    return {
+      grund,
+      band: band
+        ? {
+            adresse: adresse(bandStil),
+            deckkraft: parseFloat(bandStil.opacity),
+            hoehe: band.getBoundingClientRect().height,
+            breite: band.getBoundingClientRect().width,
+            versteckt: band.getAttribute('aria-hidden') === 'true'
+          }
+        : null
+    };
+  });
 
 for (const datei of ['clan.html', 'index.html']) {
   console.log(`\n── ${datei} ──`);
   await p.goto(`${basis}/${datei}`, { waitUntil: 'domcontentloaded' });
-  await p.waitForTimeout(1500);
+  await p.waitForTimeout(1800);
 
-  const liste = await ebenen(p);
-  pruefe(liste.length >= 5, 'Bildebenen sind vorhanden', String(liste.length));
+  const { grund, band } = await ebenenLesen();
 
-  for (const e of liste) {
-    const motiv = (/mc-hg--(\w+)/.exec(e.klasse) || [])[1] || '?';
-    pruefe(!!e.adresse, `${motiv}: ein Bild ist hinterlegt`, e.adresse.split('/').pop());
-    pruefe(e.deckkraft > 0 && e.deckkraft < 0.5, `${motiv}: dezent genug`, String(e.deckkraft));
-    pruefe(e.versteckt, `${motiv}: für Vorleseprogramme ausgeblendet`);
+  pruefe(grund.length === 4, 'vier Motive liegen bereit', String(grund.length));
+  for (const e of grund) {
+    pruefe(!!e.adresse, `${e.motiv}: ein Bild ist hinterlegt`, e.adresse.split('/').pop());
+    const antwort = await p.request.get(e.adresse);
+    pruefe(antwort.ok(), `${e.motiv}: die Datei wird ausgeliefert`, String(antwort.status()));
   }
+  pruefe(grund.filter((e) => e.an).length === 1, 'genau ein Motiv ist aktiv',
+    grund.filter((e) => e.an).map((e) => e.motiv).join(',') || 'keins');
 
-  // Wird jede Adresse wirklich ausgeliefert?
-  const adressen = [...new Set(liste.map((e) => e.adresse).filter(Boolean))];
-  for (const a of adressen) {
-    const antwort = await p.request.get(a);
-    pruefe(antwort.ok(), `${a.split('/').pop()} wird ausgeliefert`, String(antwort.status()));
-  }
+  pruefe(!!band, 'das Kopfband ist da');
+  pruefe(band && band.versteckt, 'das Kopfband ist für Vorleseprogramme ausgeblendet');
+  pruefe(band && band.hoehe > 300, 'das Kopfband ist gross', band && Math.round(band.hoehe) + 'px');
+  pruefe(band && band.breite >= 1390, 'das Kopfband geht über die volle Breite',
+    band && Math.round(band.breite) + 'px');
+  pruefe(band && band.deckkraft > 0.3, 'das Kopfband ist deutlich sichtbar',
+    band && String(band.deckkraft));
 }
 
-// Der Lichtkreis auf der Clan-Seite muss absolut bleiben, sonst schiebt er
-// den Inhalt auseinander.
+// ── Clan-Seite: das Motiv folgt dem Scrollen ──
+console.log('\n── Umblenden beim Scrollen ──');
 await p.goto(`${basis}/clan.html`, { waitUntil: 'domcontentloaded' });
-await p.waitForTimeout(600);
-const schein = await p.evaluate(() => {
-  const el = document.querySelector('#mitglieder .band__schein');
-  return el ? getComputedStyle(el).position : 'fehlt';
-});
-pruefe(schein === 'absolute', 'der Lichtkreis bleibt absolut positioniert', schein);
+await p.waitForTimeout(1200);
 
-// Und der Inhalt muss über der Bildebene liegen.
-const stapel = await p.evaluate(() => {
-  const innen = document.querySelector('.hero > .innen');
-  const ebene = document.querySelector('.hero > .mc-hg');
-  return {
-    inhalt: parseInt(getComputedStyle(innen).zIndex, 10) || 0,
-    ebene: parseInt(getComputedStyle(ebene).zIndex, 10) || 0
-  };
+const aktiv = async () =>
+  p.evaluate(() => document.querySelector('.mc-grund__bild.an')?.dataset.motiv || 'keins');
+
+// Beim Scrollen darf keine weiche Bewegung mitmessen.
+await p.addStyleTag({ content: 'html { scroll-behavior: auto !important; }' });
+
+const obenMotiv = await aktiv();
+pruefe(obenMotiv === 'hoehle', 'oben liegt das Motiv des Kopfbereichs', obenMotiv);
+
+for (const [kennung, erwartet] of [
+  ['#dnv-ueberuns', 'weite'],
+  ['#dnv-projekte', 'bluete'],
+  ['#dnv-bot', 'ritt']
+]) {
+  await p.evaluate((k) => {
+    const r = document.querySelector(k).getBoundingClientRect();
+    // Der Abschnitt soll die Mitte des Fensters kreuzen, nicht nur den
+    // oberen Rand berühren. Bewusst über das Rechteck statt offsetTop:
+    // die Abschnitte liegen in einem positionierten Container, offsetTop
+    // zählt also nicht ab dem Seitenanfang.
+    window.scrollBy(0, r.top + r.height / 2 - window.innerHeight / 2);
+  }, kennung);
+  await p.waitForTimeout(400);
+  const jetzt = await aktiv();
+  pruefe(jetzt === erwartet, `${kennung} zeigt sein Motiv`, `${jetzt} (erwartet ${erwartet})`);
+}
+
+// ── App: das Motiv folgt dem Reiter ──
+console.log('\n── Umblenden beim Reiterwechsel ──');
+await p.goto(`${basis}/index.html`, { waitUntil: 'domcontentloaded' });
+await p.waitForTimeout(2500);
+await p.evaluate(() => {
+  document.querySelectorAll('.modal,.disclaimer-modal,.cookie-consent-modal')
+    .forEach((m) => (m.style.display = 'none'));
+  document.body.classList.remove('loading', 'modal-open');
+  // script.js bricht hier früh ab (das Supabase-CDN ist gesperrt), dadurch
+  // fehlt App.settings, das showSection braucht. App ist ein const auf
+  // oberster Ebene und liegt NICHT an window — der Name muss direkt
+  // getroffen werden.
+  App.settings = App.settings || {};
+  App.settings.design = App.settings.design || { itemRain: false };
+  App.settings.market = App.settings.market || { name: true };
 });
-pruefe(stapel.inhalt > stapel.ebene, 'der Kopfbereich liegt über seinem Bild', JSON.stringify(stapel));
+
+for (const [reiter, erwartet] of [
+  ['mitglieder', 'ritt'],
+  ['market', 'weite'],
+  ['auctions', 'bluete'],
+  ['clan', 'hoehle']
+]) {
+  await p.evaluate((r) => showSection(r), reiter);
+  await p.waitForTimeout(300);
+  const jetzt = await aktiv();
+  pruefe(jetzt === erwartet, `Reiter ${reiter} zeigt sein Motiv`, `${jetzt} (erwartet ${erwartet})`);
+}
+
+// Das Kopfband wechselt in der App mit.
+const bandMotiv = await p.evaluate(
+  () => document.querySelector('.mc-kopfband').className.match(/mc-motiv--(\w+)/)[1]
+);
+pruefe(bandMotiv === 'hoehle', 'das Kopfband trägt das Motiv des Reiters', bandMotiv);
 
 await b.close();
 console.log(fehlschlag ? `\n${fehlschlag} Prüfung(en) fehlgeschlagen.` : '\nAlle Prüfungen bestanden.');

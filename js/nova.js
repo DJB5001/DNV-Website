@@ -153,6 +153,116 @@
     { passive: true }
   );
 
+  /* ── Hintergrundmotive ──────────────────────────────────────────
+     Vier Bilder liegen übereinander in .mc-grund, sichtbar ist immer
+     genau eines. Gewechselt wird per Klasse — das Überblenden macht
+     die CSS.
+
+     Woher das Motiv kommt, hängt von der Seite ab:
+       Clan-Seite: vom Abschnitt, der gerade in der Mitte steht.
+       App:        vom offenen Reiter.
+     Beides steuert dieselbe Funktion. */
+
+  var MOTIVE = ['hoehle', 'ritt', 'weite', 'bluete'];
+
+  var grundEbenen = {};
+  document.querySelectorAll('.mc-grund__bild').forEach(function (el) {
+    grundEbenen[el.dataset.motiv] = el;
+  });
+
+  var kopfband = document.querySelector('.mc-kopfband');
+  var aktuellesMotiv = 'hoehle';
+
+  function motivSetzen(motiv, auchBand) {
+    if (!motiv || !grundEbenen[motiv] || motiv === aktuellesMotiv) return;
+    aktuellesMotiv = motiv;
+    MOTIVE.forEach(function (m) {
+      if (grundEbenen[m]) grundEbenen[m].classList.toggle('an', m === motiv);
+    });
+    // Das Kopfband wechselt nur in der App mit. Auf der Clan-Seite
+    // gehört es fest zum Kopfbereich und soll dort stehen bleiben.
+    if (auchBand && kopfband) {
+      MOTIVE.forEach(function (m) {
+        kopfband.classList.remove('mc-motiv--' + m);
+      });
+      kopfband.classList.add('mc-motiv--' + motiv);
+    }
+  }
+
+  window.dnvMotiv = motivSetzen;
+
+  /* Clan-Seite: der Abschnitt, der die Mitte des Fensters kreuzt,
+     bestimmt das Bild.
+
+     Bewusst über getBoundingClientRect statt IntersectionObserver:
+     dessen Verhältniswert bezieht sich auf die Grösse des Elements,
+     nicht auf die des Fensters. Ein Abschnitt, der höher ist als das
+     Fenster, käme dabei nie über 0,5 und verlöre gegen jeden kurzen
+     Abschnitt daneben. */
+
+  /* Die Liste wird nachgezogen statt einmal festgehalten: die meisten
+     Abschnitte baut js/clan-inhalt.js erst bei DOMContentLoaded ein,
+     also nach dieser Datei. Eine hier eingefrorene Auswahl kennte nur
+     den Kopfbereich und die Mitglieder. */
+  var motivBereiche = [];
+
+  function bereicheSammeln() {
+    motivBereiche = [].slice.call(document.querySelectorAll('[data-mc-motiv]'));
+  }
+
+  var offenePruefung = false;
+
+  function motivPruefen() {
+    var mitte = window.innerHeight * 0.42;
+    var treffer = null;
+    motivBereiche.forEach(function (el) {
+      var kasten = el.getBoundingClientRect();
+      if (kasten.top <= mitte && kasten.bottom > mitte) treffer = el;
+    });
+    if (treffer) motivSetzen(treffer.dataset.mcMotiv, false);
+  }
+
+  bereicheSammeln();
+
+  // Nur ohne Reiterleiste, also auf der Clan-Seite. In der App würde
+  // das Scrollen dem Reiter sein Motiv wieder wegnehmen.
+  if (!document.getElementById('tabs')) {
+    window.addEventListener(
+      'scroll',
+      function () {
+        if (offenePruefung) return;
+        offenePruefung = true;
+        requestAnimationFrame(function () {
+          motivPruefen();
+          offenePruefung = false;
+        });
+      },
+      { passive: true }
+    );
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', function () {
+        bereicheSammeln();
+        motivPruefen();
+      });
+    }
+    motivPruefen();
+  }
+
+  /* App: jeder Reiter bekommt sein eigenes Bild. Was nicht in der
+     Liste steht, behält das Motiv des Kopfbereichs. */
+  var REITER_MOTIV = {
+    clan: 'hoehle',
+    mitglieder: 'ritt',
+    market: 'weite',
+    auctions: 'bluete',
+    deals: 'hoehle',
+    history: 'ritt',
+    shards: 'weite',
+    items: 'bluete',
+    profile: 'ritt'
+  };
+
   /* ── Clan-Knopf als Reiter ──────────────────────────────────────
      In der App ist der Clan-Knopf ein Reiter wie Markt oder Auktionen,
      liegt aber außerhalb von #tabs. showSection räumt beim Wechsel nur
@@ -188,6 +298,7 @@
       if (id === 'mitglieder' && typeof window.dnvMitgliederZeichnen === 'function') {
         window.dnvMitgliederZeichnen();
       }
+      motivSetzen(REITER_MOTIV[id] || 'hoehle', true);
     };
   }
 

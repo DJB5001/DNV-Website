@@ -30,7 +30,20 @@
 <body class="loading">
   <!-- Nova-Himmel: zwei weiche Lichtwolken hinter der gesamten Seite.
        Rein dekorativ, liegt hinter allem und faengt keine Klicks ab. -->
-  <div class="nova-himmel" aria-hidden="true"><span></span><span></span><canvas id="blockfeld"></canvas></div>
+  <div class="nova-himmel" aria-hidden="true">
+    <!-- Durchgehender Hintergrund: vier Motive übereinander, je nach
+         Reiter blendet js/nova.js weich um. -->
+    <div class="mc-grund">
+      <div class="mc-grund__bild mc-motiv--hoehle an" data-motiv="hoehle"></div>
+      <div class="mc-grund__bild mc-motiv--ritt" data-motiv="ritt"></div>
+      <div class="mc-grund__bild mc-motiv--weite" data-motiv="weite"></div>
+      <div class="mc-grund__bild mc-motiv--bluete" data-motiv="bluete"></div>
+    </div>
+    <span></span><span></span><canvas id="blockfeld"></canvas>
+  </div>
+
+  <!-- Das grosse Motiv hinter Titel und Reiterleiste. -->
+  <div class="mc-kopfband mc-kopfband--app mc-motiv--hoehle" aria-hidden="true"></div>
 
   <!-- Disclaimer Modal -->
   <div id="disclaimerModal" class="modal disclaimer-modal" style="display: none;">
@@ -1284,7 +1297,6 @@
          irgendwo ab, bleibt die Seite trotzdem nicht leer. -->
     <div id="clan" class="section active">
       <div class="clan-tab">
-        <div class="mc-hg mc-hg--hoehle mc-hg--stark" aria-hidden="true"></div>
         <p class="clan-tab__kicker">Minecraft-Clan auf OPSUCHT · CityBuild</p>
         <h2 class="clan-tab__titel">DarkNova <span>[DNV]</span></h2>
         <p class="clan-tab__text">
@@ -1312,7 +1324,6 @@
 
     <div id="mitglieder" class="section">
       <div class="clan-tab">
-        <div class="mc-hg mc-hg--ritt" aria-hidden="true"></div>
         <p class="clan-tab__kicker"><span data-mitglieder-anzahl>0</span> im Clan</p>
         <h2 class="clan-tab__titel">Unsere <span>Mitglieder</span></h2>
         <p class="clan-tab__text">
