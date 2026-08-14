@@ -1,0 +1,127 @@
+{
+  "stand": "2026-08-14T17:03:58.668Z",
+  "anzahl": 15,
+  "hinweis": "Automatisch vom DNV-Bot aus den Discord-Rollen erzeugt. Änderungen hier werden überschrieben.",
+  "mitglieder": [
+    {
+      "name": "M4Claiz",
+      "rolle": "Owner",
+      "farbe": "fuehrung",
+      "rang": 1,
+      "seit": "2026-08-07",
+      "verifiziert": false
+    },
+    {
+      "name": "DJB500",
+      "rolle": "Co-Owner",
+      "farbe": "fuehrung",
+      "rang": 2,
+      "seit": "2026-08-07",
+      "verifiziert": false
+    },
+    {
+      "name": "M4Claia",
+      "rolle": "Lager Leitung",
+      "farbe": "leitung",
+      "rang": 7,
+      "seit": "2026-08-11",
+      "verifiziert": false
+    },
+    {
+      "name": "Acolone7",
+      "rolle": "Allrounder",
+      "farbe": "allround",
+      "rang": 10,
+      "seit": "2026-08-10",
+      "verifiziert": false
+    },
+    {
+      "name": "Ailyn",
+      "rolle": "Allrounder",
+      "farbe": "allround",
+      "rang": 10,
+      "seit": "2026-08-10",
+      "verifiziert": false
+    },
+    {
+      "name": "Exotic666",
+      "rolle": "Builder",
+      "farbe": "builder",
+      "rang": 11,
+      "seit": "2026-08-10",
+      "verifiziert": false
+    },
+    {
+      "name": "Eagle",
+      "rolle": "Farmer",
+      "farbe": "farmer",
+      "rang": 12,
+      "seit": "2026-08-09",
+      "verifiziert": false
+    },
+    {
+      "name": "Starfisch",
+      "rolle": "Farmer",
+      "farbe": "farmer",
+      "rang": 12,
+      "seit": "2026-08-10",
+      "verifiziert": false
+    },
+    {
+      "name": "Yuki",
+      "rolle": "Farmer",
+      "farbe": "farmer",
+      "rang": 12,
+      "seit": "2026-08-10",
+      "verifiziert": false
+    },
+    {
+      "name": "Donutsmp.net",
+      "rolle": "Farmer",
+      "farbe": "farmer",
+      "rang": 12,
+      "seit": "2026-08-11",
+      "verifiziert": false
+    },
+    {
+      "name": "Eddi",
+      "rolle": "Farmer",
+      "farbe": "farmer",
+      "rang": 12,
+      "seit": "2026-08-13",
+      "verifiziert": false
+    },
+    {
+      "name": "KilianMMXII",
+      "rolle": "Farmer",
+      "farbe": "farmer",
+      "rang": 12,
+      "seit": "2026-08-13",
+      "verifiziert": false
+    },
+    {
+      "name": "Kirito",
+      "rolle": "Farmer",
+      "farbe": "farmer",
+      "rang": 12,
+      "seit": "2026-08-13",
+      "verifiziert": false
+    },
+    {
+      "name": "David555",
+      "rolle": "Farmer",
+      "farbe": "farmer",
+      "rang": 12,
+      "seit": "2026-08-14",
+      "verifiziert": false
+    },
+    {
+      "name": "Tentie",
+      "rolle": "Farmer",
+      "farbe": "farmer",
+      "rang": 12,
+      "seit": "2026-08-14",
+      "verifiziert": false
+    }
+  ]
+}
