@@ -34,6 +34,7 @@ npx http-server . -p 8123      # abweichender Port über PORT=...
 | `hintergrund-test.mjs` | Jede Bildebene hat ein Motiv, die Datei wird ausgeliefert, der Inhalt liegt darüber | Browser |
 | `spieler-test.mjs` | Bestenliste, alle sieben Sortierarten, Profil und Rückweg | Browser |
 | `verlaengerung-test.mjs` | Verlängerte Auktionen zählen nur einmal — gegen die echten Daten | Verlauf |
+| `mitglieder-test.mjs` | Die Mitgliederliste kommt aus `data/mitglieder.json`; fehlt oder klemmt sie, trägt die hinterlegte Liste | Browser |
 
 ## Zwei Auktionen, die keine sind
 

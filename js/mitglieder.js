@@ -2,20 +2,37 @@
    DarkNova · Mitglieder
    ---------------------------------------------------------------
    Eine Datenquelle für beide Seiten: die Clan-Seite und den
-   Mitglieder-Reiter in OPSuchtWeb. Wer dazukommt, wird hier
-   eingetragen — die Darstellung zieht automatisch nach.
+   Mitglieder-Reiter in OPSuchtWeb.
 
-   Stand: 14.08.2026, übernommen aus der Clan-Übersicht im Spiel.
+   Die Liste kommt aus data/mitglieder.json. Diese Datei schreibt der
+   Discord-Bot aus den Serverrollen — wer dort einen Rang bekommt oder
+   verliert, steht wenige Minuten später auch hier. Von Hand muss
+   niemand mehr etwas nachtragen.
+
+   Die Liste weiter unten ist nur der Notnagel: Sie greift, solange der
+   Bot noch nie geschrieben hat oder die Datei gerade nicht zu laden ist.
+   Ohne sie stünde die Seite im Fehlerfall leer da.
    ═══════════════════════════════════════════════════════════════ */
 
 const dnvRollen = {
+  'Owner': { rang: 1, farbe: 'fuehrung' },
+  'Co-Owner': { rang: 2, farbe: 'fuehrung' },
+  'Admin': { rang: 3, farbe: 'fuehrung' },
+  'Event Leitung': { rang: 4, farbe: 'leitung' },
+  'Builder Leitung': { rang: 5, farbe: 'leitung' },
+  'Farmer Leitung': { rang: 6, farbe: 'leitung' },
+  'Lager Leitung': { rang: 7, farbe: 'leitung' },
+  'Moderator': { rang: 8, farbe: 'team' },
+  'Supporter': { rang: 9, farbe: 'team' },
+  'Allrounder': { rang: 10, farbe: 'allround' },
+  'Builder': { rang: 11, farbe: 'builder' },
+  'Farmer': { rang: 12, farbe: 'farmer' },
+  // Die alten Bezeichnungen aus der Clan-Übersicht im Spiel
   'Anführer': { rang: 1, farbe: 'fuehrung' },
-  'Co-Anführer': { rang: 2, farbe: 'fuehrung' },
-  'Allrounder': { rang: 3, farbe: 'allround' },
-  'Farmer': { rang: 4, farbe: 'farmer' }
+  'Co-Anführer': { rang: 2, farbe: 'fuehrung' }
 };
 
-const dnvMitglieder = [
+let dnvMitglieder = [
   { name: 'M4Claiz', rolle: 'Anführer', seit: '2026-08-08' },
   { name: 'DJB500', rolle: 'Co-Anführer', seit: '2026-08-08' },
   { name: 'Ailyn2013', rolle: 'Allrounder', seit: '2026-08-10' },
@@ -50,10 +67,16 @@ const dnvMitglieder = [
     return d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
   }
 
+  // Rang und Farbe stehen in der Bot-Datei schon drin. Die Tabelle oben ist
+  // nur der Rückfall für die Notliste und für Rollen, die der Bot noch nicht
+  // kennt — so muss diese Datei nicht jedes Mal mitgepflegt werden.
+  const rangVon = (m) => m.rang ?? dnvRollen[m.rolle]?.rang ?? 99;
+  const farbeVon = (m) => m.farbe ?? dnvRollen[m.rolle]?.farbe ?? 'farmer';
+
   function sortiert() {
     return dnvMitglieder.slice().sort((a, b) => {
-      const ra = dnvRollen[a.rolle]?.rang ?? 99;
-      const rb = dnvRollen[b.rolle]?.rang ?? 99;
+      const ra = rangVon(a);
+      const rb = rangVon(b);
       if (ra !== rb) return ra - rb;
       // Gleicher Rang: wer länger dabei ist, steht vorn
       if (a.seit !== b.seit) return a.seit < b.seit ? -1 : 1;
@@ -63,7 +86,7 @@ const dnvMitglieder = [
 
   function karte(m) {
     const kette = kopfKette(m.name);
-    const farbe = dnvRollen[m.rolle]?.farbe || 'farmer';
+    const farbe = farbeVon(m);
     // Der Anfangsbuchstabe als Ersatz, falls kein Kopf zu holen ist.
     const initial = String(m.name).replace(/^\./, '').charAt(0).toUpperCase();
 
@@ -105,10 +128,12 @@ const dnvMitglieder = [
 
   // Füllt jeden Container mit data-mitglieder. So funktioniert dieselbe
   // Datei auf der Clan-Seite wie im Reiter der App.
-  window.dnvMitgliederZeichnen = function () {
+  window.dnvMitgliederZeichnen = function (nochmal) {
     const liste = sortiert();
     document.querySelectorAll('[data-mitglieder]').forEach(ziel => {
-      if (ziel.dataset.gezeichnet) return;
+      // Einmal zeichnen reicht — außer die Bot-Datei kommt nach, dann wird
+      // mit den echten Daten überschrieben.
+      if (ziel.dataset.gezeichnet && !nochmal) return;
       ziel.dataset.gezeichnet = '1';
       ziel.innerHTML = liste.map(karte).join('');
     });
@@ -117,9 +142,33 @@ const dnvMitglieder = [
     });
   };
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', window.dnvMitgliederZeichnen);
-  } else {
+  /* Der Discord-Bot legt die aktuelle Liste als data/mitglieder.json ab.
+     Zuerst wird gezeichnet, was schon da ist — die Seite steht damit sofort —
+     und sobald die Datei geladen ist, wird mit den echten Daten ersetzt.
+     Fehlt oder klemmt sie, bleibt die Notliste stehen. */
+  async function ausDatei() {
+    try {
+      const antwort = await fetch(`data/mitglieder.json?t=${Date.now()}`, { cache: 'no-store' });
+      if (!antwort.ok) return;
+
+      const daten = await antwort.json();
+      if (!Array.isArray(daten.mitglieder) || daten.mitglieder.length === 0) return;
+
+      dnvMitglieder = daten.mitglieder;
+      window.dnvMitgliederZeichnen(true);
+    } catch (fehler) {
+      console.warn('Mitgliederliste vom Bot nicht ladbar, nutze die hinterlegte:', fehler);
+    }
+  }
+
+  function start() {
     window.dnvMitgliederZeichnen();
+    ausDatei();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', start);
+  } else {
+    start();
   }
 })();
