@@ -26,8 +26,8 @@ npx http-server . -p 8123      # abweichender Port über PORT=...
 |---|---|---|
 | `varianten-test.mjs` | Sammelkarte und Werkzeug unter gleichem Namen werden getrennt | Verlauf |
 | `index-test.mjs` | Der Item-Index teilt Varianten auf, ohne Verkäufe zu verlieren | Verlauf |
-| `bilder-test.mjs` | Aus Materialnamen entstehen brauchbare Bildadressen | Verlauf |
-| `kette-test.mjs` | Bild-Rückfall: eigenes Bild → Typ → Verbotsschild | Browser |
+| `bilder-test.mjs` | Aus Materialnamen entstehen brauchbare Bildadressen. Mit `--abrufen` wird jede Adresse wirklich geholt (dauert Minuten) | Verlauf |
+| `kette-test.mjs` | Bild-Rückfall: eigenes Bild → Wiki → Spieltextur → Verbotsschild | Browser |
 | `anzeige-test.mjs` | Marktname ohne API-Feld, Variante auf der Auktionskarte | Browser |
 | `filter-test.mjs` | „Auktionsverlauf" zeigt nur die gewählte Variante | Browser + Verlauf |
 
@@ -38,3 +38,18 @@ aber zweierlei — eine Sammelkarte aus Papier (Ø rund 590 Tsd) und eine
 Netherit-Spitzhacke (Ø rund 870 Mio). Wer beides zusammen mittelt,
 bekommt eine Zahl, die für keines von beidem stimmt. Betroffen sind 396
 der 2569 Namen im Verlauf.
+
+## Zu den Bildern
+
+Items ohne eigenes Bild bekommen das Bild ihres Typs. Probiert wird der
+Reihe nach: Wiki (schönere Ansichten, aber die Seitennamen weichen
+mitunter ab), dann die Spieltextur nach exakter Material-ID.
+
+Gemessen mit `--abrufen`: Die Spieltexturen allein decken **99,0 %** der
+40.522 Items im Verlauf ab. Was übrig bleibt, sind eigene Server-Items
+(`NETHERITE_SPEAR`, `DIAMOND_SPEAR`), sehr neue Inhalte (`DRIED_GHAST`)
+und mehrflächige Blöcke.
+
+Ob ein Bild am Ende wirklich erscheint, lässt sich nur auf der laufenden
+Seite sehen — in dieser Umgebung erreicht der Browser keine externen
+Adressen.

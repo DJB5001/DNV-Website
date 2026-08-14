@@ -10,7 +10,10 @@ const schnipsel = (von, bis) => {
   return quelle.slice(a, b);
 };
 
+// materialLesbar steht im Bild-Abschnitt weiter oben, wird von
+// variantenLabel aber gebraucht.
 const block =
+  schnipsel('// NETHERITE_PICKAXE wird zu', '// Rückfallkette für Item-Bilder') +
   schnipsel('function loreAlsText(item)', 'function getMonthlyAveragePerUnit') +
   schnipsel('function buildItemIndex()', 'function renderItemSearch()');
 

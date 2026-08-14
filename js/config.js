@@ -1,8 +1,39 @@
-// Basis-Adresse für Bilder von Item-Typen.
-// Sie wird genutzt, wenn ein Item kein eigenes Bild hat: Aus dem Material
-// (z. B. NETHERITE_PICKAXE) wird Netherite_Pickaxe.png. Passt die Quelle
-// nicht, genügt es, diese eine Zeile zu ändern.
+// ── Bilder für Item-Typen ────────────────────────────────────────────
+// Hat ein Item kein eigenes Bild, wird der Reihe nach probiert:
+//
+//   1. Wiki       — schöne Ansichten, auch von Blöcken. Deckt das meiste
+//                   ab, aber die Seitennamen weichen manchmal vom
+//                   Materialnamen ab, und dann greift nichts.
+//   2. Sonderfall — Materialien ohne eigene Textur (siehe unten).
+//   3. item/      — Spieltextur nach exakter Material-ID und deshalb sehr
+//                   zuverlässig: 93 % aller Items im Verlauf sind darüber
+//                   abgedeckt. Dafür flach statt gerendert.
+//   4. block/     — dasselbe für Blöcke.
+//
+// Beide Adressen lassen sich hier austauschen, ohne script.js anzufassen.
 const materialBildBasis = 'https://mcdf.wiki.gg/images/';
+const materialTexturBasis =
+  'https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21.4/assets/minecraft/textures/';
+
+// Materialien, die keine Textur unter ihrem eigenen Namen haben.
+// Jeder Eintrag wurde gegen die Quelle geprüft.
+const materialSonderfaelle = {
+  // Spawn-Eier teilen sich eine Textur, eingefärbt wird erst im Spiel.
+  SPAWN_EGG: 'item/spawn_egg',
+  SHIELD: 'entity/shield_base',
+  TNT: 'block/tnt_side',
+  CROSSBOW: 'item/crossbow_standby',
+  ENCHANTED_GOLDEN_APPLE: 'item/golden_apple',
+  SUNFLOWER: 'block/sunflower_front',
+  // Der Kompass ist animiert und liegt als Einzelbilder vor.
+  COMPASS: 'item/compass_00',
+  RECOVERY_COMPASS: 'item/recovery_compass_00',
+  CLOCK: 'item/clock_00',
+  ANCIENT_DEBRIS: 'block/ancient_debris_side',
+  DRAGON_EGG: 'block/dragon_egg',
+  // Köpfe haben kein flaches Bild — ersatzweise das Standard-Skin.
+  PLAYER_HEAD: 'entity/player/wide/steve'
+};
 
 const customAuctionIcons = {
   "Engelschuhe v3": "https://i.postimg.cc/jSnGfbHW/engelsschuhe-v2.png",

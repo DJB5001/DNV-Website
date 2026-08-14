@@ -2058,50 +2058,89 @@ async function loadAuctions() {
   document.querySelector('#tab-history .loading-spinner')?.remove();
 }
 
-// Bild des Item-Typs. Items ohne eigenes Bild zeigten bisher das rote
-// Verbotsschild — obwohl der Typ (Netherit-Spitzhacke, Papier, Totem)
-// bekannt ist und ein brauchbares Bild hat.
+// Kandidaten für das Bild eines Item-Typs, in der Reihenfolge, in der
+// sie probiert werden. Items ohne eigenes Bild zeigten früher das rote
+// Verbotsschild — obwohl der Typ bekannt ist.
 //
-// Die Adresse wird aus dem Materialnamen gebildet; die Basis steht in
-// config.js und lässt sich dort austauschen, ohne diese Datei
-// anzufassen. Trifft der Name daneben, greift über onerror weiterhin
-// das Verbotsschild — schlechter als heute wird es also nie.
-function materialBildUrl(material) {
-  if (!material) return null;
-  const basis =
+// Warum mehrere Quellen: Das Wiki liefert die schöneren Ansichten, aber
+// seine Seitennamen weichen mitunter vom Materialnamen ab (bei
+// GOLDEN_HORSE_ARMOR und WOODEN_PICKAXE etwa griff nichts). Die
+// Spieltexturen gehen nach der exakten Material-ID und decken damit
+// 93 % aller Items im Verlauf ab, sind dafür aber flach.
+function materialBildKandidaten(material) {
+  if (!material) return [];
+
+  const id = String(material).toLowerCase();
+  const wikiBasis =
     typeof materialBildBasis === 'string' && materialBildBasis
       ? materialBildBasis
       : 'https://mcdf.wiki.gg/images/';
+  const texturBasis = typeof materialTexturBasis === 'string' ? materialTexturBasis : '';
+  const sonderfaelle = typeof materialSonderfaelle === 'object' && materialSonderfaelle
+    ? materialSonderfaelle
+    : {};
 
-  const name = String(material)
-    .toLowerCase()
+  const kandidaten = [];
+
+  // 1. Wiki — Seitenname mit großen Anfangsbuchstaben, kleine Wörter
+  //    bleiben klein: TOTEM_OF_UNDYING wird zu Totem_of_Undying.png
+  const wikiName = id
     .split('_')
     .filter(Boolean)
     .map((wort, i) =>
       i > 0 && KLEINE_WOERTER.has(wort) ? wort : wort.charAt(0).toUpperCase() + wort.slice(1)
     )
     .join('_');
+  if (wikiName) kandidaten.push(`${wikiBasis}${wikiName}.png`);
 
-  return name ? `${basis}${name}.png` : null;
+  if (texturBasis) {
+    // 2. Sonderfälle ohne eigene Textur. Spawn-Eier teilen sich eine.
+    const sonder = id.endsWith('_spawn_egg')
+      ? sonderfaelle.SPAWN_EGG
+      : sonderfaelle[String(material).toUpperCase()];
+    if (sonder) kandidaten.push(`${texturBasis}${sonder}.png`);
+
+    // 3. und 4. Spieltextur, erst als Gegenstand, dann als Block
+    kandidaten.push(`${texturBasis}item/${id}.png`);
+    kandidaten.push(`${texturBasis}block/${id}.png`);
+  }
+
+  return kandidaten;
+}
+
+// Erste Adresse der Kette — für alles, was nur eine einzelne braucht.
+function materialBildUrl(material) {
+  return materialBildKandidaten(material)[0] || null;
+}
+
+// NETHERITE_PICKAXE wird zu "Netherite Pickaxe". Dient als Notnagel
+// überall dort, wo ein Anzeigename fehlt.
+function materialLesbar(material) {
+  if (!material) return '';
+  return String(material)
+    .toLowerCase()
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, c => c.toUpperCase());
 }
 
 // Rückfallkette für Item-Bilder, aufgerufen aus onerror.
 //
-// Der Grund: Viele Einträge in config.js zeigen auf hochgeladene Bilder,
-// die es nicht mehr gibt (etwa "Magnet" oder "Wasserwaage"). Bisher fiel
-// so ein toter Link direkt auf das Verbotsschild zurück, obwohl der
-// Item-Typ bekannt ist. Jetzt wird erst der Typ versucht:
-//
-//   eigenes Bild  →  Bild des Typs  →  Verbotsschild
-//
-// Die Marke am Element verhindert, dass eine Stufe zweimal probiert wird
-// und das Ereignis sich im Kreis dreht.
+// Viele Einträge in config.js zeigen auf hochgeladene Bilder, die es
+// nicht mehr gibt (etwa "Magnet" oder "Wasserwaage"). Statt sofort auf
+// das Verbotsschild zu fallen, wird die Kette Stufe für Stufe
+// abgearbeitet; der Zähler am Element merkt sich, wo sie steht.
 function bildRueckfall(img) {
-  const typBild = materialBildUrl(img.dataset.material);
+  let kette = [];
+  try {
+    kette = JSON.parse(img.dataset.bildkette || '[]');
+  } catch {
+    kette = [];
+  }
 
-  if (typBild && !img.dataset.typVersucht) {
-    img.dataset.typVersucht = '1';
-    img.src = typBild;
+  const naechste = Number(img.dataset.bildstufe || 0);
+  if (naechste < kette.length) {
+    img.dataset.bildstufe = String(naechste + 1);
+    img.src = kette[naechste];
     return;
   }
 
@@ -2562,16 +2601,6 @@ function variantenLabel(item) {
 
   if (!teile.length && item?.material) teile.push(materialLesbar(item.material));
   return teile.join(' · ');
-}
-
-// NETHERITE_PICKAXE wird zu "Netherite Pickaxe". Dient als Notnagel
-// überall dort, wo ein Anzeigename fehlt.
-function materialLesbar(material) {
-  if (!material) return '';
-  return String(material)
-    .toLowerCase()
-    .replace(/_/g, ' ')
-    .replace(/\b\w/g, c => c.toUpperCase());
 }
 
 function getMonthlyAveragePerUnit(auction) {
@@ -3117,7 +3146,7 @@ function createAuctionCard(auction, historyType = null, personalData = null) {
     ${badgeHtml}
     ${trendHtml}
     ${discountHtml}
-    <img src="${iconUrl}" alt="${displayName}" loading="lazy" data-material="${auction.item.material ?? ''}" onerror="bildRueckfall(this)">
+    <img src="${iconUrl}" alt="${displayName}" loading="lazy" data-bildkette='${JSON.stringify(materialBildKandidaten(auction.item.material))}' onerror="bildRueckfall(this)">
     <h3 class="auction-name">${displayName}</h3>
     ${variantenLabel(auction.item) ? `<div class="item-variante">${variantenLabel(auction.item)}</div>` : ''}
     <div class="price-info auction-startBid"><span class="buy">Start:</span> ${formatCardPrice(auction.startBid)}</div>
@@ -3300,7 +3329,7 @@ function renderItemSearch() {
     const iconUrl = getAuctionItemIcon(entry.item);
     const avg = getMonthlyAveragePerUnit({ item: entry.item });
     card.innerHTML = `
-      <img src="${iconUrl}" alt="${entry.name}" loading="lazy" data-material="${entry.item.material ?? ''}" onerror="bildRueckfall(this)">
+      <img src="${iconUrl}" alt="${entry.name}" loading="lazy" data-bildkette='${JSON.stringify(materialBildKandidaten(entry.item.material))}' onerror="bildRueckfall(this)">
       <h3 class="auction-name">${entry.name}</h3>
       ${entry.label ? `<div class="item-variante">${entry.label}</div>` : ''}
       <div class="price-info"><span style="color:var(--text-secondary)">Ø 30 Tage:</span> ${avg !== null ? formatCardPrice(Math.round(avg)) : 'Keine Daten'}</div>
@@ -3354,7 +3383,7 @@ async function openItemDetail(schluessel) {
     ${label ? `<p class="item-variante item-variante--gross">${label}</p>` : ''}
     <div class="auction-info-box">
       <div class="info-item" style="text-align:center;">
-        <img src="${iconUrl}" alt="${itemName}" style="width:64px;height:64px;image-rendering:pixelated;" data-material="${repItem.material ?? ''}" onerror="bildRueckfall(this)">
+        <img src="${iconUrl}" alt="${itemName}" style="width:64px;height:64px;image-rendering:pixelated;" data-bildkette='${JSON.stringify(materialBildKandidaten(repItem.material))}' onerror="bildRueckfall(this)">
       </div>
       <div class="info-item"><strong>Durchschnitt</strong>${avgAll !== null ? `<span class="sell">${avgAll.toLocaleString('de-DE')}</span>` : '<span>Keine Daten</span>'}</div>
       <div class="info-item"><strong>Durchschnitt (30 Tage)</strong>${avgMonth !== null ? `<span class="sell">${Math.round(avgMonth).toLocaleString('de-DE')}</span>` : '<span>Keine Daten</span>'}</div>
