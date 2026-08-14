@@ -33,12 +33,26 @@
 
     <!-- Hintergrund: Sternenfeld, Raster, Lichtkreise. Fest hinter allem. -->
     <div class="himmel" aria-hidden="true">
+      <!-- Der durchgehende Hintergrund. Vier Motive übereinander,
+           js/nova.js blendet beim Scrollen weich um. Steht bewusst
+           als erstes Kind: Sterne, Würfel und Lichtkreise liegen
+           davor. -->
+      <div class="mc-grund">
+        <div class="mc-grund__bild mc-motiv--hoehle an" data-motiv="hoehle"></div>
+        <div class="mc-grund__bild mc-motiv--ritt" data-motiv="ritt"></div>
+        <div class="mc-grund__bild mc-motiv--weite" data-motiv="weite"></div>
+        <div class="mc-grund__bild mc-motiv--bluete" data-motiv="bluete"></div>
+      </div>
       <canvas id="sternenfeld"></canvas>
       <canvas id="blockfeld"></canvas>
       <div class="kern kern--1"></div>
       <div class="kern kern--2"></div>
     </div>
     <div class="raster-schicht" aria-hidden="true"></div>
+
+    <!-- Das grosse Motiv über dem Kopfbereich. Scrollt mit der Seite
+         weg und löst sich nach unten hin auf. -->
+    <div class="mc-kopfband mc-motiv--hoehle" aria-hidden="true"></div>
 
     <nav class="nav">
       <a class="nav__marke" href="index.html">
@@ -58,10 +72,7 @@
     </nav>
 
     <!-- ══ Kopfbereich ══ -->
-    <header class="hero" id="inhalt">
-      <!-- Minecraft-Motiv hinter dem Kopfbereich, weich ausgeblendet.
-           Siehe css/hintergrund.css. -->
-      <div class="mc-hg mc-hg--hoehle mc-hg--stark" aria-hidden="true"></div>
+    <header class="hero" id="inhalt" data-mc-motiv="hoehle">
       <div class="innen">
         <span class="plakette auf">
           <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -112,12 +123,8 @@
     </header>
 
     <!-- ══ Mitglieder ══ -->
-    <section class="band" id="mitglieder">
-      <!-- Reihenfolge beachten: .band__schein steht VOR der Bildebene.
-           Die Regel .mc-hg ~ * setzt nachfolgende Geschwister auf
-           position: relative — der Lichtkreis muss absolut bleiben. -->
+    <section class="band" id="mitglieder" data-mc-motiv="ritt">
       <div class="band__schein" aria-hidden="true"></div>
-      <div class="mc-hg mc-hg--ritt" aria-hidden="true"></div>
       <div class="innen">
         <div class="kopf auf">
           <span class="plakette">

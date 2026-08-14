@@ -1,124 +1,182 @@
 /* ═══════════════════════════════════════════════════════════════
    DarkNova · Minecraft-Hintergründe
    ---------------------------------------------------------------
-   Eine einzige Bausteinklasse für beide Stilwelten: .mc-hg legt ein
-   Bild hinter einen Abschnitt, ohne dessen Inhalt anzufassen.
+   Zwei Ebenen, beide ganzflächig:
+
+   .mc-kopfband   Das grosse Motiv oben. Es gehört zur Seite, nicht
+                  zum Fenster — beim Scrollen wandert es mit weg und
+                  löst sich nach unten hin auf.
+
+   .mc-grund      Der durchgehende Hintergrund dahinter. Er steht fest
+                  und trägt vier Motive übereinander, von denen immer
+                  genau eines sichtbar ist. Beim Scrollen (Clan-Seite)
+                  bzw. beim Reiterwechsel (App) blendet js/nova.js
+                  weich um.
 
    Die Bilder liegen in images/hintergrund/ und sind schon beim
-   Erzeugen entsättigt, ins Violett gezogen und abgedunkelt worden.
-   Dadurch muss der Browser nichts umfärben und die Bilder passen zur
-   Seite, statt gegen sie zu arbeiten.
-
-   Verwendung:
-     <section class="…">                 ← braucht position: relative
-       <div class="mc-hg mc-hg--hoehle" aria-hidden="true"></div>
-       … Inhalt …
-     </section>
-
-   Der Inhalt muss über der Ebene liegen. Dafür sorgt entweder eine
-   bestehende Regel der Seite oder die Geschwister-Regel weiter unten.
+   Erzeugen entsättigt, ins jeweilige Akzentlicht gezogen und
+   abgedunkelt worden. Dadurch muss der Browser nichts umfärben und
+   die Bilder passen zur Seite, statt gegen sie zu arbeiten.
+   Siehe images/hintergrund/HERKUNFT.md.
    ═══════════════════════════════════════════════════════════════ */
 
-.mc-hg {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  overflow: hidden;
-  border-radius: inherit;
+/* ── Die vier Motive ─────────────────────────────────────────────
+   Nur die Bildadresse. Welche Ebene sie benutzt, ist hier egal. */
+
+.mc-motiv--hoehle {
+  --mc-bild: url('../images/hintergrund/hoehle.webp');
 }
 
-/* Das Bild selbst. Es wird nicht am Rand abgeschnitten, sondern per
-   Maske weich ausgeblendet — so bleibt sichtbar, was dahinter liegt
-   (Sternenfeld, Blockfeld, Lichtkreise), statt davon verdeckt zu
-   werden. */
-.mc-hg::before {
-  content: '';
+.mc-motiv--ritt {
+  --mc-bild: url('../images/hintergrund/ritt.webp');
+}
+
+.mc-motiv--weite {
+  --mc-bild: url('../images/hintergrund/weite.webp');
+}
+
+.mc-motiv--bluete {
+  --mc-bild: url('../images/hintergrund/bluete.webp');
+}
+
+/* ── Durchgehender Hintergrund ───────────────────────────────────
+   Sitzt als erstes Kind in .himmel bzw. .nova-himmel. Die beiden
+   sind bereits fest positioniert und liegen hinter allem — dadurch
+   braucht diese Ebene keine eigene Stapelangabe und kann von den
+   Sternen, Würfeln und Lichtkreisen überlagert werden. */
+
+.mc-grund {
   position: absolute;
-  /* Etwas größer als der Container, damit die weiche Maske nicht an
-     einer sichtbaren Kante endet. */
-  inset: -1px;
+  inset: 0;
+  pointer-events: none;
+}
+
+.mc-grund__bild {
+  position: absolute;
+  inset: 0;
   background-image: var(--mc-bild);
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-  opacity: var(--mc-staerke, 0.17);
-  mask-image: radial-gradient(
-    ellipse 82% 78% at 50% 48%,
-    #000 0%,
-    rgba(0, 0, 0, 0.5) 52%,
-    transparent 82%
-  );
-  -webkit-mask-image: radial-gradient(
-    ellipse 82% 78% at 50% 48%,
-    #000 0%,
-    rgba(0, 0, 0, 0.5) 52%,
-    transparent 82%
-  );
+  opacity: 0;
+  transition: opacity 1.1s ease;
 }
 
-/* Die vier Motive. Alle vier stammen aus denselben offiziellen
-   Minecraft-Wallpapern, unterscheiden sich aber im Farbstich, damit
-   die Abschnitte nicht gleich aussehen. */
-.mc-hg--hoehle {
-  --mc-bild: url('../images/hintergrund/hoehle.webp');
+.mc-grund__bild.an {
+  opacity: var(--mc-grund-staerke, 0.16);
 }
 
-.mc-hg--ritt {
-  --mc-bild: url('../images/hintergrund/ritt.webp');
+/* ── Wie kräftig, hängt vom Reiter ab ────────────────────────────
+   Beide Stärken stehen am <body>, nicht an den Ebenen selbst: nur so
+   kann eine spätere Regel sie überschreiben, ohne dass jede Ebene
+   eine eigene Ausnahme braucht.
+
+   Auf den Clan-Reitern darf das Bild wirken — dort ist nichts zu
+   lesen, was Ruhe bräuchte. Über Preistabellen dagegen wird es
+   deutlich zurückgenommen. */
+
+body:has(.mc-kopfband--app) {
+  --mc-band-staerke: 0.44;
+  --mc-grund-staerke: 0.16;
 }
 
-.mc-hg--weite {
-  --mc-bild: url('../images/hintergrund/weite.webp');
+body:has(#market.active),
+body:has(#auctions.active),
+body:has(#history.active),
+body:has(#deals.active),
+body:has(#shards.active),
+body:has(#items.active),
+body:has(#profile.active) {
+  --mc-band-staerke: 0.18;
+  --mc-grund-staerke: 0.07;
 }
 
-.mc-hg--bluete {
-  --mc-bild: url('../images/hintergrund/bluete.webp');
-}
+/* ── Das grosse Motiv oben ───────────────────────────────────────
+   Steht direkt im <body> und ist absolut positioniert: dadurch
+   scrollt es mit der Seite, statt wie der Grund stehen zu bleiben.
+   Der negative Stapelplatz hält es hinter allem Inhalt. */
 
-/* Ein kräftigerer Auftritt für den Kopfbereich, wo noch kein Text
-   um Aufmerksamkeit kämpft. */
-.mc-hg--stark {
-  --mc-staerke: 0.26;
-}
-
-.mc-hg--leise {
-  --mc-staerke: 0.11;
-}
-
-/* ── Inhalt nach vorne ──────────────────────────────────────────
-   Alles, was NACH der Bildebene kommt, bekommt einen eigenen
-   Stapelplatz. Nur direkte Geschwister — verschachtelte Elemente
-   behalten ihre eigene Positionierung. */
-.mc-hg ~ * {
-  position: relative;
-  z-index: 1;
-}
-
-/* ── Abschnitte, die eine Bildebene tragen ──────────────────── */
-
-.dnv-band,
-.clan-tab {
-  position: relative;
-}
-
-/* Auf der Clan-Seite bleibt der Kopfbereich flächig; in der App wird
-   aus dem Kopf des Home-Reiters eine eigene Tafel, damit das Bild
-   einen Rahmen hat statt frei auszulaufen. */
-.section > .clan-tab {
-  max-width: 60rem;
-  padding: clamp(2.2rem, 5vw, 3.4rem) clamp(1.2rem, 4vw, 2.6rem);
-  border: 1px solid var(--border, rgba(255, 255, 255, 0.08));
-  border-radius: 22px;
+.mc-kopfband {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: clamp(28rem, 96vh, 58rem);
+  z-index: -1;
+  pointer-events: none;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.018);
 }
 
-/* Handy: die Maske darf schmaler ausfallen, sonst steht das Motiv
-   nur noch als Streifen in der Mitte. */
+.mc-kopfband::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: var(--mc-bild);
+  background-size: cover;
+  background-position: center top;
+  background-repeat: no-repeat;
+  opacity: var(--mc-band-staerke, 0.55);
+  /* Nach unten hin löst sich das Bild auf, statt an einer Kante zu
+     enden. Die Seite geht damit ohne Bruch in den Grund über. */
+  mask-image: linear-gradient(
+    180deg,
+    #000 0%,
+    rgba(0, 0, 0, 0.9) 42%,
+    rgba(0, 0, 0, 0.45) 72%,
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    180deg,
+    #000 0%,
+    rgba(0, 0, 0, 0.9) 42%,
+    rgba(0, 0, 0, 0.45) 72%,
+    transparent 100%
+  );
+}
+
+/* Ein dunkler Schleier über dem oberen Rand: darüber stehen die
+   Navigation und die Reiterleiste, und die müssen lesbar bleiben,
+   egal welches Motiv gerade darunter liegt. */
+.mc-kopfband::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(6, 6, 11, 0.72) 0%, transparent 34%);
+}
+
+/* In der App beginnt der Inhalt weiter oben, deshalb fällt das Band
+   dort niedriger aus. Nur die Höhe — die Stärke kommt vom <body>,
+   sonst könnte der Reiter sie nicht mehr ändern. */
+.mc-kopfband--app {
+  height: clamp(24rem, 72vh, 44rem);
+}
+
+/* ── Handy ───────────────────────────────────────────────────────
+   Ein Hochkant-Fenster schneidet aus dem breiten Bild nur einen
+   schmalen Streifen heraus. Weniger Höhe und ein etwas kräftigeres
+   Bild halten das Motiv trotzdem erkennbar. */
+
 @media (max-width: 640px) {
-  .mc-hg::before {
-    mask-image: radial-gradient(ellipse 120% 70% at 50% 45%, #000 0%, transparent 85%);
-    -webkit-mask-image: radial-gradient(ellipse 120% 70% at 50% 45%, #000 0%, transparent 85%);
+  .mc-kopfband {
+    height: clamp(22rem, 62vh, 34rem);
+    --mc-band-staerke: 0.5;
+  }
+
+  .mc-kopfband--app {
+    height: clamp(20rem, 56vh, 32rem);
+  }
+
+  .mc-grund__bild.an {
+    --mc-grund-staerke: 0.13;
+  }
+}
+
+/* ── Weniger Bewegung ────────────────────────────────────────────
+   Wer Animationen abbestellt hat, bekommt das Umblenden hart statt
+   weich — die Bilder selbst bleiben. */
+
+@media (prefers-reduced-motion: reduce) {
+  .mc-grund__bild {
+    transition: none;
   }
 }

@@ -36,7 +36,7 @@ DUNKEL = (6, 6, 11)  # der Seitengrund
 AUFTRAEGE = [
     ('hoehle', (169, 126, 240), 0.30, 0.62),
     ('ritt',   (140, 150, 255), 0.26, 0.52),
-    ('weite',  ( 91, 225, 255), 0.22, 0.48),
+    ('weite',  ( 91, 225, 255), 0.22, 0.38),
     ('bluete', (232,  92, 214), 0.24, 0.50),
 ]
 
@@ -46,5 +46,9 @@ fertig = ImageEnhance.Brightness(Image.blend(duo, im, farbanteil)).enhance(helli
 fertig.save(ziel, 'WEBP', quality=82, method=6)
 ```
 
+`weite` ist das hellste der vier Motive und steht in der App hinter dem
+Markt-Reiter — deshalb ist es stärker abgedunkelt als die anderen.
+
 1600×900 als WebP ergibt rund 60–75 KB je Datei. Grösser lohnt nicht: die
-Bilder liegen ohnehin bei 17–26 % Deckkraft hinter einer weichen Maske.
+Bilder laufen mit 7–16 % (durchgehender Grund) bzw. 18–55 % (Kopfband)
+Deckkraft und liegen zusätzlich hinter einer weichen Maske.
