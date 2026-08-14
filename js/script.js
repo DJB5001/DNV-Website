@@ -32,6 +32,13 @@ try {
   bildGedaechtnis = {};
 }
 
+// Zeitfenster, in dem zwei Aufnahmen als dieselbe, nur verlängerte
+// Auktion gelten. Gemessen an den echten Daten: 96 % aller Verlängerungen
+// liegen unter 5,5 Minuten, danach bricht die Verteilung ab. Zehn Minuten
+// liegen sicher darüber und deutlich unter dem, was zwei getrennte
+// Auktionen desselben Verkäufers trennt.
+const VERLAENGERUNG_FENSTER_MS = 10 * 60 * 1000;
+
 // Sortierarten im Spieler-Reiter. Die Schlüssel stehen so im <select>.
 const SPIELER_SORTIERUNG = {
   SUM: { titel: 'Höchste Summe', wert: (k) => k.summe },
@@ -2106,7 +2113,13 @@ async function loadAuctions() {
     const res = await fetch(`${HISTORY_REPO_BASE}/auction-history.json?t=${Date.now()}`);
     if (!res.ok) throw new Error("HTTP " + res.status);
     const history = await res.json();
-    App.auctionHistory = history || {};
+    // Vor allem anderen entdoppeln — Durchschnitte, Verkaufszahlen,
+    // Spielerbilanzen und Shard-Kurse greifen alle auf dieselben Daten zu.
+    const { verlauf, entfernt } = verlaufEntdoppeln(history || {});
+    App.auctionHistory = verlauf;
+    if (entfernt) {
+      console.info(`Verlauf: ${entfernt} Zwischenstände verlängerter Auktionen zusammengefasst.`);
+    }
   } catch (error) {
     console.error("Fehler beim Laden des Auktions-Verlaufs (Verlauf wird leer angezeigt, Auktionen bleiben sichtbar):", error);
     App.auctionHistory = {};
@@ -2737,6 +2750,89 @@ function itemVariante(item) {
 
 function gleicheVariante(a, b) {
   return itemVariante(a) === itemVariante(b);
+}
+
+// ── Verlängerte Auktionen zusammenfassen ────────────────────────
+//
+// Wird auf OPSUCHT kurz vor Schluss noch geboten, verlängert sich die
+// Auktion. Der Verlauf hält dann jede dieser Verlängerungen als eigenen
+// Eintrag fest — dieselbe Auktion steht drei-, vier-, bis zu fünfzehnmal
+// darin, jedes Mal mit einem höheren Preis. Gezählt gehört nur die
+// letzte Aufnahme; alles davor ist ein Zwischenstand, kein Verkauf.
+//
+// Betroffen sind 6.605 der 40.966 Einträge, also gut 16 %. Ohne das
+// stimmt kein Durchschnitt, keine Verkaufszahl und keine Bilanz eines
+// Spielers.
+
+function verkaufsZeit(verkauf) {
+  const t = new Date(verkauf?.soldAt || verkauf?.endTime || 0).getTime();
+  return isNaN(t) ? 0 : t;
+}
+
+// Ist "jetzt" eine spätere Aufnahme derselben Auktion wie "vorher"?
+//
+// Der Ausschlag gibt nicht die Zeit, sondern die Gebotsliste: bei einer
+// Verlängerung bleibt jeder bisherige Bieter drin und bietet nie weniger
+// als zuvor. Zwei getrennte Auktionen müssten exakt dieselbe Bieterschaft
+// mit durchweg höheren Beträgen haben — das passiert nicht zufällig.
+function istFortsetzung(vorher, jetzt) {
+  if (verkaufsZeit(jetzt) - verkaufsZeit(vorher) > VERLAENGERUNG_FENSTER_MS) return false;
+
+  const alt = vorher?.bids || {};
+  const neu = jetzt?.bids || {};
+  const bieter = Object.keys(alt);
+
+  // Ohne Gebote kann nichts verlängert worden sein.
+  if (!bieter.length || !Object.keys(neu).length) return false;
+
+  for (const uuid of bieter) {
+    if (!(uuid in neu)) return false;
+    if (neu[uuid] < alt[uuid]) return false;
+  }
+  return true;
+}
+
+// Gibt einen neuen Verlauf zurück, in dem jede Auktion genau einmal
+// steht — mit ihrer letzten Aufnahme, also dem tatsächlichen Endpreis.
+function verlaufEntdoppeln(verlauf) {
+  const sauber = {};
+  let entfernt = 0;
+
+  for (const name in verlauf) {
+    const liste = verlauf[name];
+    if (!Array.isArray(liste)) {
+      sauber[name] = liste;
+      continue;
+    }
+
+    // Nach Verkäufer und Variante gruppieren: nur innerhalb einer Gruppe
+    // kann überhaupt dieselbe Auktion mehrfach auftauchen.
+    const gruppen = new Map();
+    for (const verkauf of liste) {
+      const schluessel = `${verkauf?.seller ?? ''}\u0000${itemVariante(verkauf?.item)}`;
+      if (!gruppen.has(schluessel)) gruppen.set(schluessel, []);
+      gruppen.get(schluessel).push(verkauf);
+    }
+
+    const behalten = [];
+    for (const gruppe of gruppen.values()) {
+      gruppe.sort((a, b) => verkaufsZeit(a) - verkaufsZeit(b));
+      let letzte = gruppe[0];
+      for (let i = 1; i < gruppe.length; i++) {
+        // Verglichen wird mit der jeweils letzten Aufnahme der Kette,
+        // nicht mit der ersten: eine Auktion kann sich mehrfach
+        // hintereinander verlängern, über die Fensterbreite hinaus.
+        if (istFortsetzung(letzte, gruppe[i])) entfernt++;
+        else behalten.push(letzte);
+        letzte = gruppe[i];
+      }
+      behalten.push(letzte);
+    }
+
+    sauber[name] = behalten;
+  }
+
+  return { verlauf: sauber, entfernt };
 }
 
 // Alle Verkäufe aus dem Verlauf, die wirklich dieselbe Variante sind.

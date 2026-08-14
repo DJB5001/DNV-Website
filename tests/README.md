@@ -33,6 +33,20 @@ npx http-server . -p 8123      # abweichender Port über PORT=...
 | `reiter-test.mjs` | Clan und Mitglieder laufen als Reiter, die Leiste bleibt stehen | Browser |
 | `hintergrund-test.mjs` | Jede Bildebene hat ein Motiv, die Datei wird ausgeliefert, der Inhalt liegt darüber | Browser |
 | `spieler-test.mjs` | Bestenliste, alle sieben Sortierarten, Profil und Rückweg | Browser |
+| `verlaengerung-test.mjs` | Verlängerte Auktionen zählen nur einmal — gegen die echten Daten | Verlauf |
+
+## Zwei Auktionen, die keine sind
+
+Neben den Varianten gibt es einen zweiten Grund, warum Durchschnitte
+danebenlagen: Wird kurz vor Schluss geboten, verlängert sich die Auktion,
+und der Verlauf hält jede Verlängerung als eigenen Eintrag fest. Dieselbe
+Auktion steht dann bis zu fünfzehnmal darin, jedes Mal teurer.
+
+Erkannt wird das an der Gebotsliste, nicht an der Zeit: bei einer
+Verlängerung bleibt jeder bisherige Bieter drin und bietet nie weniger als
+zuvor. Das Zeitfenster von zehn Minuten ist an den echten Daten gemessen —
+96 % aller Verlängerungen liegen unter 5,5 Minuten, danach bricht die
+Verteilung ab. Betroffen waren 6.468 von 40.966 Einträgen, also 16 %.
 
 ## Warum diese Tests
 

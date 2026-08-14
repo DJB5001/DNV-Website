@@ -57,7 +57,17 @@ const werkzeugVerkaeufe = verkaeufeZurVariante(werkzeug.item);
 console.log(`Sammelkarte:  n=${karteVerkaeufe.length}  Ø ${fmt(mittel(karteVerkaeufe))}  [${variantenLabel(karte.item)}]`);
 console.log(`Werkzeug:     n=${werkzeugVerkaeufe.length}  Ø ${fmt(mittel(werkzeugVerkaeufe))}  [${variantenLabel(werkzeug.item)}]`);
 
-pruefe(karteVerkaeufe.length === 33, 'Sammelkarte hat 33 Verkäufe');
+// Bewusst keine feste Zahl: der Verlauf wächst täglich, und ein Test,
+// der die Datenmenge festschreibt, schlägt irgendwann ohne Fehler im Code
+// fehl. Geprüft wird stattdessen, dass die Gruppe VOLLSTÄNDIG ist — jeder
+// Verkauf mit dieser Variante muss drin sein, keiner doppelt.
+const kartenErwartet = alleBohrer.filter(
+  s => s.item && s.item.material === 'PAPER' && itemVariante(s.item) === itemVariante(karte.item)
+);
+pruefe(
+  karteVerkaeufe.length === kartenErwartet.length && karteVerkaeufe.length > 20,
+  `Sammelkarte: alle ${kartenErwartet.length} Verkäufe dieser Variante sind erfasst`
+);
 pruefe(karteVerkaeufe.every(s => s.item.material === 'PAPER'), 'kein Werkzeug in der Kartengruppe');
 pruefe(werkzeugVerkaeufe.every(s => s.item.material === 'NETHERITE_PICKAXE'), 'keine Karte in der Werkzeuggruppe');
 pruefe(mittel(karteVerkaeufe) < 2_000_000, 'Kartendurchschnitt liegt im Kartenbereich');
