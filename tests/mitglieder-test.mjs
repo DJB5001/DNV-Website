@@ -94,12 +94,171 @@ try {
   pruefe('Farbe Team greift', vomBot.klassen.some((k) => k.includes('mitglied__rolle--team')));
   pruefe('Farbe Builder greift', vomBot.klassen.some((k) => k.includes('mitglied__rolle--builder')));
 
-  // Bedrock-Kopf wird ohne den Punkt geholt, der Name behält ihn
-  const kopfQuelle = await seite.evaluate(
-    () => [...document.querySelectorAll('.mitglied')].at(-1).querySelector('img')?.getAttribute('src')
-  );
+  // Dieser Eintrag hat keine UUID, also gibt es auch keinen Skin zu holen —
+  // dann muss der Anfangsbuchstabe stehen bleiben statt eines fremden Kopfs.
+  const letzteKarte = await seite.evaluate(() => {
+    const k = [...document.querySelectorAll('.mitglied')].at(-1);
+    return {
+      hatImg: Boolean(k.querySelector('img')),
+      hatSkin: Boolean(k.querySelector('.mitglied__skinkopf')),
+      initial: k.querySelector('.mitglied__initial')?.textContent,
+    };
+  });
   pruefe('Bedrock-Name behält den Punkt', vomBot.namen.at(-1) === '.BedrockHans');
-  pruefe('Kopfbild ohne Punkt abgefragt', /BedrockHans/.test(kopfQuelle) && !/\.BedrockHans/.test(kopfQuelle), kopfQuelle);
+  pruefe('Bedrock ohne UUID holt kein Java-Kopfbild', letzteKarte.hatImg === false);
+  pruefe('Stattdessen der Anfangsbuchstabe', letzteKarte.initial === 'B', letzteKarte.initial);
+
+  // ── Bedrock-Köpfe ───────────────────────────────────────────
+  // Bedrock-Spieler haben kein Java-Konto. mc-heads liefert für ihren Namen
+  // trotzdem ein Bild — den Standard-Steve — also darf er gar nicht erst
+  // gefragt werden. Der Skin kommt stattdessen über die Xbox-ID von Geyser.
+  const javaAbfragen = [];
+  await seite.route('**/mc-heads.net/**', (route) => {
+    javaAbfragen.push(route.request().url());
+    route.abort();
+  });
+  await seite.route('**/minotar.net/**', (route) => {
+    javaAbfragen.push(route.request().url());
+    route.abort();
+  });
+
+  // So antwortet Geyser wirklich (gekürzt, echte Antwort für einen
+  // OPSucht-Spieler). Wichtig: Die Adresse im value-Block beginnt mit http —
+  // auf einer https-Seite verwirft der Browser so ein Bild.
+  const echteAntwort = {
+    hash: '1211fb447057ebc5e96154301a55fe881a5ed61a2617e51325b9daf5934961e7',
+    is_steve: true,
+    last_update: 1786556594955,
+    texture_id: '7ca2e98e2a5af3113feedb35c1d521ef633142142cad935b8fb4f68b1f23d5c8',
+    value: Buffer.from(
+      JSON.stringify({
+        textures: {
+          SKIN: { url: 'http://textures.minecraft.net/texture/7ca2e98e2a5af3113feedb35c1d521ef633142142cad935b8fb4f68b1f23d5c8' },
+        },
+      })
+    ).toString('base64'),
+  };
+
+  let geyserAbfragen = 0;
+  await seite.route('**/api.geysermc.org/v2/skin/**', (route) => {
+    geyserAbfragen += 1;
+    const url = route.request().url();
+
+    // Unbekannte Xbox-ID: Geyser antwortet mit einem leeren Objekt, nicht
+    // mit einem Fehler. Dort muss der Buchstabe übrig bleiben.
+    if (url.endsWith('/999')) {
+      return route.fulfill({ status: 200, contentType: 'application/json', body: '{}' });
+    }
+    // Ohne texture_id muss der Weg über value greifen
+    if (url.endsWith('/2535428814673622')) {
+      const ohneKennung = { ...echteAntwort, texture_id: undefined };
+      return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(ohneKennung) });
+    }
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(echteAntwort) });
+  });
+  await seite.route('**/textures.minecraft.net/texture/**', (route) =>
+    route.fulfill({ status: 200, contentType: 'image/png', body: Buffer.alloc(0) })
+  );
+
+  fs.writeFileSync(
+    DATEI,
+    JSON.stringify({
+      anzahl: 5,
+      mitglieder: [
+        // Verifizierter Bedrock-Spieler: Geyser-UUID, daraus die Xbox-ID
+        { name: '.BedrockHans', rolle: 'Farmer', rang: 12, seit: '2026-08-11',
+          verifiziert: true, plattform: 'bedrock', uuid: '00000000-0000-0000-0009-01f585da16d5' },
+        // Bedrock ohne Punkt im Namen — nur die Plattform verrät es
+        { name: 'OhnePunkt', rolle: 'Farmer', rang: 12, seit: '2026-08-11',
+          verifiziert: true, plattform: 'bedrock', uuid: '00000000-0000-0000-0009-01f60bea46ea' },
+        // Bedrock ohne Verifizierung: keine UUID, also nur der Buchstabe
+        { name: '.NochNichtVerifiziert', rolle: 'Farmer', rang: 12, seit: '2026-08-12',
+          verifiziert: false, plattform: null, uuid: null },
+        // Antwort ohne texture_id — die Adresse steckt dann nur im value-Block
+        { name: '.NurValue', rolle: 'Farmer', rang: 12, seit: '2026-08-12',
+          verifiziert: true, plattform: 'bedrock', uuid: '00000000-0000-0000-0009-01f585da16d6' },
+        { name: 'JavaSpieler', rolle: 'Farmer', rang: 12, seit: '2026-08-13',
+          verifiziert: true, plattform: 'java', uuid: 'aaaa-bbbb' },
+      ],
+    })
+  );
+
+  await seite.reload({ waitUntil: 'domcontentloaded' });
+  await seite.waitForFunction(() => document.querySelectorAll('.mitglied__name').length === 5, null, {
+    timeout: 5000,
+  });
+  await seite.waitForTimeout(600);
+
+  const koepfe = await seite.evaluate(() =>
+    [...document.querySelectorAll('.mitglied')].map((k) => ({
+      name: k.querySelector('.mitglied__name').textContent,
+      hatImg: Boolean(k.querySelector('img')),
+      hatSkin: Boolean(k.querySelector('.mitglied__skinkopf')),
+      hintergrund: k.querySelector('.mitglied__skinkopf')?.style.backgroundImage ?? '',
+      initial: k.querySelector('.mitglied__initial')?.textContent,
+    }))
+  );
+  const nach = (name) => koepfe.find((k) => k.name === name);
+
+  // Für den Java-Spieler dürfen beide Dienste drankommen — der abgewiesene
+  // erste zieht ja absichtlich den zweiten nach. Entscheidend ist, dass kein
+  // Bedrock-Name dabei auftaucht.
+  pruefe(
+    'Kein Java-Dienst wird nach einem Bedrock-Namen gefragt',
+    javaAbfragen.length > 0 && javaAbfragen.every((u) => u.includes('JavaSpieler')),
+    javaAbfragen.join(' | ')
+  );
+  pruefe('Java-Spieler nutzt weiter das Bild', nach('JavaSpieler').hatImg === true);
+  pruefe('Bedrock nutzt kein Bild', nach('.BedrockHans').hatImg === false);
+  pruefe('Bedrock bekommt den Skin-Ausschnitt', nach('.BedrockHans').hatSkin === true);
+  pruefe(
+    'Skin-Adresse aus der Textur-Kennung gebaut',
+    nach('.BedrockHans').hintergrund.includes(`https://textures.minecraft.net/texture/${echteAntwort.texture_id}`),
+    nach('.BedrockHans').hintergrund.slice(0, 70)
+  );
+  pruefe(
+    'Zwei Ebenen für Kopf und Mütze',
+    (nach('.BedrockHans').hintergrund.match(/url\(/g) || []).length === 2
+  );
+  pruefe('Ohne Punkt erkennt die Plattform es trotzdem', nach('OhnePunkt').hatSkin === true);
+  pruefe('Ohne UUID bleibt nur der Buchstabe', nach('.NochNichtVerifiziert').hatSkin === false);
+  pruefe('Und der Buchstabe stimmt', nach('.NochNichtVerifiziert').initial === 'N');
+  pruefe('Geyser wurde für alle drei mit UUID gefragt', geyserAbfragen === 3, String(geyserAbfragen));
+
+  // Der Rueckfall ueber value: Adresse steckt dort mit http drin und muss
+  // auf https umgeschrieben werden, sonst blockt der Browser das Bild.
+  pruefe('Ohne texture_id greift der value-Block', nach('.NurValue').hatSkin === true);
+  pruefe(
+    'Und die Adresse wird auf https gehoben',
+    nach('.NurValue').hintergrund.includes('https://textures.minecraft.net/') &&
+      !nach('.NurValue').hintergrund.includes('http://'),
+    nach('.NurValue').hintergrund.slice(0, 70)
+  );
+
+  // Antwortet Geyser nicht, darf keine leere Fläche stehen bleiben
+  fs.writeFileSync(
+    DATEI,
+    JSON.stringify({
+      anzahl: 1,
+      mitglieder: [
+        { name: '.KeinSkin', rolle: 'Farmer', rang: 12, seit: '2026-08-11',
+          verifiziert: true, plattform: 'bedrock', uuid: '00000000-0000-0000-0000-0000000003e7' },
+      ],
+    })
+  );
+  await seite.reload({ waitUntil: 'domcontentloaded' });
+  await seite.waitForTimeout(900);
+  const ohneSkin = await seite.evaluate(() => ({
+    hatSkin: Boolean(document.querySelector('.mitglied__skinkopf')),
+    initial: document.querySelector('.mitglied__initial')?.textContent,
+  }));
+  pruefe('Ohne Antwort von Geyser verschwindet die Fläche', ohneSkin.hatSkin === false);
+  pruefe('Darunter steht der Buchstabe', ohneSkin.initial === 'K');
+
+  await seite.unroute('**/mc-heads.net/**');
+  await seite.unroute('**/minotar.net/**');
+  await seite.unroute('**/api.geysermc.org/v2/skin/**');
+  await seite.unroute('**/textures.minecraft.net/texture/**');
 
   // ── Kaputte Datei: die hinterlegte Liste muss wieder tragen ──
   fs.writeFileSync(DATEI, '{ das ist kein json');

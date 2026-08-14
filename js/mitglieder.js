@@ -49,16 +49,78 @@ let dnvMitglieder = [
 (function () {
   'use strict';
 
-  // Kopfbilder: zwei Dienste hintereinander, dann der eigene Ersatz mit
-  // dem Anfangsbuchstaben. Ein führender Punkt kennzeichnet auf OPSUCHT
-  // Bedrock-Spieler; für die Abfrage muss er weg, ein Kopf existiert dort
-  // aber oft trotzdem nicht — dann greift der Ersatz.
+  // Kopfbilder für Java-Spieler: zwei Dienste hintereinander, dann der
+  // eigene Ersatz mit dem Anfangsbuchstaben.
   function kopfKette(name) {
     const sauber = String(name).replace(/^\./, '');
     return [
       `https://mc-heads.net/avatar/${encodeURIComponent(sauber)}/96`,
       `https://minotar.net/avatar/${encodeURIComponent(sauber)}/96`
     ];
+  }
+
+  /* Bedrock-Spieler haben kein Java-Konto. Fragt man mc-heads trotzdem nach
+     ihrem Namen, kommt kein Fehler zurück, sondern der Standard-Steve — die
+     Ersatzkette greift also nie und alle Bedrock-Mitglieder sahen gleich aus.
+
+     Verlässlich ist nur, was der Bot mitliefert: plattform und uuid aus der
+     Verifizierung. Der Punkt im Namen ist nur die Notlösung für Einträge,
+     die noch ohne Verifizierung in der Liste stehen. */
+  const istBedrock = (m) => m.plattform === 'bedrock' || String(m.name).startsWith('.');
+
+  /* In einer Geyser-UUID stecken die letzten beiden Blöcke als Hexzahl —
+     das ist die Xbox-ID, mit der sich der Skin holen lässt. */
+  function xuidAus(uuid) {
+    if (!uuid || !/^00000000-0000-0000-/.test(uuid)) return null;
+    try {
+      return BigInt('0x' + uuid.slice(19).replace(/-/g, '')).toString();
+    } catch {
+      return null;
+    }
+  }
+
+  /* Geyser antwortet mit texture_id und zusätzlich mit value — dem
+     base64-Block, wie Mojang ihn verschickt. Bevorzugt wird texture_id:
+     kurz, und die Adresse wird selbst gebaut.
+
+     Der Weg über value ist der Rückfall, falls das Feld einmal fehlt. Die
+     Adresse darin beginnt mit http, und ein unverschlüsseltes Bild würde
+     der Browser auf einer https-Seite verwerfen — deshalb wird sie
+     umgeschrieben. Kennt Geyser die Xbox-ID nicht, kommt ein leeres Objekt;
+     dann gibt es null und es bleibt beim Anfangsbuchstaben. */
+  async function skinAdresse(xuid) {
+    const antwort = await fetch(`https://api.geysermc.org/v2/skin/${xuid}`);
+    if (!antwort.ok) return null;
+
+    const daten = await antwort.json();
+    if (daten && daten.texture_id) {
+      return `https://textures.minecraft.net/texture/${daten.texture_id}`;
+    }
+    if (daten && daten.value) {
+      const roh = JSON.parse(atob(daten.value));
+      const adresse = roh?.textures?.SKIN?.url;
+      return adresse ? adresse.replace(/^http:/, 'https:') : null;
+    }
+    return null;
+  }
+
+  /* Aus der Skin-Datei wird der Kopf per Hintergrund-Ausschnitt geholt: Er
+     liegt in jeder Datei an derselben Stelle, und weil mit Prozenten statt
+     Pixeln gerechnet wird, stimmt der Ausschnitt auch bei HD-Skins. */
+  async function bedrockKoepfeNachziehen() {
+    for (const el of document.querySelectorAll('[data-xuid]')) {
+      const xuid = el.dataset.xuid;
+      delete el.dataset.xuid;
+
+      try {
+        const adresse = await skinAdresse(xuid);
+        // Zweimal dasselbe Bild: einmal die Mütze, darunter der Kopf.
+        if (adresse) el.style.backgroundImage = `url("${adresse}"), url("${adresse}")`;
+        else el.remove();
+      } catch (fehler) {
+        el.remove();
+      }
+    }
   }
 
   function datumLesbar(iso) {
@@ -85,22 +147,32 @@ let dnvMitglieder = [
   }
 
   function karte(m) {
-    const kette = kopfKette(m.name);
     const farbe = farbeVon(m);
     // Der Anfangsbuchstabe als Ersatz, falls kein Kopf zu holen ist.
     const initial = String(m.name).replace(/^\./, '').charAt(0).toUpperCase();
 
-    return `
-      <article class="mitglied">
-        <div class="mitglied__kopf">
-          <span class="mitglied__initial" aria-hidden="true">${initial}</span>
+    // Bedrock: der Skin kommt über die Xbox-ID, nachgeladen wird er gleich.
+    // Ohne UUID — also ohne Verifizierung — bleibt es beim Buchstaben.
+    let kopf = '';
+    if (istBedrock(m)) {
+      const xuid = xuidAus(m.uuid);
+      if (xuid) kopf = `<span class="mitglied__skinkopf" data-xuid="${xuid}" aria-hidden="true"></span>`;
+    } else {
+      const kette = kopfKette(m.name);
+      kopf = `
           <img
             src="${kette[0]}"
             alt=""
             loading="lazy"
             data-kopfkette='${JSON.stringify(kette.slice(1))}'
             onerror="dnvKopfFehler(this)"
-          />
+          />`;
+    }
+
+    return `
+      <article class="mitglied">
+        <div class="mitglied__kopf">
+          <span class="mitglied__initial" aria-hidden="true">${initial}</span>${kopf}
         </div>
         <h3 class="mitglied__name">${m.name}</h3>
         <span class="mitglied__rolle mitglied__rolle--${farbe}">${m.rolle}</span>
@@ -140,6 +212,7 @@ let dnvMitglieder = [
     document.querySelectorAll('[data-mitglieder-anzahl]').forEach(el => {
       el.textContent = String(liste.length);
     });
+    bedrockKoepfeNachziehen();
   };
 
   /* Der Discord-Bot legt die aktuelle Liste als data/mitglieder.json ab.
