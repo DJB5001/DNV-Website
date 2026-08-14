@@ -1,0 +1,124 @@
+/* ═══════════════════════════════════════════════════════════════
+   DarkNova · Minecraft-Hintergründe
+   ---------------------------------------------------------------
+   Eine einzige Bausteinklasse für beide Stilwelten: .mc-hg legt ein
+   Bild hinter einen Abschnitt, ohne dessen Inhalt anzufassen.
+
+   Die Bilder liegen in images/hintergrund/ und sind schon beim
+   Erzeugen entsättigt, ins Violett gezogen und abgedunkelt worden.
+   Dadurch muss der Browser nichts umfärben und die Bilder passen zur
+   Seite, statt gegen sie zu arbeiten.
+
+   Verwendung:
+     <section class="…">                 ← braucht position: relative
+       <div class="mc-hg mc-hg--hoehle" aria-hidden="true"></div>
+       … Inhalt …
+     </section>
+
+   Der Inhalt muss über der Ebene liegen. Dafür sorgt entweder eine
+   bestehende Regel der Seite oder die Geschwister-Regel weiter unten.
+   ═══════════════════════════════════════════════════════════════ */
+
+.mc-hg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  border-radius: inherit;
+}
+
+/* Das Bild selbst. Es wird nicht am Rand abgeschnitten, sondern per
+   Maske weich ausgeblendet — so bleibt sichtbar, was dahinter liegt
+   (Sternenfeld, Blockfeld, Lichtkreise), statt davon verdeckt zu
+   werden. */
+.mc-hg::before {
+  content: '';
+  position: absolute;
+  /* Etwas größer als der Container, damit die weiche Maske nicht an
+     einer sichtbaren Kante endet. */
+  inset: -1px;
+  background-image: var(--mc-bild);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: var(--mc-staerke, 0.17);
+  mask-image: radial-gradient(
+    ellipse 82% 78% at 50% 48%,
+    #000 0%,
+    rgba(0, 0, 0, 0.5) 52%,
+    transparent 82%
+  );
+  -webkit-mask-image: radial-gradient(
+    ellipse 82% 78% at 50% 48%,
+    #000 0%,
+    rgba(0, 0, 0, 0.5) 52%,
+    transparent 82%
+  );
+}
+
+/* Die vier Motive. Alle vier stammen aus denselben offiziellen
+   Minecraft-Wallpapern, unterscheiden sich aber im Farbstich, damit
+   die Abschnitte nicht gleich aussehen. */
+.mc-hg--hoehle {
+  --mc-bild: url('../images/hintergrund/hoehle.webp');
+}
+
+.mc-hg--ritt {
+  --mc-bild: url('../images/hintergrund/ritt.webp');
+}
+
+.mc-hg--weite {
+  --mc-bild: url('../images/hintergrund/weite.webp');
+}
+
+.mc-hg--bluete {
+  --mc-bild: url('../images/hintergrund/bluete.webp');
+}
+
+/* Ein kräftigerer Auftritt für den Kopfbereich, wo noch kein Text
+   um Aufmerksamkeit kämpft. */
+.mc-hg--stark {
+  --mc-staerke: 0.26;
+}
+
+.mc-hg--leise {
+  --mc-staerke: 0.11;
+}
+
+/* ── Inhalt nach vorne ──────────────────────────────────────────
+   Alles, was NACH der Bildebene kommt, bekommt einen eigenen
+   Stapelplatz. Nur direkte Geschwister — verschachtelte Elemente
+   behalten ihre eigene Positionierung. */
+.mc-hg ~ * {
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Abschnitte, die eine Bildebene tragen ──────────────────── */
+
+.dnv-band,
+.clan-tab {
+  position: relative;
+}
+
+/* Auf der Clan-Seite bleibt der Kopfbereich flächig; in der App wird
+   aus dem Kopf des Home-Reiters eine eigene Tafel, damit das Bild
+   einen Rahmen hat statt frei auszulaufen. */
+.section > .clan-tab {
+  max-width: 60rem;
+  padding: clamp(2.2rem, 5vw, 3.4rem) clamp(1.2rem, 4vw, 2.6rem);
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+  border-radius: 22px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.018);
+}
+
+/* Handy: die Maske darf schmaler ausfallen, sonst steht das Motiv
+   nur noch als Streifen in der Mitte. */
+@media (max-width: 640px) {
+  .mc-hg::before {
+    mask-image: radial-gradient(ellipse 120% 70% at 50% 45%, #000 0%, transparent 85%);
+    -webkit-mask-image: radial-gradient(ellipse 120% 70% at 50% 45%, #000 0%, transparent 85%);
+  }
+}

@@ -195,6 +195,112 @@
      Nur auf der Clan-Seite. Die App bekommt bewusst kein bewegtes
      Feld: Über Preistabellen wäre es Unruhe statt Atmosphäre. */
 
+  /* ── Blockfeld ──────────────────────────────────────────────────
+     Ein Hauch Minecraft im Hintergrund: langsam treibende Würfel in
+     isometrischer Ansicht, gezeichnet statt fotografiert.
+
+     Bewusst kein Bild aus dem Netz: Das wäre fremdes Material, würde
+     Ladezeit kosten und müsste für jede Bildschirmgröße neu skaliert
+     werden. Gezeichnete Würfel sind ein paar Zeilen groß, passen sich
+     jeder Größe an und tragen die Farben des Clans.
+
+     Sehr zurückhaltend gehalten — der Hintergrund soll Tiefe geben,
+     nicht um Aufmerksamkeit kämpfen. */
+
+  var blockfeld = document.getElementById('blockfeld');
+  if (blockfeld && !sparsam) {
+    (function () {
+      var ctx = blockfeld.getContext('2d');
+      var wuerfel = [];
+      var b = 0;
+      var h = 0;
+      var dpr = Math.min(window.devicePixelRatio || 1, 2);
+      var laeuft = true;
+
+      // Die drei sichtbaren Flächen eines Würfels. Unterschiedliche
+      // Helligkeit erzeugt die Körperlichkeit, nicht eine Schattierung.
+      var FLAECHEN = [
+        { deckung: 1.0, punkte: [[0, -0.5], [0.87, 0], [0, 0.5], [-0.87, 0]] },      // oben
+        { deckung: 0.62, punkte: [[-0.87, 0], [0, 0.5], [0, 1.5], [-0.87, 1]] },     // links
+        { deckung: 0.38, punkte: [[0.87, 0], [0, 0.5], [0, 1.5], [0.87, 1]] }        // rechts
+      ];
+
+      function messen() {
+        var kasten = blockfeld.parentElement.getBoundingClientRect();
+        b = kasten.width;
+        h = kasten.height;
+        blockfeld.width = Math.round(b * dpr);
+        blockfeld.height = Math.round(h * dpr);
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+        wuerfel = [];
+        var anzahl = Math.min(Math.round(b * h / 42000), 26);
+        for (var i = 0; i < anzahl; i++) {
+          wuerfel.push({
+            x: Math.random() * b,
+            y: Math.random() * h,
+            groesse: 16 + Math.random() * 30,
+            tempo: 0.05 + Math.random() * 0.14,
+            deckung: 0.03 + Math.random() * 0.05,
+            schwung: Math.random() * Math.PI * 2
+          });
+        }
+      }
+
+      function malen() {
+        if (!laeuft) return;
+        ctx.clearRect(0, 0, b, h);
+
+        for (var i = 0; i < wuerfel.length; i++) {
+          var w = wuerfel[i];
+          w.y -= w.tempo;
+          w.schwung += 0.004;
+          if (w.y < -w.groesse * 2) {
+            w.y = h + w.groesse * 2;
+            w.x = Math.random() * b;
+          }
+
+          // Sanftes Pendeln zur Seite, damit die Bewegung nicht wie ein
+          // Fahrstuhl wirkt.
+          var x = w.x + Math.sin(w.schwung) * 12;
+
+          for (var f = 0; f < FLAECHEN.length; f++) {
+            var flaeche = FLAECHEN[f];
+            ctx.beginPath();
+            for (var p = 0; p < flaeche.punkte.length; p++) {
+              var px = x + flaeche.punkte[p][0] * w.groesse;
+              var py = w.y + flaeche.punkte[p][1] * w.groesse;
+              if (p === 0) ctx.moveTo(px, py);
+              else ctx.lineTo(px, py);
+            }
+            ctx.closePath();
+            ctx.fillStyle = 'rgba(169, 126, 240, ' + (w.deckung * flaeche.deckung).toFixed(4) + ')';
+            ctx.fill();
+          }
+        }
+        requestAnimationFrame(malen);
+      }
+
+      messen();
+      malen();
+
+      var wartetB;
+      window.addEventListener('resize', function () {
+        clearTimeout(wartetB);
+        wartetB = setTimeout(messen, 180);
+      });
+
+      document.addEventListener('visibilitychange', function () {
+        if (document.hidden) {
+          laeuft = false;
+        } else if (!laeuft) {
+          laeuft = true;
+          requestAnimationFrame(malen);
+        }
+      });
+    })();
+  }
+
   var leinwand = document.getElementById('sternenfeld');
   if (leinwand && !sparsam) {
     var ctx = leinwand.getContext('2d');

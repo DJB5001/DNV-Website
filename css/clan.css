@@ -106,12 +106,19 @@ p {
   overflow: hidden;
 }
 
-#sternenfeld {
+#sternenfeld,
+#blockfeld {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   display: block;
+}
+
+/* Die Würfel liegen vor den Sternen, aber hinter den Lichtwolken —
+   so wirken sie als Schicht im Raum, nicht als Aufkleber. */
+#blockfeld {
+  z-index: 1;
 }
 
 .raster-schicht {
