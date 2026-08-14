@@ -1,5 +1,5 @@
 {
-  "stand": "2026-08-14T17:08:31.056Z",
+  "stand": "2026-08-14T17:09:31.055Z",
   "anzahl": 15,
   "hinweis": "Automatisch vom DNV-Bot aus den Discord-Rollen erzeugt. Änderungen hier werden überschrieben.",
   "mitglieder": [
@@ -44,12 +44,12 @@
       "verifiziert": true
     },
     {
-      "name": "Exotic666",
+      "name": ".Toastbrot251",
       "rolle": "Builder",
       "farbe": "builder",
       "rang": 11,
       "seit": "2026-08-10",
-      "verifiziert": false
+      "verifiziert": true
     },
     {
       "name": "EagleoneHD",
@@ -68,12 +68,12 @@
       "verifiziert": false
     },
     {
-      "name": "Yuki",
+      "name": "yukilee9088",
       "rolle": "Farmer",
       "farbe": "farmer",
       "rang": 12,
       "seit": "2026-08-10",
-      "verifiziert": false
+      "verifiziert": true
     },
     {
       "name": "Donutsmp.net",
