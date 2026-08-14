@@ -1,6 +1,6 @@
 {
-  "stand": "2026-08-14T18:18:45.721Z",
-  "anzahl": 15,
+  "stand": "2026-08-14T19:01:45.900Z",
+  "anzahl": 16,
   "hinweis": "Automatisch vom DNV-Bot aus den Discord-Rollen erzeugt. Änderungen hier werden überschrieben.",
   "mitglieder": [
     {
@@ -142,6 +142,16 @@
       "verifiziert": true,
       "plattform": "bedrock",
       "uuid": "00000000-0000-0000-0009-01f2502e1546"
+    },
+    {
+      "name": "FLYJANNIS2012",
+      "rolle": "Farmer",
+      "farbe": "farmer",
+      "rang": 12,
+      "seit": "2026-08-14",
+      "verifiziert": true,
+      "plattform": "java",
+      "uuid": "677f415e-07f3-4871-aa75-309c2ca83aee"
     },
     {
       "name": "TentieMC",
