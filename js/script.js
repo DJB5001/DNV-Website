@@ -1209,18 +1209,10 @@ function resetVisibilitySettings() {
   App.settings.players = { name: true, auctions: true, bids: true, 'bid-amount': true };
   App.settings.design = { itemRain: true, customBackground: false, customBackgroundImage: '', customCursor: false, cursorType: 'dot', cursorSize: 1.0 };
 
-  // Remove all hide classes from body
-  const categories = ['auctions', 'market', 'shards', 'players'];
-  categories.forEach(cat => {
-    Object.keys(App.settings[cat] || {}).forEach(key => {
-      document.body.classList.remove(`hide-${cat}-${key}`);
-    });
-  });
-
-  // Update all visibility checkboxes
-  document.querySelectorAll('#settingsModal input[type="checkbox"]').forEach(cb => {
-    if (cb.id.startsWith('setting-')) cb.checked = true;
-  });
+  // Klassen und Kästchen aus den Vorgaben ableiten statt pauschal alles
+  // einzuschalten — sonst widerspricht die Anzeige den Vorgaben, sobald
+  // eine davon auf "aus" steht.
+  applyVisibilitySettings();
 
   // Reset Design UI & State
   toggleItemRain(true);
@@ -5022,6 +5014,13 @@ function updateVisitorCounter() {
 
 async function init() {
   loadTrendsCache();
+
+  // Vorgaben und Startansicht zuerst: Home braucht keine Daten und ist
+  // dadurch sofort da. Hing das am Laden von Markt, Auktionen und
+  // Shards, blieb die Seite leer, sobald eines davon klemmte.
+  applyVisibilitySettings();
+  showSection('clan');
+
   await Promise.all([loadMarket(), loadAuctions(), loadShards()]);
   setupAuctionFilters();
   setupProfileCardInteractions();
@@ -5031,7 +5030,7 @@ async function init() {
   await renderShards();
   if (App.timerInterval) clearInterval(App.timerInterval);
   App.timerInterval = setInterval(updateAuctionTimers, 1000);
-  showSection('auctions');
+
   checkDisclaimer();
 }
 

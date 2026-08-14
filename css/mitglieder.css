@@ -125,3 +125,40 @@
   font-size: 0.76rem;
   color: var(--m-leise);
 }
+
+/* Auf dem Handy passten bei 12rem Mindestbreite nur einzelne Karten
+   untereinander — bei zehn Mitgliedern viel Scrollen für wenig Inhalt.
+   Zwei nebeneinander sind kompakter und immer noch gut lesbar. */
+@media (max-width: 40rem) {
+  .mitglieder {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.7rem;
+  }
+
+  .mitglied {
+    padding: 1.1rem 0.6rem 0.9rem;
+    gap: 0.45rem;
+  }
+
+  .mitglied__kopf {
+    width: 3.4rem;
+    height: 3.4rem;
+  }
+
+  .mitglied__initial {
+    font-size: 1.25rem;
+  }
+
+  .mitglied__name {
+    font-size: 0.85rem;
+  }
+
+  .mitglied__rolle {
+    font-size: 0.58rem;
+    padding: 0.18rem 0.45rem;
+  }
+
+  .mitglied__seit {
+    font-size: 0.68rem;
+  }
+}

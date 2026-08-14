@@ -906,6 +906,14 @@ body .dnv-titel {
   letter-spacing: -0.035em !important;
 }
 
+/* Gilt genauso für den Kopf des Home-Reiters. */
+body .clan-tab__titel {
+  font-family: var(--schrift-display) !important;
+  font-weight: 800 !important;
+  font-size: clamp(1.8rem, 4.5vw, 2.8rem) !important;
+  letter-spacing: -0.04em !important;
+}
+
 body .dnv-karte__titel {
   font-family: var(--schrift-display);
   letter-spacing: -0.02em;
@@ -915,4 +923,151 @@ body .dnv-karte__titel {
 #clan [data-clan-inhalt] .dnv-band {
   padding-left: 0;
   padding-right: 0;
+}
+
+/* ── 17. Handy ─────────────────────────────────────────────────────
+   Auf schmalen Schirmen war die Leiste zweizeilig: style.css setzt
+   flex-wrap: wrap, wodurch der Home-Knopf über die Reiter rutschte
+   statt daneben zu stehen. Die Reiter scrollen ohnehin waagerecht,
+   also darf nichts umbrechen. */
+
+/* style.css stellt die Leiste auf schmalen Schirmen auf flex-direction:
+   column um — daher stand der Home-Knopf ÜBER den Reitern statt daneben.
+   Da die Reiter ohnehin waagerecht scrollen, bleibt es bei einer Zeile. */
+.header-controls {
+  flex-wrap: nowrap;
+  flex-direction: row;
+}
+
+/* Kopfzeile über dem Titel: Rechtstexte links, Anmelden und Zahnrad
+   rechts. Auf dem Handy war sie so eng, dass das Zahnrad abgeschnitten
+   wurde. */
+.dnv-kopfzeile {
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 40rem) {
+  body {
+    padding: 1rem 0.85rem 2rem;
+  }
+
+  .container {
+    max-width: 100%;
+  }
+
+  .header-controls {
+    flex-direction: row;
+    gap: 0;
+    /* style.css setzt hier width: 100%. Zusammen mit den negativen
+       Rändern endete die Leiste sonst vor dem rechten Rand. */
+    width: auto;
+    margin: 0 -0.85rem 1.25rem;
+    padding: 0 0.5rem;
+  }
+
+  /* Reiter dichter setzen, damit mehr davon ins Bild passt */
+  #tabs.tabs button {
+    padding: 0.95rem 0.65rem;
+    font-size: 0.7rem;
+    letter-spacing: 0.06em;
+  }
+
+  .dnv-clanlink {
+    font-size: 0.68rem;
+    padding: 0.45rem 0.7rem;
+  }
+
+  /* Der Titel darf schrumpfen, die Zeile darunter muss umbrechen
+     dürfen — mit 0.22em Sperrung passte sie sonst nicht. */
+  body > .container > h1 {
+    font-size: clamp(1.9rem, 11vw, 2.6rem) !important;
+  }
+
+  .dnv-titelzeile {
+    font-size: 0.62rem;
+    letter-spacing: 0.12em;
+    padding: 0 0.5rem;
+  }
+
+  .dnv-kopfzeile {
+    margin-bottom: 0.75rem;
+  }
+
+  .dnv-kopfzeile .auth-header-btn {
+    padding: 0.45rem 0.8rem;
+    font-size: 0.75rem;
+  }
+
+  .dnv-kopfzeile .settings-icon {
+    width: 30px;
+    height: 30px;
+  }
+
+  /* Eine Karte je Zeile liest sich besser als zwei gequetschte */
+  .grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .grid > .card {
+    padding: 1rem;
+  }
+
+  .clan-tab__zahlen {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .clan-tab__knoepfe .clan-tab__knopf {
+    flex: 1 1 100%;
+    justify-content: center;
+  }
+
+  .dnv-fuss {
+    align-items: flex-start;
+  }
+}
+
+/* Sehr schmale Geräte: die Reiterbeschriftung wird sonst zweizeilig. */
+@media (max-width: 22rem) {
+  #tabs.tabs button {
+    padding: 0.9rem 0.5rem;
+    font-size: 0.66rem;
+  }
+}
+
+/* Zahnrad und Plus sind jetzt eingebettete Symbole statt Verweise auf
+   einen images-Ordner, den es im Repo nie gab. Vorher standen dort
+   kaputte Platzhalter, die auf dem Handy über den Rand ragten. */
+.settings-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 100px !important;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    color var(--transition-speed) ease,
+    border-color var(--transition-speed) ease;
+}
+
+.settings-icon:hover {
+  color: var(--accent-color1);
+  border-color: rgba(169, 126, 240, 0.5);
+}
+
+.add-ad-btn svg {
+  display: block;
+}
+
+/* Der Home-Knopf ist ab Werk hervorgehoben, passend zum Abschnitt, der
+   im HTML schon aktiv ist. showSection nimmt das beim ersten Wechsel
+   wieder zurück. */
+.dnv-clanlink {
+  box-shadow: 0 0 22px rgba(169, 126, 240, 0.34);
 }
