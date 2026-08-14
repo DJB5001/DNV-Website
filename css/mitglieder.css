@@ -78,6 +78,24 @@
   image-rendering: pixelated;
 }
 
+/* Bedrock-Spieler: Für sie gibt es keinen fertigen Kopf zu holen, nur die
+   ganze Skin-Datei. Der Kopf liegt darin immer an derselben Stelle — 8x8
+   Pixel bei (8,8), die Mütze bei (40,8) — also wird er hier als Ausschnitt
+   gezeigt. Zwei Ebenen: die Mütze über dem Kopf.
+
+   Gerechnet wird in Prozent statt in Pixeln. Dadurch stimmt der Ausschnitt
+   bei einer 64er Datei genauso wie bei einer HD-Datei mit 128 Pixeln, und er
+   passt sich der Kartengröße auf dem Handy von selbst an.
+   14,2857 % = 8/56, also acht Pixel Versatz bei 64 minus 8 sichtbaren. */
+.mitglied__skinkopf {
+  position: absolute;
+  inset: 0;
+  background-repeat: no-repeat, no-repeat;
+  background-size: 800%, 800%;
+  background-position: 71.4286% 14.2857%, 14.2857% 14.2857%;
+  image-rendering: pixelated;
+}
+
 .mitglied__name {
   margin: 0;
   font-family: var(--m-anzeige);
