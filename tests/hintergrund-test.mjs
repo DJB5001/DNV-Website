@@ -122,6 +122,20 @@ for (const [kennung, erwartet] of [
   pruefe(jetzt === erwartet, `${kennung} zeigt sein Motiv`, `${jetzt} (erwartet ${erwartet})`);
 }
 
+// ── Der Grund kommt erst hinter dem Kopfband hervor ──
+// Oben zeigen beide dasselbe Motiv; lägen sie gleichzeitig da, sähe man
+// das Bild doppelt und versetzt.
+console.log('\n── Grund blendet sich ein ──');
+await p.evaluate(() => window.scrollTo(0, 0));
+await p.waitForTimeout(300);
+const grundOben = await p.evaluate(() => parseFloat(getComputedStyle(document.querySelector('.mc-grund')).opacity));
+pruefe(grundOben < 0.02, 'oben liegt nur das Kopfband', String(grundOben));
+
+await p.evaluate(() => window.scrollTo(0, document.querySelector('.mc-kopfband').offsetHeight * 1.2));
+await p.waitForTimeout(300);
+const grundUnten = await p.evaluate(() => parseFloat(getComputedStyle(document.querySelector('.mc-grund')).opacity));
+pruefe(grundUnten > 0.98, 'unterhalb des Bandes ist der Grund voll da', String(grundUnten));
+
 // ── App: das Motiv folgt dem Reiter ──
 console.log('\n── Umblenden beim Reiterwechsel ──');
 await p.goto(`${basis}/index.html`, { waitUntil: 'domcontentloaded' });

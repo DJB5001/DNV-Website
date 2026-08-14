@@ -30,6 +30,10 @@ const materialSonderfaelle = {
   RECOVERY_COMPASS: 'item/recovery_compass_00',
   CLOCK: 'item/clock_00',
   ANCIENT_DEBRIS: 'block/ancient_debris_side',
+  // Die Seitentextur des Knochenblocks ist fast weiss und wirkt wie eine
+  // leere Flaeche. Die Oberseite zeigt die Knochenringe und ist als Bild
+  // das einzige, woran man den Block erkennt.
+  BONE_BLOCK: 'block/bone_block_top',
   DRAGON_EGG: 'block/dragon_egg',
   // Köpfe haben kein flaches Bild — ersatzweise das Standard-Skin.
   PLAYER_HEAD: 'entity/player/wide/steve'

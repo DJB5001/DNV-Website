@@ -2103,7 +2103,11 @@ function materialBildKandidaten(material) {
     // 2. Sonderfälle ohne eigene Textur. Spawn-Eier teilen sich eine.
     const sonder = id.endsWith('_spawn_egg')
       ? sonderfaelle.SPAWN_EGG
-      : sonderfaelle[String(material).toUpperCase()];
+      // Bewusst über id statt über material: id ist bereits um den
+      // Namensraum "minecraft:" und einen NBT-Anhang bereinigt. Sonst
+      // greift kein einziger Sonderfall, sobald die API den vollen
+      // Bezeichner liefert.
+      : sonderfaelle[id.toUpperCase()];
     if (sonder) kandidaten.push(`${texturBasis}${sonder}.png`);
 
     // 3. und 4. Spieltextur, erst als Gegenstand, dann als Block
@@ -2332,6 +2336,22 @@ function animateCardsWave(sectionElement, immediate = false) {
 
 
 
+// Das Minecraft-Kopfbild eines Spielers, gedacht als Auflage über dem
+// Anfangsbuchstaben in .player-initial-avatar.
+//
+// Abgefragt wird über die UUID — die ist eindeutig, anders als der Name,
+// der sich ändern kann. Lädt keiner der beiden Dienste, blendet
+// dnvKopfFehler das Bild aus und der Buchstabe darunter kommt zum
+// Vorschein. Deshalb bleibt der Buchstabe im Markup immer stehen.
+function spielerKopfBild(uuid) {
+  if (!uuid || typeof dnvKopfFehler !== 'function') return '';
+  const kette = [
+    `https://mc-heads.net/avatar/${encodeURIComponent(uuid)}/96`,
+    `https://minotar.net/avatar/${encodeURIComponent(uuid)}/96`
+  ];
+  return `<img class="player-kopf" src="${kette[0]}" alt="" loading="lazy" data-kopfkette='${JSON.stringify(kette.slice(1))}' onerror="dnvKopfFehler(this)">`;
+}
+
 function createPlayerCard(uuid, username) {
   const card = document.createElement("div");
   card.className = "card";
@@ -2339,17 +2359,7 @@ function createPlayerCard(uuid, username) {
   const bids = App.auctionsData.filter(a => a.bids && uuid in a.bids).length;
   const initial = (username.match(/[a-zA-Z]/) || ['?'])[0].toUpperCase();
 
-  // Kopfbild über dem Anfangsbuchstaben. Abgefragt wird über die UUID —
-  // die ist eindeutig, anders als der Name, der sich ändern kann.
-  // Lädt keiner der Dienste, blendet dnvKopfFehler das Bild aus und der
-  // Buchstabe darunter kommt zum Vorschein.
-  const kopf = [
-    `https://mc-heads.net/avatar/${encodeURIComponent(uuid)}/96`,
-    `https://minotar.net/avatar/${encodeURIComponent(uuid)}/96`
-  ];
-  const kopfBild = typeof dnvKopfFehler === 'function'
-    ? `<img class="player-kopf" src="${kopf[0]}" alt="" loading="lazy" data-kopfkette='${JSON.stringify(kopf.slice(1))}' onerror="dnvKopfFehler(this)">`
-    : '';
+  const kopfBild = spielerKopfBild(uuid);
 
   card.innerHTML = `<div class="player-initial-avatar">${initial}${kopfBild}</div><h3 class="players-name">${username}</h3><div class="price-info players-auctions"><span>Auktionen:</span> ${ownedAuctions}</div><div class="price-info players-bids"><span>Gebote:</span> ${bids}</div>`;
   card.onclick = () => {
@@ -4143,7 +4153,7 @@ async function openAuctionChart(auction) {
   };
 
   infoBox.innerHTML = `
-      <div class="info-item"><strong>Verkäufer</strong><span class="seller-profile"><div class="player-initial-avatar" style="width: 24px; height: 24px; font-size: 1rem; margin: 0;">${sellerInitial}</div>${sellerName}</span></div>
+      <div class="info-item"><strong>Verkäufer</strong><span class="seller-profile"><div class="player-initial-avatar player-initial-avatar--klein">${sellerInitial}${spielerKopfBild(auction.seller)}</div>${sellerName}</span></div>
       <div class="info-item"><strong>Startzeit</strong><span>${fmtDate(auction.startTime)}</span></div>
       <div class="info-item"><strong>Endzeit</strong><span>${fmtDate(auction.endTime)}</span></div>
       <div class="info-item"><strong>${isExpired ? 'Verkauft für' : 'Aktuelles Gebot'}</strong><span class="sell">${(auction.currentBid ?? auction.startBid).toLocaleString('de-DE')}</span></div>

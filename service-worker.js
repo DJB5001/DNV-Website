@@ -5,7 +5,7 @@
 
 // Hochzählen, sobald sich die Liste ändert — beim Aktivieren wirft der
 // Worker alle Caches weg, die nicht mehr so heißen.
-const CACHE_NAME = 'opsucht-static-v9';
+const CACHE_NAME = 'opsucht-static-v10';
 const STATIC_ASSETS = [
   './',
   './index.html',

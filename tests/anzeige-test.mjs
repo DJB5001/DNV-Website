@@ -73,6 +73,32 @@ const r = await p.evaluate(() => {
   const werkzeug = { material: 'NETHERITE_PICKAXE', displayName: 'Bohrer V3', lore: ['', 'Zustand: ✯✯✯'] };
   erg.filterTrennt = karteVar !== itemVariante(werkzeug);
 
+  // ── Spielerkopf ────────────────────────────────────────────────
+  // Denselben Bau nutzen die Bieterkarten und die Verkäuferzeile im
+  // Auktionsfenster. Der Buchstabe muss stehen bleiben: fällt das Bild
+  // aus, ist er das Einzige, was den Kreis noch füllt.
+  const kopf = document.createElement('div');
+  kopf.className = 'player-initial-avatar player-initial-avatar--klein';
+  kopf.innerHTML = 'N' + spielerKopfBild('11111111-2222-3333-4444-555555555555');
+  document.body.appendChild(kopf);
+  const bild = kopf.querySelector('img.player-kopf');
+  erg.kopf = {
+    bildDa: !!bild,
+    ueberUuid: !!bild && bild.getAttribute('src').includes('11111111-2222-3333-4444-555555555555'),
+    hatRueckfall: !!bild && (JSON.parse(bild.dataset.kopfkette || '[]').length > 0),
+    buchstabeBleibt: kopf.textContent.trim() === 'N',
+    breite: Math.round(kopf.getBoundingClientRect().width),
+  };
+  kopf.remove();
+
+  // ── Knochenblock ───────────────────────────────────────────────
+  // Die Seitentextur ist fast weiss; erkennbar ist der Block nur an den
+  // Ringen der Oberseite. Sie muss vor den Rückfallstufen kommen.
+  const bbKette = materialBildKandidaten('BONE_BLOCK');
+  const bbOben = bbKette.findIndex((u) => u.endsWith('bone_block_top.png'));
+  const bbSeite = bbKette.findIndex((u) => u.endsWith('bone_block_side.png'));
+  erg.knochen = { oben: bbOben, seite: bbSeite, mitNamensraum: materialBildKandidaten('minecraft:bone_block')[1] || '' };
+
   return erg;
 });
 
@@ -86,6 +112,17 @@ pruefe(r.marktNameEcht === 'Eichenstamm', 'echter Name wird weiterhin bevorzugt'
 pruefe(r.auktionVariante === 'Sammelkarte', 'Auktionskarte weist die Variante aus', r.auktionVariante);
 pruefe(r.filterFelder.auktion && r.filterFelder.verlauf, 'Variantenfilter sind im Zustand angelegt');
 pruefe(r.filterTrennt, 'Sammelkarte und Werkzeug ergeben verschiedene Filterwerte');
+pruefe(r.kopf.bildDa, 'der Spielerkopf wird als Bild angelegt');
+pruefe(r.kopf.ueberUuid, 'der Kopf wird über die UUID geholt, nicht über den Namen');
+pruefe(r.kopf.hatRueckfall, 'es gibt einen zweiten Dienst als Rückfall');
+pruefe(r.kopf.buchstabeBleibt, 'der Anfangsbuchstabe bleibt darunter stehen');
+pruefe(r.kopf.breite === 24, 'die kleine Fassung misst 24 Pixel', r.kopf.breite + 'px');
+pruefe(r.knochen.oben > 0 && r.knochen.oben < r.knochen.seite,
+  'Knochenblock: die Oberseite kommt vor der Seitentextur',
+  `oben ${r.knochen.oben}, seite ${r.knochen.seite}`);
+pruefe(r.knochen.mitNamensraum.endsWith('bone_block_top.png'),
+  'der Sonderfall greift auch mit Namensraum-Präfix',
+  r.knochen.mitNamensraum.split('/').pop());
 
 console.log(fehler === 0 ? '\nAlle Prüfungen bestanden.' : `\n${fehler} fehlgeschlagen.`);
 await b.close();
