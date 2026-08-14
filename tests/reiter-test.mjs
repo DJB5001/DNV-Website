@@ -82,15 +82,27 @@ const mitglieder = await p.evaluate(() => ({
   namen: [...document.querySelectorAll('#mitglieder .mitglied__name')].map(e => e.textContent),
   rollen: [...document.querySelectorAll('#mitglieder .mitglied__rolle')].map(e => e.textContent),
   anzahlText: document.querySelector('#mitglieder [data-mitglieder-anzahl]')?.textContent,
+  // Die Liste selbst als Maßstab: der Clan wächst, und ein Test, der die
+  // Mitgliederzahl festschreibt, schlägt beim nächsten Beitritt fehl,
+  // ohne dass am Code etwas kaputt wäre.
+  gepflegt: typeof dnvMitglieder !== 'undefined' ? dnvMitglieder.length : -1,
 }));
 console.log(JSON.stringify(mitglieder, null, 1));
 
 pruefe(mitglieder.offen, 'der Mitglieder-Abschnitt ist offen');
 pruefe(!mitglieder.clanKnopfAktiv, 'der Clan-Knopf ist nicht mehr hervorgehoben');
-pruefe(mitglieder.karten === 10, 'zehn Mitglieder werden gezeigt', String(mitglieder.karten));
+pruefe(
+  mitglieder.karten === mitglieder.gepflegt && mitglieder.karten > 0,
+  'jedes gepflegte Mitglied bekommt eine Karte',
+  `${mitglieder.karten} von ${mitglieder.gepflegt}`
+);
 pruefe(mitglieder.namen[0] === 'M4Claiz', 'der Anführer steht vorn', mitglieder.namen[0]);
 pruefe(mitglieder.rollen[0] === 'Anführer', 'die Rolle stimmt', mitglieder.rollen[0]);
-pruefe(mitglieder.anzahlText === '10', 'die Anzahl wird eingesetzt', mitglieder.anzahlText);
+pruefe(
+  mitglieder.anzahlText === String(mitglieder.gepflegt),
+  'die Anzahl wird eingesetzt',
+  mitglieder.anzahlText
+);
 
 
 // Zurück auf Markt — nichts darf hängen bleiben

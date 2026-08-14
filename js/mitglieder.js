@@ -25,7 +25,8 @@ const dnvMitglieder = [
   { name: 'enrico5667', rolle: 'Farmer', seit: '2026-08-13' },
   { name: 'Itz_Edgar', rolle: 'Farmer', seit: '2026-08-13' },
   { name: 'KilianMMXII', rolle: 'Farmer', seit: '2026-08-13' },
-  { name: '.DavidCraft8080', rolle: 'Farmer', seit: '2026-08-14' }
+  { name: '.DavidCraft8080', rolle: 'Farmer', seit: '2026-08-14' },
+  { name: 'TentieMC', rolle: 'Farmer', seit: '2026-08-14' }
 ];
 
 (function () {
