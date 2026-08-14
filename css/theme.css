@@ -1071,3 +1071,26 @@ body .dnv-karte__titel {
 .dnv-clanlink {
   box-shadow: 0 0 22px rgba(169, 126, 240, 0.34);
 }
+
+/* Blockfeld: treibende Würfel als leiser Minecraft-Anklang. Liegt im
+   festen Himmel hinter der ganzen Seite und wird von js/nova.js
+   gezeichnet — kein Bild, keine Ladezeit, jede Bildschirmgröße passt. */
+.nova-himmel #blockfeld {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  /* Über Preistabellen treten die Würfel zurück — dieselbe Überlegung
+     wie beim Sternenfeld, das die App bewusst gar nicht bekommt. */
+  opacity: 0.4;
+  transition: opacity 0.4s ease;
+}
+
+/* Auf Home und bei den Mitgliedern dürfen sie voll da sein: Dort steht
+   Atmosphäre im Vordergrund, keine Zahlen. Browser ohne :has() bleiben
+   bei der gedämpften Fassung — das ist kein Verlust. */
+body:has(#clan.active) .nova-himmel #blockfeld,
+body:has(#mitglieder.active) .nova-himmel #blockfeld {
+  opacity: 1;
+}
