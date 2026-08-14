@@ -43,9 +43,11 @@ der 2569 Namen im Verlauf.
 
 Items ohne eigenes Bild bekommen das Bild ihres Typs. Probiert wird der
 Reihe nach: Wiki (schönere Ansichten, aber die Seitennamen weichen
-mitunter ab), dann die Spieltextur nach exakter Material-ID.
+mitunter ab), dann die Spieltextur nach exakter Material-ID — als
+Gegenstand, als Block, und zuletzt die Seitenflächen mehrflächiger
+Blöcke wie Knochen- oder Honigblock.
 
-Gemessen mit `--abrufen`: Die Spieltexturen allein decken **99,0 %** der
+Gemessen mit `--abrufen`: Die Spieltexturen allein decken **99,1 %** der
 40.522 Items im Verlauf ab. Was übrig bleibt, sind eigene Server-Items
 (`NETHERITE_SPEAR`, `DIAMOND_SPEAR`), sehr neue Inhalte (`DRIED_GHAST`)
 und mehrflächige Blöcke.

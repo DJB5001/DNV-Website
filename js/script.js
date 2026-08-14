@@ -2070,7 +2070,14 @@ async function loadAuctions() {
 function materialBildKandidaten(material) {
   if (!material) return [];
 
-  const id = String(material).toLowerCase();
+  const id = String(material)
+    .toLowerCase()
+    .split('[')[0]          // NBT-Anhang wie [custom_name='…'] abschneiden
+    .split(':')
+    .pop()                  // Namensraum "minecraft:" abstreifen
+    .trim();
+  if (!id) return [];
+
   const wikiBasis =
     typeof materialBildBasis === 'string' && materialBildBasis
       ? materialBildBasis
@@ -2103,6 +2110,12 @@ function materialBildKandidaten(material) {
     // 3. und 4. Spieltextur, erst als Gegenstand, dann als Block
     kandidaten.push(`${texturBasis}item/${id}.png`);
     kandidaten.push(`${texturBasis}block/${id}.png`);
+
+    // 5. Mehrflächige Blöcke haben keine Textur unter ihrem blanken
+    //    Namen, sondern je eine pro Seite — Knochenblock, Honigblock,
+    //    Quarzsäule und Verwandte. Als Muster statt als Einzelfälle.
+    kandidaten.push(`${texturBasis}block/${id}_side.png`);
+    kandidaten.push(`${texturBasis}block/${id}_top.png`);
   }
 
   return kandidaten;
@@ -3566,18 +3579,23 @@ async function renderShards() {
   const fragment = document.createDocumentFragment();
   for (const rate of filteredRates) {
     const itemInfo = rate.parsed;
-    let icon = 'https://mcdf.wiki.gg/images/Barrier.png?ff8ff1';
-    if (itemInfo.isCustom) {
-      icon = customAuctionIcons[itemInfo.name] || icon;
-    } else {
+
+    // Dieselbe Rückfallkette wie bei den Auktionen. Vorher blieb hier das
+    // Verbotsschild stehen, sobald ein Item nicht im Markt geführt wird —
+    // und es gab kein onerror, das hätte nachfassen können.
+    const kandidaten = materialBildKandidaten(itemInfo.material);
+    let icon = null;
+    if (itemInfo.isCustom) icon = customAuctionIcons[itemInfo.name] || null;
+    if (!icon) {
       const materialKey = itemInfo.material ? itemInfo.material.toLowerCase() : '';
-      const marketItem = App.marketItemsMap[materialKey];
-      if (marketItem) icon = marketItem.icon;
+      icon = App.marketItemsMap[materialKey]?.icon || null;
     }
+    if (!icon) icon = kandidaten.shift() || BARRIER_BILD;
+
     const card = document.createElement("div");
     card.className = "card";
     card.style.cursor = "pointer";
-    card.innerHTML = `<img src="${icon}" alt="${itemInfo.name}"><h3 class="shards-name">${itemInfo.name}</h3><div class="price-info shards-rate">Wert: <span style="color: #34D399; font-weight: bold;">${parseFloat(rate.exchangeRate).toFixed(2)}</span> Shards</div>`;
+    card.innerHTML = `<img src="${icon}" alt="${itemInfo.name}" data-bildkette='${JSON.stringify(kandidaten)}' onerror="bildRueckfall(this)"><h3 class="shards-name">${itemInfo.name}</h3><div class="price-info shards-rate">Wert: <span style="color: #34D399; font-weight: bold;">${parseFloat(rate.exchangeRate).toFixed(2)}</span> Shards</div>`;
     card.onclick = () => openChart(itemInfo.name, 'shards');
     fragment.appendChild(card);
   }

@@ -73,10 +73,14 @@ const pruefe = (bed, t) => {
 };
 
 const k = r.schwert.kandidaten;
-pruefe(k.length === 3, 'drei Quellen für ein gewöhnliches Material');
+pruefe(k.length === 5, 'fünf Quellen für ein gewöhnliches Material');
 pruefe(/mcdf\.wiki\.gg/.test(k[0]), 'zuerst das Wiki (schönere Ansichten)');
 pruefe(/textures\/item\//.test(k[1]), 'dann die Spieltextur als Gegenstand');
 pruefe(/textures\/block\//.test(k[2]), 'dann die Spieltextur als Block');
+pruefe(
+  k[3].endsWith('_side.png') && k[4].endsWith('_top.png'),
+  'zuletzt die Seitenflächen mehrflächiger Blöcke'
+);
 
 pruefe(
   r.spawnEi.kandidaten.some(x => /item\/spawn_egg\.png$/.test(x)),
