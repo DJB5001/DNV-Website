@@ -158,6 +158,52 @@
       </div>
     </section>`,
 
+    // ── Werbeprämie ───────────────────────────────────────────────
+    // Steht bewusst vor "Mitmachen": Es ist ein Grund mehr, sich zu
+    // bewerben oder jemanden mitzubringen, und läuft direkt in die
+    // Bewerbung hinein.
+    //
+    // Im Discord richtet sich der Text nur an Mitglieder ("ihr bekommt").
+    // Hier lesen vor allem Leute, die noch keine sind — deshalb steht der
+    // dritte Punkt da: Wer geworben wurde, muss den Namen im Gespräch
+    // nennen, sonst geht die Prämie verloren. Genau daran scheitert es
+    // sonst, und genau diese Person liest gerade mit.
+    `<section class="dnv-band" id="dnv-praemie" data-mc-motiv="bluete">
+      ${kopf(
+        'Werbeprämie',
+        'geschenk',
+        '250.000 $ für jedes neue',
+        'Mitglied',
+        'Wer jemanden mitbringt, bekommt dafür 250.000 $ — ohne Obergrenze. Kein Zeitraum, keine Bedingung außer der einen: Der Neue muss das Bewerbungsgespräch bestehen.'
+      )}
+      <div class="dnv-raster">
+        ${karte(
+          'sprechblase',
+          'Erzähl von uns',
+          'Du kennst jemanden, der zu uns passt? Schick ihm unseren Discord und sag ihm, worauf er sich einlässt.',
+          'Schritt 1'
+        )}
+        ${karte(
+          'formular',
+          'Er bewirbt sich',
+          'Ganz normal über das Bewerbungs-Panel im Discord. Danach kommt das übliche Kennenlerngespräch.',
+          'Schritt 2'
+        )}
+        ${karte(
+          'haken',
+          'Dein Name fällt im Gespräch',
+          'Der wichtigste Punkt: Wer geworben wurde, nennt den Namen seines Werbers im Gespräch. Ohne das können wir die Prämie nicht zuordnen.',
+          'Schritt 3'
+        )}
+      </div>
+      <ul class="dnv-liste">
+        <li>Ausgezahlt wird, sobald die Aufnahme durch ist</li>
+        <li>Es zählt nur, wer das Bewerbungsgespräch besteht</li>
+        <li>Zweitaccounts und Fake-Bewerbungen zählen nicht</li>
+        <li>Wie viele du anwirbst, ist dir überlassen — es gibt keine Grenze</li>
+      </ul>
+    </section>`,
+
     // ── Mitmachen ─────────────────────────────────────────────────
     `<section class="dnv-band" id="dnv-mitmachen" data-mc-motiv="hoehle">
       ${kopf(
