@@ -1,0 +1,261 @@
+/* ═══════════════════════════════════════════════════════════════
+   DarkNova · Clan-Inhalte
+   ---------------------------------------------------------------
+   Gestaltet die Abschnitte aus js/clan-inhalt.js. Sie erscheinen an
+   zwei Stellen: auf der Clan-Seite und im Home-Reiter der App.
+
+   Beide Seiten führen eigene Farbnamen (clan.css nutzt --akzent, die
+   App --accent-color1). Deshalb holt sich hier jede Angabe ihren Wert
+   über eine Kette: erst die Clan-Seite, dann die App, zuletzt ein
+   fester Wert. So sehen die Abschnitte überall gleich aus, ohne dass
+   die Regeln doppelt gepflegt werden müssen.
+   ═══════════════════════════════════════════════════════════════ */
+
+[data-clan-inhalt] {
+  --c-akzent: var(--akzent, var(--accent-color1, #a97ef0));
+  --c-akzent-hell: var(--akzent-hell, #c9adf7);
+  --c-rand: var(--linie, var(--border, rgba(255, 255, 255, 0.08)));
+  --c-flaeche: var(--karte-grund, var(--surface-card, rgba(255, 255, 255, 0.022)));
+  --c-flaeche-an: var(--karte-grund-an, rgba(255, 255, 255, 0.05));
+  --c-text: var(--fg-hell, var(--text-primary, #fff));
+  --c-leise: var(--leise, var(--text-secondary, #8b87a3));
+  --c-anzeige: var(--anzeige, var(--schrift-display, 'Sora', system-ui, sans-serif));
+  --c-mono: var(--mono, var(--schrift-mono, 'JetBrains Mono', ui-monospace, monospace));
+}
+
+.dnv-band {
+  padding: clamp(3rem, 6vw, 5rem) 0;
+  max-width: 74rem;
+  margin: 0 auto;
+}
+
+.dnv-band + .dnv-band {
+  border-top: 1px solid var(--c-rand);
+}
+
+/* ── Abschnittskopf ─────────────────────────────────────────────── */
+
+.dnv-kopf {
+  text-align: center;
+  margin-bottom: 2.75rem;
+}
+
+.dnv-plakette {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.9rem;
+  border: 1px solid var(--c-rand);
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.03);
+  font-size: 0.78rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--c-text);
+}
+
+.dnv-plakette svg {
+  width: 0.95rem;
+  height: 0.95rem;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: var(--c-akzent);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.dnv-titel {
+  font-family: var(--c-anzeige);
+  font-weight: 800;
+  font-size: clamp(1.7rem, 4vw, 2.6rem);
+  line-height: 1.05;
+  letter-spacing: -0.035em;
+  text-transform: uppercase;
+  text-wrap: balance;
+  color: var(--c-text);
+  margin: 1.1rem 0 0;
+}
+
+/* Das letzte Wort trägt den Akzent — es sagt, worum es geht. */
+.dnv-titel em {
+  font-style: normal;
+  color: var(--c-akzent);
+}
+
+.dnv-einleitung {
+  margin: 1rem auto 0;
+  max-width: 54ch;
+  line-height: 1.65;
+  color: var(--c-leise);
+}
+
+/* ── Karten ─────────────────────────────────────────────────────── */
+
+.dnv-raster {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15.5rem, 1fr));
+  gap: 1rem;
+}
+
+.dnv-raster--zwei {
+  grid-template-columns: repeat(auto-fit, minmax(21rem, 1fr));
+}
+
+.dnv-karte {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1.5rem;
+  border: 1px solid var(--c-rand);
+  border-radius: 16px;
+  background: var(--c-flaeche);
+  transition:
+    border-color 0.25s ease,
+    background 0.25s ease,
+    transform 0.25s ease;
+}
+
+.dnv-karte:hover {
+  border-color: rgba(169, 126, 240, 0.35);
+  background: var(--c-flaeche-an);
+  transform: translateY(-2px);
+}
+
+.dnv-karte__symbol {
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 1px solid rgba(169, 126, 240, 0.28);
+  border-radius: 10px;
+  background: rgba(169, 126, 240, 0.12);
+}
+
+.dnv-karte__symbol svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  fill: none;
+  stroke: var(--c-akzent);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.dnv-karte__titel {
+  margin: 0;
+  font-family: var(--c-anzeige);
+  font-weight: 800;
+  font-size: 1.08rem;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  text-transform: none;
+  color: var(--c-text);
+}
+
+.dnv-karte__text {
+  margin: 0;
+  max-width: none;
+  font-size: 0.92rem;
+  line-height: 1.6;
+  color: var(--c-leise);
+}
+
+/* Der Chip schließt die Karte ab und trägt die harte Angabe. */
+.dnv-karte__chip {
+  align-self: flex-start;
+  margin-top: auto;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid rgba(169, 126, 240, 0.28);
+  border-radius: 7px;
+  background: rgba(169, 126, 240, 0.12);
+  font-family: var(--c-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--c-akzent-hell);
+  white-space: nowrap;
+}
+
+/* ── Liste und Knöpfe ───────────────────────────────────────────── */
+
+.dnv-liste {
+  list-style: none;
+  padding: 0;
+  margin: 0 auto;
+  max-width: 40rem;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.dnv-liste li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.9rem 1.1rem;
+  border: 1px solid var(--c-rand);
+  border-radius: 10px;
+  background: var(--c-flaeche);
+  text-align: left;
+  color: var(--c-text);
+}
+
+.dnv-liste li::before {
+  content: '';
+  flex: 0 0 auto;
+  width: 0.45rem;
+  height: 0.45rem;
+  margin-top: 0.62rem;
+  border-radius: 50%;
+  background: var(--c-akzent);
+  box-shadow: 0 0 10px var(--c-akzent);
+}
+
+.dnv-knopfreihe {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 2rem;
+}
+
+.dnv-knopf {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.72rem 1.35rem;
+  border: 1px solid var(--c-rand);
+  border-radius: 10px !important;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--c-text);
+  font-weight: 700;
+  font-size: 0.9rem;
+  letter-spacing: 0;
+  text-transform: none;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    transform 0.16s ease,
+    box-shadow 0.16s ease,
+    border-color 0.16s ease;
+}
+
+.dnv-knopf--voll {
+  background: linear-gradient(135deg, var(--c-akzent), #7c4fd6);
+  border-color: transparent;
+  color: #14091f;
+  box-shadow: 0 0 26px rgba(169, 126, 240, 0.32);
+}
+
+.dnv-knopf--voll:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 0 38px rgba(169, 126, 240, 0.5);
+}
+
+@media (max-width: 60rem) {
+  .dnv-band {
+    padding-left: 0;
+    padding-right: 0;
+  }
+}

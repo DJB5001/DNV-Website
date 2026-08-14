@@ -22,6 +22,7 @@
   <!-- Redesign: wird nach style.css geladen und ueberschreibt nur das Aussehen -->
   <link rel="stylesheet" href="css/theme.css">
   <link rel="stylesheet" href="css/mitglieder.css">
+  <link rel="stylesheet" href="css/clan-inhalt.css">
   <link rel="stylesheet" href="css/auth.css">
 </head>
 
@@ -1123,16 +1124,16 @@
     <div class="header-controls">
       <a class="dnv-clanlink" id="tab-clan" href="clan.html" onclick="return dnvClanReiter(event)">
         <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path fill="currentColor" d="M12 0l2.6 9.4L24 12l-9.4 2.6L12 24l-2.6-9.4L0 12l9.4-2.6z"/></svg>
-        DNV <span>Clan</span>
+        Home
       </a>
       <div id="tabs" class="tabs">
+        <button id="tab-mitglieder" onclick="goToTab('mitglieder')">Mitglieder</button>
         <button id="tab-market" onclick="goToTab('market')">Markt<span class="loading-spinner"></span></button>
         <button id="tab-auctions" onclick="goToTab('auctions')">Auktionen<span class="loading-spinner"></span></button>
         <button id="tab-deals" onclick="goToTab('deals')">Schnäppchen</button>
         <button id="tab-history" onclick="goToTab('history')">Verlauf<span class="loading-spinner"></span></button>
         <button id="tab-shards" onclick="goToTab('shards')">Shards<span class="loading-spinner"></span></button>
         <button id="tab-items" onclick="goToTab('items')">Items</button>
-        <button id="tab-mitglieder" onclick="goToTab('mitglieder')">Mitglieder</button>
         <button id="tab-profile" onclick="goToTab('profile')">Profil</button>
       </div>
     </div>
@@ -1292,9 +1293,11 @@
         <div class="clan-tab__knoepfe">
           <a class="clan-tab__knopf clan-tab__knopf--voll" href="https://discord.gg/CD4VWsjBqw" target="_blank" rel="noopener noreferrer">Discord beitreten</a>
           <button type="button" class="clan-tab__knopf" onclick="goToTab('mitglieder')">Mitglieder ansehen</button>
-          <a class="clan-tab__knopf" href="clan.html">Zur ganzen Clan-Seite</a>
         </div>
       </div>
+
+      <!-- Die vollständigen Clan-Inhalte, dieselben wie auf clan.html -->
+      <div data-clan-inhalt></div>
     </div>
 
     <div id="mitglieder" class="section">
@@ -1554,6 +1557,7 @@
   <script src="js/script.js"></script>
   <!-- Bewegung des Redesigns. Laeuft eigenstaendig und fasst weder eine
        ID noch eine Klasse aus script.js an. -->
+  <script src="js/clan-inhalt.js"></script>
   <script src="js/mitglieder.js"></script>
   <script src="js/nova.js"></script>
 
