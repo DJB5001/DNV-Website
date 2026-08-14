@@ -859,6 +859,33 @@ button:focus-visible {
   color: var(--accent-color1);
 }
 
+/* Verzauberungen auf der Auktionskarte.
+   Kleiner als im Detailfenster: Auf der Karte stehen sie neben Preis und
+   Restzeit und dürfen die nicht verdrängen. Deshalb auch nur bis zu drei,
+   der Rest als "+n" mit der vollständigen Liste im Titel. */
+.auction-enchants {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.25rem;
+  margin: 0.35rem 0 0.15rem;
+}
+
+.enchant-badge--klein {
+  padding: 0.1rem 0.45rem;
+  font-size: 0.68rem;
+  font-weight: 500;
+  border-radius: 1rem;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.enchant-badge--rest {
+  opacity: 0.75;
+}
+
 #notificationBtn.active {
   background-color: #34D399;
   color: var(--text-dark);
