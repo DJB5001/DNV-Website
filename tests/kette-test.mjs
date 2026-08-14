@@ -1,15 +1,19 @@
-// Integrationstest der Bild-Rückfallkette im echten Browser.
+// Test der Bild-Rückfallkette im echten Browser.
 //
-// Voraussetzungen:
-//   1. Playwright verfügbar (npm i -D playwright, oder global installiert)
-//   2. Die Seite wird ausgeliefert, z. B.: npx http-server . -p 8123
-//      Abweichender Port über PORT=... setzen.
+// Voraussetzungen: Playwright, und die Seite muss ausgeliefert werden:
+//   npx http-server . -p 8123     (abweichender Port über PORT=...)
 //
-// Hier im Test schlagen ALLE externen Bilder fehl, deshalb lässt sich
-// die komplette Kette in einem Durchlauf beobachten.
-
-// NODE_PATH hilft bei ESM nicht weiter, deshalb wird die globale
-// Installation notfalls selbst aufgelöst.
+// Geprüft wird die Schrittlogik: Reihenfolge der Quellen, Vollständigkeit,
+// sauberer Abschluss beim Verbotsschild und kein Nachfeuern.
+//
+// bildRueckfall wird dafür direkt aufgerufen, statt auf echte Fehlschläge
+// zu warten. Das ist Absicht: Ein scheiterndes Bild braucht bis zur
+// Zeitüberschreitung mitunter zehn Sekunden, was den Test langsam und
+// wacklig machen würde. Ob die Adressen tatsächlich etwas liefern, prüft
+// tests/bilder-test.mjs mit echten Abrufen.
+//
+// NODE_PATH hilft bei ESM nicht, deshalb wird die globale Installation
+// notfalls selbst aufgelöst.
 let chromium;
 try {
   ({ chromium } = await import('playwright'));
@@ -26,50 +30,76 @@ try {
 
 const b = await chromium.launch();
 const p = await b.newPage();
-await p.goto('http://127.0.0.1:' + (process.env.PORT || 8123) + '/index.html', { waitUntil: 'domcontentloaded' });
-await p.waitForTimeout(2200);
+await p.goto(`http://127.0.0.1:${process.env.PORT || 8123}/index.html`, {
+  waitUntil: 'domcontentloaded',
+});
+await p.waitForTimeout(2000);
 
-const r = await p.evaluate(async () => {
-  const ergebnis = {};
-  ergebnis.funktionenDa = {
-    bildRueckfall: typeof bildRueckfall,
-    materialBildUrl: typeof materialBildUrl,
+const r = await p.evaluate(() => {
+  const durchlauf = material => {
+    const kandidaten = materialBildKandidaten(material);
+    const img = document.createElement('img');
+    img.dataset.bildkette = JSON.stringify(kandidaten);
+    img.onerror = () => {};
+
+    // Zwei Schritte mehr als Kandidaten: Der vorletzte muss das
+    // Verbotsschild setzen, der letzte darf nichts mehr ändern.
+    const gesehen = [];
+    for (let i = 0; i < kandidaten.length + 2; i++) {
+      bildRueckfall(img);
+      gesehen.push(img.getAttribute('src'));
+    }
+    return { kandidaten, gesehen, onerrorDanach: img.onerror === null };
   };
-  ergebnis.typUrl = materialBildUrl('NETHERITE_SWORD');
 
-  // Bild mit totem eigenem Link, so wie "Magnet" oder "Wasserwaage"
-  const img = document.createElement('img');
-  img.dataset.material = 'NETHERITE_SWORD';
-  img.onerror = () => bildRueckfall(img);
-
-  // Jede Änderung von src mitschreiben. Zu festen Zeiten zu messen geht
-  // daneben: Beide Fehlschläge können längst durch sein.
-  const schritte = [];
-  new MutationObserver(() => schritte.push(img.getAttribute('src')))
-    .observe(img, { attributes: true, attributeFilter: ['src'] });
-
-  const warte = ms => new Promise(r => setTimeout(r, ms));
-
-  img.src = 'https://i.postimg.cc/000TOT/gibt-es-nicht.png';
-  document.body.appendChild(img);
-  await warte(9000);
-
-  ergebnis.schritte = schritte;
-  ergebnis.typVersucht = img.dataset.typVersucht;
-  ergebnis.onerrorDanach = img.onerror === null ? 'null (kein Kreisel)' : 'noch gesetzt';
-  img.remove();
-  return ergebnis;
+  return {
+    schwert: durchlauf('NETHERITE_SWORD'),
+    spawnEi: durchlauf('ZOMBIE_SPAWN_EGG'),
+    ohneMaterial: durchlauf(undefined),
+  };
 });
 
-console.log(JSON.stringify(r, null, 1));
+const kurz = s => (s.includes('/textures/') ? s.split('/textures/')[1] : s.split('/').pop());
+for (const [name, e] of Object.entries(r)) {
+  console.log(`── ${name}`);
+  e.gesehen.forEach((s, i) => console.log(`   ${i + 1}. ${kurz(s)}`));
+}
+console.log();
 
-// schritte[0] ist der Startwert, die Rückfallstufen folgen danach.
-const [, stufe1, stufe2] = r.schritte;
-const ok1 = stufe1 === r.typUrl;
-const ok2 = /Barrier/.test(stufe2);
-console.log(`\n${ok1 ? '  ok  ' : ' FEHL '} Stufe 1: totes eigenes Bild → Typ-Bild`);
-console.log(`${ok2 ? '  ok  ' : ' FEHL '} Stufe 2: totes Typ-Bild → Verbotsschild`);
-console.log(`${r.onerrorDanach.startsWith('null') ? '  ok  ' : ' FEHL '} kein endloses Nachfeuern`);
+let fehler = 0;
+const pruefe = (bed, t) => {
+  console.log(`${bed ? '  ok  ' : ' FEHL '} ${t}`);
+  if (!bed) fehler++;
+};
 
+const k = r.schwert.kandidaten;
+pruefe(k.length === 3, 'drei Quellen für ein gewöhnliches Material');
+pruefe(/mcdf\.wiki\.gg/.test(k[0]), 'zuerst das Wiki (schönere Ansichten)');
+pruefe(/textures\/item\//.test(k[1]), 'dann die Spieltextur als Gegenstand');
+pruefe(/textures\/block\//.test(k[2]), 'dann die Spieltextur als Block');
+
+pruefe(
+  r.spawnEi.kandidaten.some(x => /item\/spawn_egg\.png$/.test(x)),
+  'Spawn-Eier greifen auf die gemeinsame Textur zurück'
+);
+
+for (const [name, e] of Object.entries(r)) {
+  const bisKette = e.gesehen.slice(0, e.kandidaten.length);
+  pruefe(
+    bisKette.join('|') === e.kandidaten.join('|'),
+    `${name}: alle Stufen in der richtigen Reihenfolge`
+  );
+  pruefe(
+    /Barrier/.test(e.gesehen[e.kandidaten.length]),
+    `${name}: danach das Verbotsschild`
+  );
+  pruefe(
+    e.gesehen[e.kandidaten.length] === e.gesehen[e.kandidaten.length + 1],
+    `${name}: danach ändert sich nichts mehr`
+  );
+  pruefe(e.onerrorDanach, `${name}: onerror abgeschaltet, kein Kreisel`);
+}
+
+console.log(fehler === 0 ? '\nAlle Prüfungen bestanden.' : `\n${fehler} fehlgeschlagen.`);
 await b.close();
-process.exit(ok1 && ok2 ? 0 : 1);
+process.exit(fehler === 0 ? 0 : 1);

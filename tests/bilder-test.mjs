@@ -1,3 +1,11 @@
+// Prüft die Bildquellen für Item-Typen gegen den echten Verlauf.
+//
+// Ohne Argument werden nur die erzeugten Adressen geprüft (schnell).
+// Mit --abrufen wird jede Adresse tatsächlich abgerufen — das dauert
+// einige Minuten, belegt aber, wie viel wirklich abgedeckt ist.
+//
+//   node tests/bilder-test.mjs <pfad-zu-auction-history.json> [--abrufen]
+
 import fs from 'node:fs';
 import vm from 'node:vm';
 
@@ -16,67 +24,117 @@ const stueck = (von, bis) => {
 
 const block =
   stueck('// Rückfallbild, wenn auch das Typ-Bild', 'const App = {') +
-  stueck('// Bild des Item-Typs.', 'function getAuctionCategoryKey');
+  stueck('// Kandidaten für das Bild eines Item-Typs', 'function getAuctionCategoryKey');
 
-const kontext = { console };
-vm.createContext(kontext);
-vm.runInContext(config, kontext);
-vm.runInContext(block + '\nglobalThis.__api = { materialBildUrl, getAuctionItemIcon, BARRIER_BILD };', kontext);
-const { materialBildUrl, getAuctionItemIcon, BARRIER_BILD } = kontext.__api;
-
-// Der Verlauf liegt im Datenrepo DJB5001/opsuchtinfo. Pfad per Argument
-// oder Umgebungsvariable, damit der Test nicht an einem Rechner klebt.
+const argumente = process.argv.slice(2);
+const abrufen = argumente.includes('--abrufen');
 const pfad =
-  process.argv[2] ||
+  argumente.find(a => !a.startsWith('--')) ||
   process.env.AUKTIONSVERLAUF ||
   '../opsuchtinfo/auction-history.json';
 
 if (!fs.existsSync(pfad)) {
-  console.error(
-    `auction-history.json nicht gefunden unter: ${pfad}\n` +
-      'Aufruf: node tests/bilder-test.mjs <pfad-zu-auction-history.json>'
-  );
+  console.error(`auction-history.json nicht gefunden unter: ${pfad}`);
   process.exit(2);
 }
 
+const kontext = { console };
+vm.createContext(kontext);
+vm.runInContext(config, kontext);
+vm.runInContext(
+  block + '\nglobalThis.__api = { materialBildKandidaten, materialLesbar, BARRIER_BILD };',
+  kontext
+);
+const { materialBildKandidaten, materialLesbar } = kontext.__api;
+
 const historie = JSON.parse(fs.readFileSync(pfad, 'utf8'));
 
-// ── Namensbildung stichprobenartig ansehen ──────────────────────────
-console.log('=== Materialname → Dateiname ===');
-for (const m of ['NETHERITE_PICKAXE', 'PAPER', 'GOLDEN_HORSE_ARMOR', 'TOTEM_OF_UNDYING',
-                 'VAULT', 'PLAYER_HEAD', 'IRON_BOOTS', 'DIAMOND_SWORD']) {
-  console.log(`  ${m.padEnd(22)} → ${materialBildUrl(m).split('/').pop()}`);
+let fehler = 0;
+const pruefe = (bed, t, zusatz = '') => {
+  console.log(`${bed ? '  ok  ' : ' FEHL '} ${t}${zusatz ? '  → ' + zusatz : ''}`);
+  if (!bed) fehler++;
+};
+
+// ── Namensbildung ────────────────────────────────────────────────────
+console.log('=== Erzeugte Adressen ===');
+for (const m of ['NETHERITE_PICKAXE', 'TOTEM_OF_UNDYING', 'ZOMBIE_SPAWN_EGG', 'TNT']) {
+  const k = materialBildKandidaten(m);
+  console.log(`  ${m.padEnd(20)} ${k.map(x => x.split('/').pop()).join('  →  ')}`);
 }
 
-// ── Wirkung auf den echten Bestand ──────────────────────────────────
-const alleItems = [];
+pruefe(
+  materialBildKandidaten('TOTEM_OF_UNDYING')[0].endsWith('Totem_of_Undying.png'),
+  'kleine Wörter bleiben im Wiki-Namen klein'
+);
+pruefe(
+  materialBildKandidaten('ZOMBIE_SPAWN_EGG').some(x => x.endsWith('item/spawn_egg.png')),
+  'Spawn-Eier bekommen die gemeinsame Textur'
+);
+pruefe(materialBildKandidaten(undefined).length === 0, 'ohne Material keine Adressen');
+pruefe(materialLesbar('OAK_LOG') === 'Oak Log', 'Materialname wird lesbar');
+
+// ── Materialien im echten Bestand ────────────────────────────────────
+const haeufig = new Map();
 for (const verkaeufe of Object.values(historie)) {
-  for (const s of verkaeufe) if (s.item) alleItems.push(s.item);
+  for (const s of verkaeufe) {
+    const m = s.item?.material;
+    if (m) haeufig.set(m, (haeufig.get(m) || 0) + 1);
+  }
+}
+const gesamtItems = [...haeufig.values()].reduce((a, b) => a + b, 0);
+console.log(`\n=== ${haeufig.size} Materialien, ${gesamtItems.toLocaleString('de-DE')} Items ===`);
+
+const auffaellig = [...haeufig.keys()]
+  .flatMap(m => materialBildKandidaten(m))
+  .filter(u => /\s|__|\/\.png|[^\x20-\x7e]/.test(u));
+pruefe(auffaellig.length === 0, 'keine kaputt aussehenden Adressen', String(auffaellig.length));
+pruefe(
+  [...haeufig.keys()].every(m => materialBildKandidaten(m).length >= 3),
+  'jedes Material bekommt die volle Kette'
+);
+
+// ── Optional: wirklich abrufen ───────────────────────────────────────
+if (abrufen) {
+  console.log('\n=== Abruf (dauert einige Minuten) ===');
+  const treffer = [];
+  const daneben = [];
+  const materialien = [...haeufig.entries()].sort((a, b) => b[1] - a[1]);
+  const WELLE = 12;
+
+  for (let i = 0; i < materialien.length; i += WELLE) {
+    await Promise.all(
+      materialien.slice(i, i + WELLE).map(async ([mat, anzahl]) => {
+        // Das Wiki ist aus vielen Umgebungen nicht erreichbar, deshalb
+        // zählt hier nur, was die Spieltexturen abdecken.
+        const texturen = materialBildKandidaten(mat).filter(u => u.includes('/textures/'));
+        for (const u of texturen) {
+          try {
+            if ((await fetch(u, { method: 'HEAD' })).ok) return treffer.push({ mat, anzahl });
+          } catch {
+            /* nächste Stufe */
+          }
+        }
+        daneben.push({ mat, anzahl });
+      })
+    );
+    process.stdout.write(`\r  ${Math.min(i + WELLE, materialien.length)}/${materialien.length}`);
+  }
+
+  const abgedeckt = treffer.reduce((s, e) => s + e.anzahl, 0);
+  const quote = (abgedeckt / gesamtItems) * 100;
+  console.log(
+    `\n  Spieltexturen decken ${abgedeckt.toLocaleString('de-DE')}/${gesamtItems.toLocaleString('de-DE')} Items ab = ${quote.toFixed(1)} %`
+  );
+  console.log('  Ohne Textur (häufigste):');
+  daneben
+    .sort((a, b) => b.anzahl - a.anzahl)
+    .slice(0, 10)
+    .forEach(e => console.log(`    ${String(e.anzahl).padStart(5)}×  ${e.mat}`));
+
+  pruefe(quote > 85, 'Spieltexturen decken über 85 % der Items ab', `${quote.toFixed(1)} %`);
+} else {
+  console.log('\n(Abruf übersprungen — mit --abrufen wirklich prüfen)');
 }
 
-let barrier = 0, typBild = 0, eigenes = 0;
-const materialien = new Map();
-for (const it of alleItems) {
-  const url = getAuctionItemIcon(it);
-  if (url === BARRIER_BILD) barrier++;
-  else if (url === materialBildUrl(it.material)) {
-    typBild++;
-    materialien.set(it.material, (materialien.get(it.material) || 0) + 1);
-  } else eigenes++;
-}
-
-const gesamt = alleItems.length;
-console.log(`\n=== ${gesamt.toLocaleString('de-DE')} Items im Verlauf ===`);
-console.log(`  eigenes Bild (Konfiguration/API): ${eigenes.toLocaleString('de-DE').padStart(7)}  ${(eigenes / gesamt * 100).toFixed(1)}%`);
-console.log(`  Typ-Bild (NEU statt Verbotsschild): ${typBild.toLocaleString('de-DE').padStart(6)}  ${(typBild / gesamt * 100).toFixed(1)}%`);
-console.log(`  Verbotsschild übrig:              ${barrier.toLocaleString('de-DE').padStart(7)}  ${(barrier / gesamt * 100).toFixed(1)}%`);
-
-console.log('\n=== Häufigste Typen, die jetzt ein Bild bekommen ===');
-[...materialien.entries()].sort((a, b) => b[1] - a[1]).slice(0, 12)
-  .forEach(([m, n]) => console.log(`  ${String(n).padStart(6)}×  ${m.padEnd(24)} → ${materialBildUrl(m).split('/').pop()}`));
-
-// ── Auffälligkeiten in der Namensbildung ────────────────────────────
-const verdaechtig = [...materialien.keys()]
-  .map(m => materialBildUrl(m).split('/').pop())
-  .filter(n => /__|^_|_\.png|[^A-Za-z0-9_.]/.test(n));
-console.log('\nAuffällige Dateinamen:', verdaechtig.length ? verdaechtig : 'keine');
+console.log(fehler === 0 ? '\nAlle Prüfungen bestanden.' : `\n${fehler} fehlgeschlagen.`);
+process.exit(fehler === 0 ? 0 : 1);
