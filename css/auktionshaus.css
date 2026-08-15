@@ -1,0 +1,662 @@
+/* ═══════════════════════════════════════════════════════════════
+   Auktionshaus — Kopf, Kennzahlen, Steuerung, Karten
+   ═══════════════════════════════════════════════════════════════
+
+   Was hier anders ist als vorher, und warum:
+
+   1. Der Inhalt steht auf ruhigem Grund. Vorher schien der Itemregen
+      durch jede Karte und jeden Text hindurch — das kostet Kontrast an
+      genau den Stellen, an denen Zahlen gelesen werden. Die Flächen sind
+      jetzt deckend, der Regen bleibt als Atmosphäre dahinter.
+
+   2. Die Seite sagt, was sie ist. Vorher ging es von der Reiterleiste
+      direkt in ein Suchfeld. Jetzt steht oben eine Überschrift, ein Satz
+      dazu und vier Zahlen — man weiß nach einer Sekunde, woran man ist.
+
+   3. Alles zum Filtern steht in einem Kasten. Vorher waren es drei lose
+      Reihen (Suche, zwei Auswahlfelder, ein Knopf), die untereinander
+      wegliefen. Zusammengefasst ist es eine Bedienleiste statt drei
+      Fundstücken.
+
+   4. Die Karten lesen sich von links. Zentrierter Text zwingt das Auge
+      bei jeder Zeile zurück in die Mitte; bei acht Karten nebeneinander
+      ist das anstrengend. Bild und Titel stehen jetzt nebeneinander, die
+      Zahlen darunter in festen Spalten — untereinander vergleichbar.
+
+   Die Farbe bleibt das Violett der Seite. Übernommen ist die Ordnung,
+   nicht die Farbe: eine Kopie wäre keine eigene Seite mehr.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Ruhiger Grund ────────────────────────────────────────────
+   Ein feines Raster statt einer Fototapete. Es gibt der Fläche Tiefe,
+   ohne mit dem Inhalt um Aufmerksamkeit zu ringen — sichtbar nur, wenn
+   man darauf achtet. */
+#auctions,
+#deals,
+#history {
+  position: relative;
+}
+
+#auctions::before,
+#deals::before,
+#history::before {
+  content: '';
+  position: absolute;
+  inset: -2rem -1rem;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.022) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.022) 1px, transparent 1px);
+  background-size: 56px 56px;
+  /* Am Rand ausblenden, damit das Raster nirgends abrupt endet. */
+  mask-image: radial-gradient(ellipse 80% 70% at 50% 30%, #000 40%, transparent 100%);
+  -webkit-mask-image: radial-gradient(ellipse 80% 70% at 50% 30%, #000 40%, transparent 100%);
+}
+
+/* ── Kopf ─────────────────────────────────────────────────────── */
+.ah-kopf {
+  text-align: center;
+  max-width: 46rem;
+  margin: 0 auto 2.5rem;
+}
+
+.ah-marke {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.4rem 0.95rem;
+  border-radius: 999px;
+  border: 1px solid var(--ah-rand, rgba(255, 255, 255, 0.1));
+  background: var(--ah-flaeche-2, #16162340);
+  color: var(--accent-color1);
+  font-family: var(--schrift-text, inherit);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  margin-bottom: 1.4rem;
+}
+
+.ah-marke svg {
+  width: 15px;
+  height: 15px;
+}
+
+/* Die !important stehen hier nicht aus Bequemlichkeit: In style.css gibt es
+   eine globale h1-Regel, die selbst mit !important arbeitet (Serifenschrift,
+   Versalien, Goldverlauf). Ohne Gegenwehr bekäme diese Überschrift ein
+   Aussehen, das mit dem Rest der Seite nichts zu tun hat. */
+.ah-kopf h1.ah-titel {
+  font-family: var(--schrift-display, system-ui, sans-serif) !important;
+  font-size: clamp(2.3rem, 5vw, 3.6rem) !important;
+  font-weight: 800 !important;
+  line-height: 1.02;
+  letter-spacing: -0.03em;
+  text-transform: none;
+  margin: 0 0 1rem !important;
+  color: var(--text-primary);
+}
+
+/* Zwei Töne statt eines Verlaufs: Ein Verlauf über das ganze Wort macht
+   den Anfang hell und das Ende blass. So bleibt beides voll lesbar und
+   die Betonung liegt genau auf der zweiten Hälfte. */
+.ah-kopf h1.ah-titel span {
+  background: none;
+  -webkit-background-clip: initial;
+  background-clip: initial;
+  -webkit-text-fill-color: currentColor;
+  color: var(--accent-color1);
+  animation: none;
+}
+
+.ah-lead {
+  font-size: 1.02rem;
+  line-height: 1.65;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* ── Kennzahlen ───────────────────────────────────────────────── */
+.ah-zahlen {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.ah-zahl {
+  display: flex;
+  align-items: center;
+  gap: 0.95rem;
+  padding: 1.1rem 1.25rem;
+  border: 1px solid var(--ah-rand, rgba(255, 255, 255, 0.09));
+  border-radius: 14px;
+  background: var(--ah-flaeche, #101019);
+  transition: border-color 0.2s ease, transform 0.2s ease;
+}
+
+.ah-zahl:hover {
+  border-color: var(--accent-glow, rgba(169, 126, 240, 0.3));
+  transform: translateY(-2px);
+}
+
+.ah-zahl__symbol {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  background: var(--ah-symbolgrund, rgba(169, 126, 240, 0.12));
+  color: var(--accent-color1);
+}
+
+.ah-zahl__symbol svg {
+  width: 19px;
+  height: 19px;
+}
+
+.ah-zahl__text {
+  min-width: 0;
+}
+
+.ah-zahl__label {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 0.15rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ah-zahl__wert {
+  display: block;
+  font-family: var(--schrift-display, inherit);
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+
+/* ── Steuerung ────────────────────────────────────────────────── */
+.ah-steuerung {
+  border: 1px solid var(--ah-rand, rgba(255, 255, 255, 0.09));
+  border-radius: 16px;
+  background: var(--ah-flaeche, #101019);
+  padding: 1.1rem;
+  margin-bottom: 1.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.ah-zeile {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+}
+
+.ah-suche {
+  position: relative;
+  flex: 1;
+  min-width: 240px;
+}
+
+.ah-suche svg {
+  position: absolute;
+  left: 0.9rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 17px;
+  height: 17px;
+  color: var(--text-secondary);
+  pointer-events: none;
+}
+
+/* Höhere Spezifität, damit die alte .search-input-Regel nicht gewinnt. */
+.ah-steuerung .ah-suche input.search-input {
+  width: 100%;
+  margin: 0;
+  padding: 0.72rem 1rem 0.72rem 2.6rem;
+  border-radius: 11px;
+  border: 1px solid var(--ah-rand, rgba(255, 255, 255, 0.09));
+  background: var(--ah-eingabe, rgba(0, 0, 0, 0.28));
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.94rem;
+  transition: border-color 0.18s ease, background 0.18s ease;
+}
+
+.ah-steuerung .ah-suche input.search-input::placeholder {
+  color: var(--text-secondary);
+}
+
+.ah-steuerung .ah-suche input.search-input:focus {
+  outline: none;
+  border-color: var(--accent-color1);
+  background: var(--ah-eingabe-fokus, rgba(0, 0, 0, 0.42));
+}
+
+/* Knöpfe und Auswahlfelder in einer Form — sie stehen nebeneinander und
+   sollen als eine Leiste lesbar sein, nicht als zwei Bauteile. */
+.ah-steuerung .ah-knopf,
+.ah-steuerung select.auction-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: 42px;
+  padding: 0 1rem;
+  margin: 0;
+  border: 1px solid var(--ah-rand, rgba(255, 255, 255, 0.09));
+  border-radius: 11px;
+  background: var(--ah-eingabe, rgba(0, 0, 0, 0.28));
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  cursor: pointer;
+  transition: border-color 0.18s ease, color 0.18s ease;
+  white-space: nowrap;
+}
+
+.ah-steuerung .ah-knopf:hover,
+.ah-steuerung select.auction-sort:hover {
+  border-color: var(--accent-color1);
+  color: var(--text-primary);
+}
+
+/* Das versteckte Auswahlfeld ist die Datenquelle der Chips, nicht Teil der
+   Leiste. Die Regel darüber gibt jedem select ein display — ohne diese
+   Zeile stünde es sichtbar darunter. */
+.ah-steuerung select[hidden],
+.ah-steuerung [hidden] {
+  display: none !important;
+}
+
+.ah-steuerung .ah-knopf svg {
+  width: 16px;
+  height: 16px;
+}
+
+.ah-steuerung .ah-knopf--laedt svg {
+  animation: ah-dreh 0.8s linear infinite;
+}
+
+@keyframes ah-dreh {
+  to { transform: rotate(360deg); }
+}
+
+.ah-chips {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.ah-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  height: 36px;
+  padding: 0 0.85rem;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 0.87rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.16s ease, background 0.16s ease, border-color 0.16s ease;
+  white-space: nowrap;
+}
+
+.ah-chip:hover {
+  color: var(--text-primary);
+  background: var(--ah-chip-hover, rgba(255, 255, 255, 0.045));
+}
+
+.ah-chip--aktiv {
+  color: var(--accent-color1);
+  background: var(--ah-symbolgrund, rgba(169, 126, 240, 0.12));
+  border-color: var(--accent-glow, rgba(169, 126, 240, 0.28));
+}
+
+.ah-chip__zahl {
+  font-size: 0.78rem;
+  font-weight: 700;
+  opacity: 0.62;
+}
+
+/* ── Karten ───────────────────────────────────────────────────── */
+/* Die Karten liegen in einem .grid innerhalb des Behälters — der Behälter
+   selbst trägt außerdem den Lade-Hinweis und den "Mehr anzeigen"-Knopf. */
+#auctionContainer .grid,
+#dealsContainer .grid,
+#historyContainer .grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+  gap: 1rem;
+}
+
+/* Die Karte selbst: deckend, damit Zahlen scharf stehen. */
+#auctionContainer .card,
+#dealsContainer .card,
+#historyContainer .card,
+#profile-activity-container .card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding: 1.1rem;
+  border: 1px solid var(--ah-rand, rgba(255, 255, 255, 0.09));
+  border-radius: 15px;
+  background: var(--ah-flaeche, #101019);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+#auctionContainer .card:hover,
+#dealsContainer .card:hover,
+#historyContainer .card:hover,
+#profile-activity-container .card:hover {
+  border-color: var(--accent-glow, rgba(169, 126, 240, 0.35));
+  transform: translateY(-3px);
+  box-shadow: 0 12px 28px -14px rgba(0, 0, 0, 0.75);
+}
+
+/* Kopf der Karte: Bild und Titel nebeneinander. */
+.auction-kopf {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  min-width: 0;
+}
+
+.auction-symbol {
+  flex-shrink: 0;
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  border: 1px solid var(--ah-rand, rgba(255, 255, 255, 0.07));
+  background: var(--ah-eingabe, rgba(0, 0, 0, 0.28));
+}
+
+/* Die alte Regel skalierte das Item-Bild groß und mittig. Hier ist es ein
+   Symbol neben dem Namen — Pixelkunst bleibt dabei scharf. */
+#auctionContainer .card .auction-symbol img,
+#dealsContainer .card .auction-symbol img,
+#historyContainer .card .auction-symbol img,
+#profile-activity-container .card .auction-symbol img {
+  width: 30px;
+  height: 30px;
+  margin: 0;
+  object-fit: contain;
+  image-rendering: pixelated;
+  filter: none;
+}
+
+.auction-kopf__text {
+  min-width: 0;
+  flex: 1;
+}
+
+#auctionContainer .card h3.auction-name,
+#dealsContainer .card h3.auction-name,
+#historyContainer .card h3.auction-name,
+#profile-activity-container .card h3.auction-name {
+  margin: 0 0 0.15rem;
+  font-family: var(--schrift-display, inherit);
+  font-size: 0.98rem;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+  text-align: left;
+  /* Zwei Zeilen reichen; danach kürzen, damit alle Karten gleich hoch
+     bleiben und die Zahlen auf einer Linie stehen. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.auction-art {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Verkäufer links, Restzeit rechts — eine Zeile mit zwei Enden. */
+.auction-zeile {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding-top: 0.15rem;
+  border-top: 1px solid var(--ah-rand-schwach, rgba(255, 255, 255, 0.05));
+  padding-block: 0.65rem 0;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+
+.auction-verkaeufer {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.auction-verkaeufer__kopf {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  image-rendering: pixelated;
+  background: var(--ah-eingabe, rgba(0, 0, 0, 0.28));
+}
+
+.auction-verkaeufer__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#auctionContainer .card .auction-timer,
+#dealsContainer .card .auction-timer,
+#historyContainer .card .auction-timer {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  border: none;
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.auction-timer svg {
+  width: 13px;
+  height: 13px;
+}
+
+/* Läuft bald ab: die einzige Zahl auf der Karte, die drängt. */
+.auction-timer--knapp {
+  color: var(--buy-color, #e8636f) !important;
+  font-weight: 700;
+}
+
+/* Preise: Beschriftung links, Zahl rechts. Feste Spalten machen die
+   Karten untereinander vergleichbar, ohne dass man suchen muss. */
+/* Ganz unten festgemacht: Karten sind unterschiedlich hoch, weil die eine
+   Verzauberungen hat und die andere nicht. Klebt der Preisblock am Boden,
+   stehen die Beträge einer Reihe trotzdem auf einer Linie — und genau die
+   will man beim Überfliegen vergleichen. */
+.auction-preise {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-top: auto;
+}
+
+#auctionContainer .card .price-info,
+#dealsContainer .card .price-info,
+#historyContainer .card .price-info,
+#profile-activity-container .card .price-info {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  border: none;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  text-align: left;
+}
+
+.price-info__wert {
+  font-family: var(--schrift-mono, inherit);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+
+/* Der wichtigste Betrag der Karte — größer und in der Akzentfarbe. */
+.price-info--haupt {
+  align-items: center;
+}
+
+.price-info--haupt .price-info__wert {
+  font-size: 1.12rem;
+  color: var(--accent-color1);
+}
+
+.price-info--sofort .price-info__wert {
+  color: var(--sell-color, #4fbf87);
+}
+
+/* Verzauberungen bleiben, rücken aber nach links wie alles andere. */
+#auctionContainer .card .auction-enchants,
+#dealsContainer .card .auction-enchants,
+#historyContainer .card .auction-enchants,
+#profile-activity-container .card .auction-enchants {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  justify-content: flex-start;
+  margin: 0;
+}
+
+/* Abzeichen oben rechts, außerhalb des Textflusses. */
+#auctionContainer .card .deal-badge,
+#auctionContainer .card .auction-badge,
+#dealsContainer .card .deal-badge,
+#historyContainer .card .deal-badge {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  z-index: 2;
+  padding: 0.2rem 0.5rem;
+  border-radius: 7px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Leerer Zustand ───────────────────────────────────────────── */
+.ah-leer {
+  grid-column: 1 / -1;
+  padding: 3.5rem 1.5rem;
+  text-align: center;
+  border: 1px dashed var(--ah-rand, rgba(255, 255, 255, 0.09));
+  border-radius: 16px;
+  color: var(--text-secondary);
+}
+
+.ah-leer strong {
+  display: block;
+  margin-bottom: 0.4rem;
+  font-size: 1.05rem;
+  color: var(--text-primary);
+}
+
+/* ── Helles Erscheinungsbild ──────────────────────────────────── */
+body.light-mode {
+  --ah-flaeche: #ffffff;
+  --ah-flaeche-2: rgba(0, 0, 0, 0.03);
+  --ah-rand: rgba(0, 0, 0, 0.1);
+  --ah-rand-schwach: rgba(0, 0, 0, 0.06);
+  --ah-eingabe: rgba(0, 0, 0, 0.035);
+  --ah-eingabe-fokus: rgba(0, 0, 0, 0.06);
+  --ah-chip-hover: rgba(0, 0, 0, 0.045);
+  --ah-symbolgrund: rgba(166, 123, 91, 0.14);
+}
+
+body.light-mode #auctions::before,
+body.light-mode #deals::before,
+body.light-mode #history::before {
+  background-image:
+    linear-gradient(rgba(0, 0, 0, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.035) 1px, transparent 1px);
+}
+
+/* ── Schmale Fenster ──────────────────────────────────────────── */
+@media (max-width: 760px) {
+  .ah-zahlen {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.65rem;
+  }
+
+  .ah-zahl {
+    padding: 0.85rem 0.9rem;
+    gap: 0.7rem;
+  }
+
+  .ah-zahl__symbol {
+    width: 34px;
+    height: 34px;
+  }
+
+  .ah-zahl__wert {
+    font-size: 1.2rem;
+  }
+
+  .ah-steuerung {
+    padding: 0.85rem;
+  }
+
+  /* Die Chips laufen seitlich weiter, statt vier Reihen hoch zu werden. */
+  .ah-chips {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: 0.15rem;
+  }
+
+  .ah-chips::-webkit-scrollbar {
+    display: none;
+  }
+
+  #auctionContainer .grid,
+  #dealsContainer .grid,
+  #historyContainer .grid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 0.7rem;
+  }
+}

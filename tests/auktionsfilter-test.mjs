@@ -81,6 +81,11 @@ await seite.addInitScript(() => {
     }),
   };
   window.alert = () => {};
+
+  // Der Hinweis beim ersten Besuch legt sich über die Seite und fängt jeden
+  // Klick ab. Für den Test ist er schon gesehen.
+  sessionStorage.setItem('hasSeenDisclaimer', 'true');
+  sessionStorage.setItem('cookiesAccepted', 'true');
 });
 
 // Auktionen und Verlauf abfangen, damit der Test nicht am Netz hängt.
@@ -185,8 +190,11 @@ try {
     arten.find((a) => a.wert === 'art:op')?.text);
   pruefe('Leere Arten fehlen', !arten.some((a) => a.wert === 'art:platte'), arten.map((a) => a.wert).join(', '));
 
+  // Gefiltert wird über die Chips — das Auswahlfeld dahinter ist nur noch
+  // die Datenquelle und für den Besucher unsichtbar. Der Test geht deshalb
+  // denselben Weg wie er: klicken, nicht auswählen.
   const waehle = async (wert) => {
-    await seite.selectOption('#auction-filters', wert);
+    await seite.click(`.ah-chip[data-wert="${wert}"]`);
     await seite.waitForTimeout(400);
     return karten();
   };

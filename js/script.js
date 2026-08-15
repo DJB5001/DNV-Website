@@ -2457,6 +2457,127 @@ function passtZurArt(auktion, artId) {
   return Boolean(art.passt(item, item.displayName || '', (item.material || '').toUpperCase()));
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   Kopfzeile des Auktionshauses: vier Zahlen und die Filter-Chips.
+   ═══════════════════════════════════════════════════════════════ */
+
+/** Große Beträge lesbar kürzen — 4_100_000_000 wird zu "4.1 Mrd". */
+function ahZahlKurz(wert) {
+  const n = Number(wert) || 0;
+  if (n >= 1_000_000_000) return `${(n / 1_000_000_000).toFixed(1).replace('.', ',')} Mrd`;
+  if (n >= 1_000_000) return `${Math.round(n / 1_000_000)} Mio`;
+  if (n >= 1_000) return `${Math.round(n / 1_000)} Tsd`;
+  return String(Math.round(n));
+}
+
+/**
+ * Die vier Zahlen über der Liste.
+ *
+ * Sie beziehen sich bewusst auf alle laufenden Auktionen und nicht auf die
+ * gefilterte Auswahl: Sie sollen sagen, wie das Auktionshaus gerade
+ * aussieht — nicht, wie viele Treffer die eigene Suche hatte. Die Trefferzahl
+ * steht ohnehin am Chip.
+ */
+function zeigeAhZahlen() {
+  const ziel = document.getElementById('ahZahlen');
+  if (!ziel) return;
+
+  const alle = App.auctionsData || [];
+  const jetzt = Date.now();
+  const stunde = 60 * 60 * 1000;
+
+  const gesamtwert = alle.reduce((summe, a) => summe + (a.currentBid ?? a.startBid ?? 0), 0);
+  const baldVorbei = alle.filter(a => {
+    const ende = new Date(a.endTime).getTime() - jetzt;
+    return ende > 0 && ende <= stunde;
+  }).length;
+  const begehrt = alle.filter(a => Object.keys(a.bids || {}).length >= 3).length;
+
+  const symbol = (pfade) =>
+    `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${pfade}</svg>`;
+
+  const zahlen = [
+    {
+      label: 'Aktive Auktionen',
+      wert: alle.length.toLocaleString('de-DE'),
+      symbol: symbol('<path d="m14 13-7.5 7.5a2.12 2.12 0 0 1-3-3L11 10"/><path d="m16 16 6-6"/><path d="m8 8 6-6"/><path d="m9 7 8 8"/><path d="m21 11-8-8"/>'),
+    },
+    {
+      label: 'Gesamtwert',
+      wert: ahZahlKurz(gesamtwert),
+      symbol: symbol('<circle cx="12" cy="12" r="9"/><path d="M14.5 9.5a2.5 2.5 0 0 0-2.5-1.5c-1.4 0-2.5.8-2.5 2s1.1 2 2.5 2 2.5.8 2.5 2-1.1 2-2.5 2a2.5 2.5 0 0 1-2.5-1.5"/><path d="M12 6v12"/>'),
+    },
+    {
+      label: 'Endet in einer Stunde',
+      wert: baldVorbei.toLocaleString('de-DE'),
+      symbol: symbol('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'),
+    },
+    {
+      label: 'Heiß begehrt',
+      wert: begehrt.toLocaleString('de-DE'),
+      symbol: symbol('<path d="M12 22c4.4 0 8-3.1 8-7 0-4.5-4-6.5-4-11-2.5 1.5-3.5 3.5-3.5 5.5C11 7 9.5 5.5 9.5 4 7 6 4 8.5 4 15c0 3.9 3.6 7 8 7Z"/>'),
+    },
+  ];
+
+  ziel.innerHTML = zahlen
+    .map(
+      (z) => `
+      <div class="ah-zahl">
+        <div class="ah-zahl__symbol">${z.symbol}</div>
+        <div class="ah-zahl__text">
+          <span class="ah-zahl__label">${z.label}</span>
+          <span class="ah-zahl__wert">${z.wert}</span>
+        </div>
+      </div>`
+    )
+    .join('');
+}
+
+/**
+ * Die Filter als Chips statt als Auswahlfeld.
+ *
+ * Ein Auswahlfeld verbirgt seine Möglichkeiten, bis man es aufklappt — bei
+ * einem Filter ist gerade das Angebot die Information. Die Chips zeigen
+ * zusätzlich, wie viele Treffer dahinterstehen; ein Filter, der nichts
+ * findet, ist damit schon vor dem Klick als leer erkennbar.
+ *
+ * Das Auswahlfeld bleibt versteckt bestehen: Es ist weiterhin die Quelle
+ * für die Liste, und andere Stellen setzen seinen Wert von außen.
+ */
+function zeigeAhChips() {
+  const ziel = document.getElementById('ahChips');
+  const quelle = document.getElementById('auction-filters');
+  if (!ziel || !quelle) return;
+
+  const optionen = [...quelle.options];
+  if (optionen.length === 0) return;
+
+  ziel.innerHTML = optionen
+    .map((o) => {
+      // Die Trefferzahl steht schon im Text der Option ("OP-Items (12)").
+      const treffer = o.textContent.match(/\((\d+)\)\s*$/);
+      const name = o.textContent.replace(/\s*\(\d+\)\s*$/, '');
+      const aktiv = o.value === App.auctionCategoryFilter;
+      return `
+        <button type="button"
+                class="ah-chip${aktiv ? ' ah-chip--aktiv' : ''}"
+                data-wert="${o.value.replace(/"/g, '&quot;')}"
+                aria-pressed="${aktiv}">
+          ${name}${treffer ? `<span class="ah-chip__zahl">${treffer[1]}</span>` : ''}
+        </button>`;
+    })
+    .join('');
+
+  ziel.querySelectorAll('.ah-chip').forEach((chip) => {
+    chip.onclick = () => {
+      quelle.value = chip.dataset.wert;
+      setAuctionFilter(chip.dataset.wert);
+      zeigeAhChips();
+    };
+  });
+}
+
 function setupAuctionFilters() {
   const filterContainer = document.getElementById('auction-filters');
   filterContainer.innerHTML = '';
@@ -2525,6 +2646,11 @@ function setupAuctionFilters() {
 
     filterContainer.appendChild(gruppe);
   }
+
+  // Die Chips und die Zahlen hängen an denselben Daten - sie werden hier
+  // gleich mitgezogen, damit sie nie hinterherhinken.
+  zeigeAhChips();
+  zeigeAhZahlen();
 }
 
 function animateCardsWave(sectionElement, immediate = false) {
@@ -3778,7 +3904,7 @@ function createAuctionCard(auction, historyType = null, personalData = null) {
 
   let personalBidHtml = '';
   if (personalData && personalData.myBid) {
-    personalBidHtml = `<div class="price-info auction-bid-amount"><span style="color: var(--accent-color1);">Gebot:</span> ${formatCardPrice(personalData.myBid)}</div>`;
+    personalBidHtml = `<div class="price-info auction-bid-amount"><span>Dein Gebot</span><span class="price-info__wert">${formatCardPrice(personalData.myBid)}</span></div>`;
   }
 
   // Trend-Badge entfernt: misst dasselbe wie das Rabatt-Badge (Preis vs.
@@ -3805,26 +3931,56 @@ function createAuctionCard(auction, historyType = null, personalData = null) {
   if (!historyType) {
     const monthAvg = getMonthlyAveragePerUnit(auction);
     if (monthAvg !== null) {
-      monthAvgHtml = `<div class="price-info auction-monthAvg"><span style="color: var(--text-secondary)">Ø 30 Tage:</span> ${formatCardPrice(Math.round(monthAvg))}</div>`;
+      monthAvgHtml = `<div class="price-info auction-monthAvg"><span>Ø 30 Tage</span><span class="price-info__wert">${formatCardPrice(Math.round(monthAvg))}</span></div>`;
     }
   }
+
+  // Der Verkäufer steht nur da, wenn sein Name schon bekannt ist. Für jede
+  // Karte eine Namensabfrage loszuschicken wären bei fünfzig Karten fünfzig
+  // Anfragen für eine Nebensache - der Name kommt nach, sobald er ohnehin
+  // einmal geholt wurde.
+  const verkaeuferName = App.uuidCache[auction.seller];
+  const verkaeuferHtml =
+    verkaeuferName && verkaeuferName !== 'Unbekannt'
+      ? `<span class="auction-verkaeufer">
+           ${spielerKopfBild(auction.seller).replace('class="player-kopf"', 'class="auction-verkaeufer__kopf"')}
+           <span class="auction-verkaeufer__name">${verkaeuferName}</span>
+         </span>`
+      : '<span class="auction-verkaeufer"></span>';
+
+  const zeile = (klasse, label, wert) =>
+    `<div class="price-info ${klasse}"><span>${label}</span><span class="price-info__wert">${wert}</span></div>`;
+
+  const hauptLabel = historyType ? 'Verkauft für' : bidCount > 0 ? 'Aktuelles Gebot' : 'Startgebot';
+  const hauptWert = historyType
+    ? auction.currentBid ?? auction.startBid
+    : bidCount > 0
+      ? auction.currentBid ?? auction.startBid
+      : auction.startBid;
 
   card.innerHTML = `
     ${badgeHtml}
     ${trendHtml}
     ${discountHtml}
-    ${itemBildTag(auction.item.material, iconUrl, displayName)}
-    <h3 class="auction-name">${displayName}</h3>
-    ${variantenLabel(auction.item) ? `<div class="item-variante">${variantenLabel(auction.item)}</div>` : ''}
+    <div class="auction-kopf">
+      <div class="auction-symbol">${itemBildTag(auction.item.material, iconUrl, displayName)}</div>
+      <div class="auction-kopf__text">
+        <h3 class="auction-name">${displayName}</h3>
+        <div class="auction-art">${variantenLabel(auction.item) || getAuctionCategoryLabel(getAuctionCategoryKey(auction))}${auction.item.amount > 1 ? ` · ${auction.item.amount}×` : ''}</div>
+      </div>
+    </div>
     ${verzauberungenHtml(auction.item)}
-    <div class="price-info auction-startBid"><span class="buy">Start:</span> ${formatCardPrice(auction.startBid)}</div>
-    <div class="price-info auction-currentBid"><span class="sell">${historyType ? 'Verkauft für:' : 'Aktuell:'}</span> ${formatCardPrice(auction.currentBid ?? auction.startBid)}</div>
-    ${auction.instantBuyPrice ? `<div class="price-info auction-instantBuy"><span style="color: var(--accent-color1);">Sofortkauf:</span> ${formatCardPrice(auction.instantBuyPrice)}</div>` : ''}
-    ${monthAvgHtml}
-    ${personalBidHtml}
-    <div class="price-info auction-bids"><span style="color: var(--text-secondary)">Gebote:</span> ${bidCount}</div>
-    <div class="price-info auction-amount"><span style="color: var(--text-secondary)">Menge:</span> ${auction.item.amount}</div>
-    ${historyType ? '' : `<div class="price-info auction-timer" data-end-time="${auction.endTime}">Lädt...</div>`}
+    <div class="auction-zeile">
+      ${verkaeuferHtml}
+      ${historyType ? '' : `<span class="auction-timer" data-end-time="${auction.endTime}">–</span>`}
+    </div>
+    <div class="auction-preise">
+      ${zeile('auction-currentBid price-info--haupt', hauptLabel, formatCardPrice(hauptWert))}
+      ${auction.instantBuyPrice ? zeile('auction-instantBuy price-info--sofort', 'Sofortkauf', formatCardPrice(auction.instantBuyPrice)) : ''}
+      ${historyType || bidCount === 0 ? '' : zeile('auction-bids', 'Gebote', bidCount)}
+      ${monthAvgHtml}
+      ${personalBidHtml}
+    </div>
   `;
   card.onclick = () => {
     showPageLoader();
@@ -5737,25 +5893,40 @@ function stopMatrixAnimation() {
   }
 }
 
+/* Die Uhr auf der Karte.
+   Sekunden stehen nur noch da, wo sie etwas ändern: Bei einer Auktion, die
+   in 26 Stunden endet, tickt sonst eine Stelle vor sich hin, die niemand
+   liest — und die jede Sekunde ein Neuzeichnen auslöst. Rot wird die Zeit
+   erst unter einer Stunde; wäre alles rot, hieße Rot nichts mehr. */
+const UHR_SYMBOL =
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+  'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+  '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
+
 function updateAuctionTimers() {
-  const now = new Date();
+  const now = Date.now();
   document.querySelectorAll('.auction-timer').forEach(timerEl => {
-    const endTime = new Date(timerEl.dataset.endTime);
-    const diff = endTime - now;
+    const diff = new Date(timerEl.dataset.endTime).getTime() - now;
+
     if (diff <= 0) {
-      timerEl.textContent = 'Abgelaufen';
+      timerEl.innerHTML = `${UHR_SYMBOL}Abgelaufen`;
+      timerEl.classList.add('auction-timer--knapp');
       return;
     }
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-    let timeLeftString;
-    if (days > 0) timeLeftString = `${days}d ${hours}h ${minutes}m ${seconds}s`;
-    else if (hours > 0) timeLeftString = `${hours}h ${minutes}m ${seconds}s`;
-    else if (minutes > 0) timeLeftString = `${minutes}m ${seconds}s`;
-    else timeLeftString = `${seconds}s`;
-    timerEl.innerHTML = `⏰ <span style="color: #F87171;">${timeLeftString}</span>`;
+
+    const tage = Math.floor(diff / 86_400_000);
+    const stunden = Math.floor((diff % 86_400_000) / 3_600_000);
+    const minuten = Math.floor((diff % 3_600_000) / 60_000);
+    const sekunden = Math.floor((diff % 60_000) / 1000);
+
+    let rest;
+    if (tage > 0) rest = `${tage}d ${stunden}h`;
+    else if (stunden > 0) rest = `${stunden}h ${minuten}m`;
+    else if (minuten > 0) rest = `${minuten}m ${sekunden}s`;
+    else rest = `${sekunden}s`;
+
+    timerEl.innerHTML = `${UHR_SYMBOL}${rest}`;
+    timerEl.classList.toggle('auction-timer--knapp', diff <= 3_600_000);
   });
 }
 

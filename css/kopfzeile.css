@@ -1,0 +1,120 @@
+/* ═══════════════════════════════════════════════════════════════
+   Kompakte Kopfzeile
+   ═══════════════════════════════════════════════════════════════
+
+   Vorher standen über dem Inhalt fünf Blöcke untereinander: Rechtslinks,
+   ein riesiger Schriftzug, eine Unterzeile, ein Besucherzähler und die
+   Reiterleiste. Zusammen rund 400 Pixel, bevor die erste Auktion zu sehen
+   war — auf einem Laptop also der halbe Bildschirm für etwas, das man
+   einmal liest und danach nie wieder braucht.
+
+   Jetzt ist es eine Leiste: Name links, Reiter in der Mitte, Konto rechts.
+   Der Schriftzug bleibt — nur in der Größe, die eine Kopfzeile verträgt.
+
+   Bewusst rein über CSS gelöst. Die Reihenfolge im Dokument bleibt, wie
+   sie war, und damit auch alles, was daran hängt: die Reiterlogik, die
+   Tastaturbedienung und die übrigen Seiten des Repos.
+   ═══════════════════════════════════════════════════════════════ */
+
+@media (min-width: 861px) {
+  /* Der Container ordnet seine ersten vier Kinder in ein Raster.
+     Alles danach (die Abschnitte) läuft unverändert weiter. */
+  body > .container {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    /* Kein Spaltenabstand: Die drei Felder tragen gemeinsam eine
+       durchgehende Trennlinie, und ein Abstand hier würde sie
+       aufschneiden. Der Abstand steckt stattdessen im Innenrand. */
+    column-gap: 0;
+    row-gap: 0;
+  }
+
+  /* Jeder Abschnitt und alles Weitere nimmt wieder die volle Breite. */
+  body > .container > *:not(.dnv-kopfzeile):not(h1):not(.dnv-titelzeile):not(.visitor-counter-wrapper):not(.header-controls) {
+    grid-column: 1 / -1;
+  }
+
+  /* Name links. */
+  body > .container > h1 {
+    grid-column: 1;
+    grid-row: 1;
+    margin: 0 !important;
+    font-size: 1.45rem !important;
+    letter-spacing: -0.03em !important;
+    white-space: nowrap;
+  }
+
+  /* Der Leuchtschein war für 4 rem Schriftgröße gedacht. In dieser Größe
+     macht er den Namen nur unscharf. */
+  body > .container > h1 span {
+    filter: none !important;
+  }
+
+  /* Reiter in die Mitte. */
+  body > .container > .header-controls {
+    grid-column: 2;
+    grid-row: 1;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    background: none !important;
+    justify-content: center;
+  }
+
+  /* Konto und Einstellungen rechts. */
+  body > .container > .dnv-kopfzeile {
+    grid-column: 3;
+    grid-row: 1;
+    margin: 0 !important;
+    justify-content: flex-end;
+  }
+
+  /* Die Unterzeile sagt dasselbe wie die Reiter darunter, nur länger.
+     Der Besucherzähler ist eine Zahl, die niemanden zu einer Handlung
+     bringt — beide verschwinden aus der Kopfzeile. */
+  body > .container > .dnv-titelzeile,
+  body > .container > .visitor-counter-wrapper {
+    display: none;
+  }
+
+  /* Eine echte Leiste braucht einen Abschluss nach unten. */
+  body > .container > h1,
+  body > .container > .header-controls,
+  body > .container > .dnv-kopfzeile {
+    padding-block: 0.85rem !important;
+    border-bottom: 1px solid var(--ah-rand, rgba(255, 255, 255, 0.09));
+    margin-bottom: 2rem !important;
+  }
+
+  /* Die Rechtslinks gehören nicht in die Kopfzeile — unten steht ohnehin
+     eine Fußzeile mit denselben Verweisen.
+     Das !important muss sein: Der Block trägt sein display im style-Attribut,
+     und dagegen kommt eine gewöhnliche Regel nicht an. */
+  body > .container > .dnv-kopfzeile > .dnv-kopfzeile__links {
+    display: none !important;
+  }
+
+  /* Der Innenrand ersetzt den weggefallenen Spaltenabstand. */
+  body > .container > .header-controls {
+    padding-inline: 1.5rem !important;
+  }
+
+  /* Der Reiter für „Home" ist derselbe Knopf wie die übrigen. */
+  body > .container > .header-controls .dnv-clanlink {
+    margin: 0;
+  }
+}
+
+/* Auf schmalen Fenstern bleibt die gestapelte Anordnung — nebeneinander
+   wäre dort nichts mehr lesbar. Nur kleiner wird sie. */
+@media (max-width: 860px) {
+  body > .container > h1 {
+    font-size: clamp(1.8rem, 8vw, 2.4rem) !important;
+    margin-bottom: 0.15rem !important;
+  }
+
+  body > .container > .visitor-counter-wrapper {
+    display: none;
+  }
+}
