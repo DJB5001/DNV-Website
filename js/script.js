@@ -2676,6 +2676,42 @@ function zeigeVerlaufZahlen() {
   ]);
 }
 
+/**
+ * Verkäufernamen auf den sichtbaren Karten nachtragen.
+ *
+ * Die Karte zeigt den Verkäufer nur, wenn sein Name schon bekannt ist —
+ * beim Bauen wird nichts abgefragt, sonst wären es bei fünfzig Karten
+ * fünfzig Anfragen mitten im Zeichnen. Nachträglich ist das anders: Die
+ * Liste steht bereits, und wer die Namen nie holt, dem bleibt die Zeile
+ * für immer leer.
+ *
+ * Eingesetzt wird gezielt in die betroffene Karte statt die ganze Liste
+ * neu zu bauen — ein Neuaufbau würde Scrollstand und Anschauen stören.
+ */
+function verkaeuferNamenNachziehen(auktionen) {
+  const offen = [...new Set(
+    auktionen.map(a => a.seller).filter(uuid => uuid && !App.uuidCache[uuid])
+  )];
+  if (offen.length === 0) return;
+
+  for (const uuid of offen) {
+    uuidToUsername(uuid).then((name) => {
+      if (!name || name === 'Unbekannt' || name === '-') return;
+
+      for (const karte of document.querySelectorAll(`.card[data-verkaeufer="${CSS.escape(uuid)}"]`)) {
+        const feld = karte.querySelector('.auction-verkaeufer');
+        // Nur füllen, was noch leer ist: Steht dort schon etwas, gehört es
+        // zu einer neueren Zeichnung.
+        if (feld && !feld.childElementCount) {
+          feld.innerHTML =
+            spielerKopfBild(uuid).replace('class="player-kopf"', 'class="auction-verkaeufer__kopf"') +
+            `<span class="auction-verkaeufer__name">${name}</span>`;
+        }
+      }
+    }).catch(() => {});
+  }
+}
+
 /** Java oder Bedrock — Geyser-Konten tragen eine UUID aus lauter Nullen. */
 function spielerPlattform(uuid) {
   return String(uuid || '').startsWith('00000000-0000-0000-') ? 'Bedrock' : 'Java';
@@ -3139,6 +3175,7 @@ async function renderAuctions(isPagination = false) {
 
   const itemsToDisplay = filteredAuctions.slice(isPagination ? App.auctionDisplayCount - 50 : 0, App.auctionDisplayCount);
   itemsToDisplay.forEach(auction => grid.appendChild(createAuctionCard(auction)));
+  verkaeuferNamenNachziehen(itemsToDisplay);
 
   const oldLoadMore = container.querySelector('.load-more-container');
   if (oldLoadMore) oldLoadMore.remove();
@@ -4158,6 +4195,8 @@ function createAuctionCard(auction, historyType = null, personalData = null) {
   card.className = "card";
   const auctionId = auction.id || (auction.seller + "_" + (auction.item.material || "") + "_" + auction.endTime);
   card.dataset.auctionId = auctionId;
+  // Damit der Name nachgetragen werden kann, sobald er da ist.
+  if (auction.seller) card.dataset.verkaeufer = auction.seller;
   if (historyType) card.classList.add('historical');
 
   let badgeHtml = '';
