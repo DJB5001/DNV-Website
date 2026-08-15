@@ -16,16 +16,16 @@
 //   users/{uid}/reminders                -> Tabelle "reminders" (alle für den User)
 //   users/{uid}/reminders/{auctionId}    -> Tabelle "reminders" (eine Zeile)
 //   users/{uid}/isPartner                -> profiles.is_partner
-//   users/{uid}/minecraftVerification    -> Tabelle "minecraft_verifications"
 //   users (ganze Liste, nur für Admin-Suche)-> Tabelle "profiles"
 //   ads, ads/{id}                        -> Tabelle "ads"
 //   donations/list, donations/list/{id}  -> Tabelle "donations"
 //   donations/goal                       -> Tabelle "donation_goal"
 //   visits/count                         -> Tabelle "visits"
 //
-// reminders/{auctionId}/{uid} (der "globale" Pfad für einen serverseitigen
-// Benachrichtigungs-Worker) wird bewusst als No-Op behandelt - dafür gibt es
-// in dieser reinen Frontend-Version keinen Worker mehr.
+// Den früheren "globalen" Pfad reminders/{auctionId}/{uid} für einen
+// serverseitigen Zusteller gibt es nicht mehr. Er war ein No-Op, weil es den
+// Zusteller nie gab - inzwischen verschickt der Discord-Bot die Erinnerungen
+// und liest dafür direkt die Tabelle "reminders".
 // =============================================================================
 
 const SERVER_TIMESTAMP = "__SUPABASE_SERVER_TIMESTAMP__";
@@ -125,17 +125,6 @@ async function dbRead(parts) {
       }
     }
 
-    // users/{uid}/minecraftVerification
-    if (parts[0] === 'users' && parts[2] === 'minecraftVerification') {
-      const uid = parts[1];
-      const { data } = await supabaseClient
-        .from('minecraft_verifications')
-        .select('data')
-        .eq('user_id', uid)
-        .maybeSingle();
-      return data ? data.data : null;
-    }
-
     // ads
     if (parts[0] === 'ads' && parts.length === 1) {
       const { data, error } = await supabaseClient.from('ads').select('id,data');
@@ -182,6 +171,8 @@ async function dbWrite(parts, mode, value) {
       await supabaseClient.from('profiles').delete().eq('id', uid);
       await supabaseClient.from('pinned_items').delete().eq('user_id', uid);
       await supabaseClient.from('reminders').delete().eq('user_id', uid);
+      // Die Website verifiziert nicht mehr selbst, alte Zeilen liegen aber
+      // noch da - beim Löschen des Kontos müssen sie mit weg.
       await supabaseClient.from('minecraft_verifications').delete().eq('user_id', uid);
       return;
     }
@@ -257,30 +248,24 @@ async function dbWrite(parts, mode, value) {
       await supabaseClient.from('reminders').delete().eq('user_id', uid).eq('auction_id', auctionId);
       return;
     }
+    // discord_id und end_time stehen bewusst als eigene Spalten daneben und
+    // nicht nur im data-Block: Der Bot fragt "welche Erinnerung ist fällig
+    // und wem gehört sie" - das muss ohne Umweg über JSON gehen.
+    const zeile = {
+      user_id: uid,
+      auction_id: auctionId,
+      data: value,
+      discord_id: currentAuthUser?.discordId ?? null,
+      end_time: value?.endTime ? new Date(value.endTime).toISOString() : null,
+      // Eine neu gesetzte Erinnerung ist noch nicht verschickt. Ohne das
+      // Zurücksetzen bliebe ein altes Häkchen stehen, wenn jemand dieselbe
+      // Auktion abwählt und wieder anwählt.
+      notified_at: null
+    };
     const { error } = await supabaseClient
       .from('reminders')
-      .upsert({ user_id: uid, auction_id: auctionId, data: value }, { onConflict: 'user_id,auction_id' });
+      .upsert(zeile, { onConflict: 'user_id,auction_id' });
     if (error) throw error;
-    return;
-  }
-
-  // users/{uid}/minecraftVerification
-  if (parts[0] === 'users' && parts[2] === 'minecraftVerification') {
-    const uid = parts[1];
-    if (mode === 'remove') {
-      await supabaseClient.from('minecraft_verifications').delete().eq('user_id', uid);
-      return;
-    }
-    const v = resolveTimestamps(value);
-    const { error } = await supabaseClient
-      .from('minecraft_verifications')
-      .upsert({ user_id: uid, data: v, verified_at: new Date().toISOString() });
-    if (error) throw error;
-    return;
-  }
-
-  // reminders/{auctionId}/{uid}  -> globaler Worker-Pfad, bewusst No-Op
-  if (parts[0] === 'reminders') {
     return;
   }
 
@@ -407,11 +392,33 @@ function ref(path) {
 // -----------------------------------------------------------------------
 // Auth-Shim - ahmt firebase.auth() nach
 // -----------------------------------------------------------------------
+/**
+ * Die Discord-ID aus dem angemeldeten Konto ziehen.
+ *
+ * Der Bot kennt Leute nur unter dieser Nummer - sie ist das Bindeglied
+ * zwischen Website und Discord. Supabase legt sie je nach Aufrufweg an
+ * unterschiedlichen Stellen ab, deshalb werden drei geprüft.
+ */
+function discordIdVon(user) {
+  const identitaet = (user?.identities || []).find(i => i.provider === 'discord');
+  return identitaet?.id
+    || user?.user_metadata?.provider_id
+    || user?.user_metadata?.sub
+    || null;
+}
+
+function discordNameVon(user) {
+  const m = user?.user_metadata || {};
+  return m.custom_claims?.global_name || m.full_name || m.name || m.preferred_username || null;
+}
+
 function mapSupabaseUser(user) {
   if (!user) return null;
   return {
     uid: user.id,
     email: user.email,
+    discordId: discordIdVon(user),
+    discordName: discordNameVon(user),
     displayName: user.user_metadata?.full_name || user.user_metadata?.name || null,
     photoURL: user.user_metadata?.avatar_url || null,
     delete: async () => {
@@ -423,8 +430,35 @@ function mapSupabaseUser(user) {
 let currentAuthUser = null;
 const authStateCallbacks = [];
 
+/**
+ * Schreibt die Discord-ID ins Profil.
+ *
+ * Ohne sie findet der Bot niemanden: Er kennt nur Discord-IDs, Supabase nur
+ * seine eigenen Konto-IDs. Diese eine Zeile verbindet beide Welten - deshalb
+ * wird sie bei jeder Anmeldung neu gesetzt, falls sich der Anzeigename
+ * geändert hat oder die Zeile fehlt.
+ */
+async function merkeDiscordProfil(user) {
+  if (!user?.uid || !user.discordId) return;
+
+  try {
+    const { error } = await supabaseClient.from('profiles').upsert({
+      id: user.uid,
+      discord_id: user.discordId,
+      discord_name: user.discordName,
+      last_login: new Date().toISOString()
+    });
+    if (error) throw error;
+  } catch (fehler) {
+    // Die Seite funktioniert auch ohne - nur der Bot weiß dann nichts von
+    // diesem Konto und schickt keine Nachrichten.
+    console.warn('Discord-Profil konnte nicht gespeichert werden:', fehler.message || fehler);
+  }
+}
+
 supabaseClient.auth.onAuthStateChange((_event, session) => {
   currentAuthUser = mapSupabaseUser(session?.user || null);
+  if (currentAuthUser) merkeDiscordProfil(currentAuthUser);
   authStateCallbacks.forEach(cb => cb(currentAuthUser));
 });
 
@@ -432,15 +466,24 @@ const authShim = {
   get currentUser() {
     return currentAuthUser;
   },
-  async createUserWithEmailAndPassword(email, password) {
-    const { data, error } = await supabaseClient.auth.signUp({ email, password });
+  /**
+   * Anmeldung über Discord.
+   *
+   * Der Browser wird zu Discord geschickt und kommt mit einer Sitzung
+   * zurück - deshalb gibt es hier nichts zurückzugeben, die Seite lädt
+   * ohnehin neu. Den Rest übernimmt onAuthStateChange.
+   */
+  async signInWithDiscord() {
+    const { error } = await supabaseClient.auth.signInWithOAuth({
+      provider: 'discord',
+      options: {
+        redirectTo: window.location.origin + window.location.pathname,
+        // identify reicht: Wir brauchen die Discord-ID und den Namen,
+        // keine E-Mail und keine Serverliste.
+        scopes: 'identify'
+      }
+    });
     if (error) throw error;
-    return { user: mapSupabaseUser(data.user) };
-  },
-  async signInWithEmailAndPassword(email, password) {
-    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-    if (error) throw error;
-    return { user: mapSupabaseUser(data.user) };
   },
   onAuthStateChanged(callback) {
     authStateCallbacks.push(callback);

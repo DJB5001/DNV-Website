@@ -85,7 +85,9 @@ const App = {
     shards: { name: true, rate: true },
     players: { name: true, auctions: true, bids: true, 'bid-amount': true },
     design: { itemRain: true, customBackground: false, customBackgroundImage: '', customCursor: false, cursorType: 'dot' },
-    notifications: { overbid: true, email: false }
+    // Nur noch der Überboten-Hinweis: Alles rund um Discord steht in
+    // App.dcEinstellungen, weil es unter der Discord-ID gespeichert wird.
+    notifications: { overbid: true }
   },
   lastKnownOutbids: new Set(), // Track already notified outbids
   isAdmin: false,
@@ -342,9 +344,6 @@ function openSettingsModal() {
     // Sync toggles in Account tab
     if (document.getElementById('accountOverbidToggle')) {
       document.getElementById('accountOverbidToggle').checked = App.settings.notifications.overbid;
-    }
-    if (document.getElementById('accountEmailToggle')) {
-      document.getElementById('accountEmailToggle').checked = App.settings.notifications.email;
     }
   }
 }
@@ -1203,9 +1202,6 @@ async function loadUserSettings(user) {
       if (document.getElementById('overbidNotificationToggle')) {
         document.getElementById('overbidNotificationToggle').checked = App.settings.notifications.overbid;
       }
-      if (document.getElementById('emailNotificationToggle')) {
-        document.getElementById('emailNotificationToggle').checked = App.settings.notifications.email || false;
-      }
     }
 
     // Apply to UI
@@ -1295,16 +1291,19 @@ if (savedTheme === 'light') {
 
 // --- AUTHENTICATION LOGIC ---
 
-let currentAuthMode = 'login'; // 'login' or 'register'
+/**
+ * Angemeldet wird ausschliesslich ueber Discord.
+ *
+ * Das ist keine reine Bequemlichkeit: Der Bot kennt Leute nur unter ihrer
+ * Discord-ID. Ohne sie koennte er niemandem schreiben, wenn eine Auktion
+ * verkauft wurde oder gleich auslaeuft.
+ */
 
 function openAuthModal() {
   const modal = document.getElementById("authModal");
   modal.classList.add("show");
   document.body.classList.add('modal-open');
-  // Reset form
-  document.getElementById('authForm').reset();
   document.getElementById('authError').style.display = 'none';
-  switchAuthMode('login'); // Immer mit Login starten
   window.addEventListener('keydown', handleAuthEscKey);
 }
 
@@ -1319,79 +1318,32 @@ function handleAuthEscKey(event) {
   if (event.key === 'Escape') closeAuthModal();
 }
 
-function switchAuthMode(mode) {
-  currentAuthMode = mode;
-  const title = document.getElementById('authModalTitle');
-  const submitBtn = document.getElementById('authSubmitBtn');
-  const switchText = document.getElementById('authSwitchText');
-  const confirmPass = document.getElementById('authPasswordConfirm');
+async function anmeldenMitDiscord() {
+  const knopf = document.getElementById('authDiscordBtn');
+  const fehlerFeld = document.getElementById('authError');
 
-  document.getElementById('authError').style.display = 'none';
-
-  if (mode === 'register') {
-    title.textContent = 'Registrieren';
-    submitBtn.textContent = 'Konto erstellen';
-    confirmPass.style.display = 'block';
-    confirmPass.required = true;
-    switchText.innerHTML = 'Bereits ein Konto? <a onclick="switchAuthMode(\'login\')">Anmelden</a>';
-  } else {
-    title.textContent = 'Anmelden';
-    submitBtn.textContent = 'Anmelden';
-    confirmPass.style.display = 'none';
-    confirmPass.required = false;
-    switchText.innerHTML = 'Noch kein Konto? <a onclick="switchAuthMode(\'register\')">Registrieren</a>';
-  }
-}
-
-async function handleAuthSubmit(event) {
-  event.preventDefault();
-  const email = document.getElementById('authEmail').value;
-  const password = document.getElementById('authPassword').value;
-  const errorDiv = document.getElementById('authError');
-
-  errorDiv.style.display = 'none';
-  errorDiv.textContent = '';
+  fehlerFeld.style.display = 'none';
+  if (knopf) knopf.disabled = true;
 
   try {
-    if (currentAuthMode === 'register') {
-      const confirmPassword = document.getElementById('authPasswordConfirm').value;
-      if (password !== confirmPassword) {
-        throw new Error("Passwörter stimmen nicht überein.");
-      }
-      // Registrierung
-      await firebase.auth().createUserWithEmailAndPassword(email, password);
-      // Nach Registrierung ist man automatisch eingeloggt
-    } else {
-      // Login
-      await firebase.auth().signInWithEmailAndPassword(email, password);
-    }
-    closeAuthModal();
-  } catch (error) {
-    console.error("Auth Error:", error);
-    errorDiv.style.display = 'block';
+    // Ab hier uebernimmt Discord: Der Browser wird umgeleitet und kommt mit
+    // einer Sitzung zurueck. Das Fenster zu schliessen waere sinnlos.
+    await firebase.auth().signInWithDiscord();
+  } catch (fehler) {
+    console.error("Anmeldung fehlgeschlagen:", fehler);
+    if (knopf) knopf.disabled = false;
 
-    // Lesbaren Text aus dem Fehler holen (Supabase-Fehler haben je nach Fall
-    // .message, .error_description, .msg oder nur einen Status-Code).
-    let rawMsg =
-      (error && (error.message || error.error_description || error.msg || error.error)) || '';
-    if (typeof rawMsg !== 'string') {
-      try { rawMsg = JSON.stringify(rawMsg); } catch (e) { rawMsg = String(rawMsg); }
-    }
-    if (!rawMsg || rawMsg === '{}' || rawMsg === '[object Object]') {
-      rawMsg = 'Anmeldung fehlgeschlagen. Prüfe E-Mail/Passwort und ob der E-Mail-Login in Supabase aktiviert ist.';
+    const roh = String(fehler?.message || fehler || '').toLowerCase();
+    let text = fehler?.message || 'Die Anmeldung hat nicht geklappt. Versuch es gleich nochmal.';
+
+    // Der haeufigste Einrichtungsfehler - lieber konkret benennen, als den
+    // Leuten einen englischen Rohtext hinzuwerfen.
+    if (roh.includes('provider is not enabled') || roh.includes('unsupported provider')) {
+      text = 'Die Discord-Anmeldung ist in Supabase noch nicht eingeschaltet. Bitte beim Team melden.';
     }
 
-    let msg = rawMsg;
-    const raw = rawMsg.toLowerCase();
-    if (raw.includes('already registered') || raw.includes('already been registered')) msg = "Diese E-Mail wird bereits verwendet.";
-    else if (raw.includes('invalid email') || raw.includes('unable to validate email')) msg = "Die E-Mail Adresse ist ungültig.";
-    else if (raw.includes('password') && (raw.includes('short') || raw.includes('at least') || raw.includes('6 char'))) msg = "Das Passwort muss mindestens 6 Zeichen lang sein.";
-    else if (raw.includes('invalid login credentials')) msg = "Kein Nutzer mit dieser E-Mail und diesem Passwort gefunden.";
-    else if (raw.includes('email not confirmed')) msg = "Deine E-Mail wurde noch nicht bestätigt. Prüfe dein Postfach oder deaktiviere 'Confirm email' in Supabase.";
-    else if (raw.includes('signups not allowed') || raw.includes('signup is disabled')) msg = "Registrierung ist in Supabase aktuell deaktiviert.";
-    else if (raw.includes('email logins are disabled') || raw.includes('provider is not enabled')) msg = "Der E-Mail-Login ist in Supabase nicht aktiviert (Authentication → Providers → Email).";
-
-    errorDiv.textContent = msg;
+    fehlerFeld.textContent = text;
+    fehlerFeld.style.display = 'block';
   }
 }
 
@@ -1436,7 +1388,7 @@ firebase.auth().onAuthStateChanged(async (user) => {
   // Initial Theme load from localStorage before user settings are fetched
   initThemeFromLocalStorage();
   if (user) {
-    console.log("User Logged In:", user.email);
+    console.log("User Logged In:", user.discordName || user.displayName || user.uid);
 
     // Dynamic Header
     updateHeaderUser(user);
@@ -1447,9 +1399,12 @@ firebase.auth().onAuthStateChanged(async (user) => {
     const userData = userDataSnapshot.val() || {};
 
     const updates = {
-      email: user.email,
       lastLogin: firebase.database.ServerValue.TIMESTAMP
     };
+    // Discord gibt nur mit erweitertem Zugriff eine E-Mail heraus, und die
+    // brauchen wir nicht. Die Spalte wird deshalb nur angefasst, wenn wirklich
+    // etwas drinsteht - sonst würde eine vorhandene Adresse geleert.
+    if (user.email) updates.email = user.email;
 
     // Automatically add these fields if they don't exist yet
     if (userData.isAdmin === undefined) updates.isAdmin = false;
@@ -1487,6 +1442,12 @@ firebase.auth().onAuthStateChanged(async (user) => {
     // Load Reminders for UI
     await loadUserReminders(user);
 
+    // Die Vorlaufzeit von hier bestimmt, wie früh eine Erinnerung gesetzt
+    // werden darf - sie muss also stehen, bevor jemand den Glockenknopf
+    // drückt, nicht erst wenn er die Einstellungen öffnet.
+    await ladeDcEinstellungen();
+    pruefeBenachrichtigungsAnker();
+
     // Load Ads
     loadAds();
 
@@ -1509,6 +1470,7 @@ firebase.auth().onAuthStateChanged(async (user) => {
     toggleLightMode(false);
     resetVisibilitySettings();
     App.pinnedItems = []; // Reset pins on logout
+    App.dcEinstellungen = { ...DC_VORGABEN };
     loadAds(); // Reload default/empty ads
   }
 });
@@ -5435,26 +5397,147 @@ function showAuctionItemHistory(auction) {
   loadAuctionHistory(null, auction);
 }
 
-async function toggleEmailNotification(enabled) {
-  App.settings.notifications.email = enabled;
+/**
+ * Discord-Benachrichtigungen.
+ *
+ * Frueher gab es hier einen E-Mail-Schalter, der auf einen Zusteller
+ * verwiesen hat, den es nie gab. Jetzt schickt der Bot die Nachrichten -
+ * und diese Einstellungen sagen ihm, was jemand davon will.
+ *
+ * Gespeichert wird unter der Discord-ID, nicht unter der Konto-ID: Der Bot
+ * kennt nur die.
+ */
+
+const DC_VORGABEN = {
+  sold_dm: true,
+  reminder_dm: true,
+  reminder_lead_minutes: 10,
+  browser_popup: true
+};
+
+App.dcEinstellungen = { ...DC_VORGABEN };
+
+async function ladeDcEinstellungen() {
   const user = firebase.auth().currentUser;
-  if (user) {
+  const hinweis = document.getElementById('dcNotizNichtVerknuepft');
+
+  if (!user?.discordId) {
+    App.dcEinstellungen = { ...DC_VORGABEN };
+    zeigeDcEinstellungen();
+    return;
+  }
+
+  try {
+    const { data } = await supabaseClient
+      .from('notification_settings')
+      .select('sold_dm, reminder_dm, reminder_lead_minutes, browser_popup')
+      .eq('discord_id', user.discordId)
+      .maybeSingle();
+
+    // Nur die vier bekannten Felder: Beim Speichern wird das Objekt wieder
+    // zurückgeschrieben, und created_at gehört uns nicht.
+    App.dcEinstellungen = { ...DC_VORGABEN };
+    for (const feld of Object.keys(DC_VORGABEN)) {
+      if (data?.[feld] != null) App.dcEinstellungen[feld] = data[feld];
+    }
+  } catch (fehler) {
+    console.warn('Benachrichtigungs-Einstellungen nicht ladbar:', fehler);
+    App.dcEinstellungen = { ...DC_VORGABEN };
+  }
+
+  // Ohne Minecraft-Verknuepfung weiss der Bot nicht, welche Auktionen einem
+  // gehoeren - die Verkaufs-Nachricht kann dann gar nicht kommen.
+  if (hinweis) {
     try {
-      await userDatabase.ref('users/' + user.uid + '/settings/notifications').update({
-        email: enabled
-      });
-    } catch (e) {
-      console.error("Error saving notification settings:", e);
+      const { data } = await supabaseClient
+        .from('discord_verifications')
+        .select('mc_name')
+        .eq('discord_id', user.discordId)
+        .maybeSingle();
+      hinweis.style.display = data ? 'none' : 'block';
+    } catch {
+      hinweis.style.display = 'none';
     }
   }
-  // Sync UI toggles
-  document.querySelectorAll('#emailNotificationToggle, #accountEmailToggle').forEach(t => t.checked = enabled);
+
+  zeigeDcEinstellungen();
+}
+
+function zeigeDcEinstellungen() {
+  const e = App.dcEinstellungen;
+  const setzen = (id, wert) => {
+    const el = document.getElementById(id);
+    if (el) el.checked = wert;
+  };
+
+  setzen('dcVerkaufToggle', e.sold_dm);
+  setzen('dcErinnerungToggle', e.reminder_dm);
+  setzen('dcBrowserToggle', e.browser_popup);
+
+  const auswahl = document.getElementById('dcVorlaufSelect');
+  if (auswahl) auswahl.value = String(e.reminder_lead_minutes);
+}
+
+/**
+ * Der Knopf "Benachrichtigungen" in der Discord-Nachricht führt hierher.
+ *
+ * Ein blosser Anker würde nichts bewirken: Die Einstellungen stecken in
+ * einem Fenster, das erst aufgehen muss. Also wird der Anker abgefangen und
+ * das Fenster geöffnet - und wer noch nicht angemeldet ist, landet zuerst
+ * bei der Anmeldung und kommt danach von selbst hier an.
+ */
+function pruefeBenachrichtigungsAnker() {
+  if (window.location.hash !== '#benachrichtigungen') return;
+
+  if (!firebase.auth().currentUser) {
+    if (typeof openAuthModal === 'function') openAuthModal();
+    return;
+  }
+
+  openProfileSettingsModal();
+  document.getElementById('benachrichtigungen')
+    ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+window.addEventListener('hashchange', pruefeBenachrichtigungsAnker);
+
+async function setzeDcEinstellung(feld, wert) {
+  App.dcEinstellungen[feld] = wert;
+
+  const user = firebase.auth().currentUser;
+  if (!user?.discordId) {
+    showConfirmModal(
+      'Nicht angemeldet',
+      'Melde dich mit Discord an, damit die Einstellung gespeichert werden kann.',
+      'OK',
+      false
+    );
+    return;
+  }
+
+  try {
+    const { error } = await supabaseClient.from('notification_settings').upsert(
+      {
+        discord_id: user.discordId,
+        ...App.dcEinstellungen,
+        updated_at: new Date().toISOString()
+      },
+      { onConflict: 'discord_id' }
+    );
+    if (error) throw error;
+  } catch (fehler) {
+    console.error('Einstellung konnte nicht gespeichert werden:', fehler);
+    showConfirmModal('Nicht gespeichert', 'Die Einstellung konnte nicht gespeichert werden.', 'OK', false);
+  }
 }
 
 function setupNotificationButton(auction) {
   const notificationBtn = document.getElementById('notificationBtn');
   const auctionId = (auction.id || (auction.seller + "_" + (auction.item.material || "") + "_" + auction.endTime)).replace(/[.#$[\]]/g, '-');
-  if (App.scheduledNotifications[auctionId]) {
+  // Auch die gespeicherte Zeile zählt: Wer das Browser-Fenster abgeschaltet
+  // hat oder die Seite neu geladen hat, hat keinen Timer mehr - die
+  // Erinnerung läuft aber trotzdem, und der Knopf muss das zeigen.
+  if (App.scheduledNotifications[auctionId] || App.userReminders[auctionId]) {
     notificationBtn.classList.add('active');
   } else {
     notificationBtn.classList.remove('active');
@@ -5468,9 +5551,7 @@ function setupNotificationButton(auction) {
       // Remove from Firebase
       const user = firebase.auth().currentUser;
       if (user) {
-        // Path for Worker
-        userDatabase.ref(`reminders/${auctionId}/${user.uid}`).remove().catch(e => console.error("Error removing reminder from global path:", e));
-        // Path for User Profil
+        // Dieselbe Zeile, die der Bot liest - mit ihr verschwindet auch die DM.
         userDatabase.ref(`users/${user.uid}/reminders/${auctionId}`).remove().catch(e => console.error("Error removing reminder from user path:", e));
 
         // Update local state
@@ -5482,12 +5563,38 @@ function setupNotificationButton(auction) {
   };
 }
 
+/**
+ * Erinnerung setzen.
+ *
+ * Zwei Wege, absichtlich nebeneinander: Das Fenster im Browser kommt nur,
+ * solange der Tab offen bleibt - die Discord-Nachricht kommt immer. Deshalb
+ * ist die gespeicherte Zeile der eigentliche Zweck und der Timer nur die
+ * Zugabe für alle, die ohnehin auf der Seite sind.
+ *
+ * Die Vorlaufzeit ist dieselbe wie in den Einstellungen. Wer 30 Minuten
+ * vorher gewarnt werden will, hat sonst einen Knopf, der etwas anderes tut
+ * als der Schalter daneben.
+ */
 async function scheduleNotification(auction, btn) {
   const auctionId = (auction.id || (auction.seller + "_" + (auction.item.material || "") + "_" + auction.endTime)).replace(/[.#$[\]]/g, '-');
+  const vorlaufMinuten = Number(App.dcEinstellungen?.reminder_lead_minutes) || DC_VORGABEN.reminder_lead_minutes;
   const endTime = new Date(auction.endTime);
-  const notificationTime = endTime.getTime() - (5 * 60 * 1000);
+  const notificationTime = endTime.getTime() - vorlaufMinuten * 60 * 1000;
   const now = Date.now();
-  if (notificationTime > now) {
+
+  if (notificationTime <= now) {
+    showConfirmModal(
+      'Zeit zu knapp!',
+      `Die Auktion endet in weniger als ${vorlaufMinuten} Minuten. Eine Erinnerung kann nicht mehr gesetzt werden.`,
+      'Verstanden',
+      false
+    );
+    return;
+  }
+
+  // Das Browser-Fenster lässt sich in den Einstellungen abschalten - die
+  // Erinnerung selbst bleibt davon unberührt und kommt weiter per Discord.
+  if (App.dcEinstellungen?.browser_popup !== false) {
     const timeoutId = setTimeout(() => {
       showAuctionNotification(auction);
       delete App.scheduledNotifications[auctionId];
@@ -5495,43 +5602,29 @@ async function scheduleNotification(auction, btn) {
       if (currentBtn) currentBtn.classList.remove('active');
     }, notificationTime - now);
     App.scheduledNotifications[auctionId] = timeoutId;
-    btn.classList.add('active');
+  }
+  btn.classList.add('active');
 
-    // Persist to Firebase if user is logged in
-    const user = firebase.auth().currentUser;
-    if (user) {
-      const reminderData = {
-        endTime: auction.endTime,
-        itemName: auction.item?.displayName || auction.item?.material || "Unbekanntes Item",
-        seller: auction.seller || "Unbekannt",
-        currentBid: auction.currentBid || 0,
-        highestBidder: auction.highestBidder || "Noch kein Gebot",
-        amount: auction.item?.amount || 1,
-        uid: auctionId
-      };
+  // Persist to Firebase if user is logged in
+  const user = firebase.auth().currentUser;
+  if (user) {
+    const reminderData = {
+      endTime: auction.endTime,
+      itemName: auction.item?.displayName || auction.item?.material || "Unbekanntes Item",
+      seller: auction.seller || "Unbekannt",
+      currentBid: auction.currentBid || 0,
+      highestBidder: auction.highestBidder || "Noch kein Gebot",
+      amount: auction.item?.amount || 1,
+      uid: auctionId
+    };
 
-      // Path for User Profil (Always save here for the UI)
-      userDatabase.ref(`users/${user.uid}/reminders/${auctionId}`).set(reminderData)
-        .catch(e => console.error("Error saving reminder to user path:", e));
+    // Eine Zeile für beides: Die Oberfläche liest sie im Profil, der Bot
+    // holt sich daraus die fälligen Erinnerungen.
+    userDatabase.ref(`users/${user.uid}/reminders/${auctionId}`).set(reminderData)
+      .catch(e => console.error("Error saving reminder to user path:", e));
 
-      // Update local state
-      App.userReminders[auctionId] = reminderData;
-
-      // Path for Worker (Only if email enabled)
-      if (App.settings.notifications.email) {
-        userDatabase.ref(`reminders/${auctionId}/${user.uid}`).set({
-          ...reminderData,
-          email: user.email
-        }).catch(e => console.error("Error saving reminder to global path:", e));
-      }
-    }
-  } else {
-    showConfirmModal(
-      'Zeit zu knapp!',
-      'Die Auktion endet in weniger als 5 Minuten. Eine Erinnerung kann nicht mehr gesetzt werden.',
-      'Verstanden',
-      false
-    );
+    // Update local state
+    App.userReminders[auctionId] = reminderData;
   }
 }
 
@@ -6119,135 +6212,35 @@ function updateCustomButton(idx, field, value) {
 }
 
 // --- MINECRAFT VERIFICATION LOGIC ---
+//
+// Die Website verifiziert nicht mehr selbst. Sie hat dasselbe getan wie der
+// Discord-Bot - Code ins Auktionshaus, Verkäufer vergleichen - nur eben ein
+// zweites Mal und mit einem zweiten Ergebnis. Wer beides benutzte, musste es
+// zweimal durchlaufen, und wessen Discord-Verifizierung galt, hatte hier
+// trotzdem nichts.
+//
+// Jetzt schreibt der Bot nach discord_verifications, und die Website liest
+// dort nur noch. Eine Verknüpfung, für beide Seiten.
 
-let minecraftVerificationInterval = null;
-let minecraftVerificationStartTime = null;
-
-function generateVerificationCode() {
-  const randomSuffix = Math.random().toString(36).substring(2, 8).toUpperCase();
-  return `${randomSuffix}`;
-}
-
-function prepareMinecraftVerification() {
-  const ign = document.getElementById('minecraft-ign-input').value.trim();
-  if (!ign) {
-    showConfirmModal('Eingabe fehlt', 'Bitte gib einen Minecraft-Namen ein.', 'OK', false);
-    return;
-  }
-
-  const code = generateVerificationCode();
-  const codeValueEl = document.getElementById('minecraft-generated-code');
-  const codeInstructionEl = document.getElementById('instruction-code');
-
-  if (codeValueEl) codeValueEl.textContent = code;
-  if (codeInstructionEl) codeInstructionEl.textContent = code;
-
-  const ignInput = document.getElementById('minecraft-ign-input');
-  const generateBtn = document.getElementById('generate-code-btn');
-  const verificationStep = document.getElementById('minecraft-verification-step');
-
-  if (ignInput) ignInput.disabled = true;
-  if (generateBtn) generateBtn.style.display = 'none';
-  if (verificationStep) verificationStep.style.display = 'block';
-}
-
-function copyVerificationCode() {
-  const code = document.getElementById('minecraft-generated-code').textContent;
-  navigator.clipboard.writeText(code).then(() => {
-    showConfirmModal('Kopiert', 'Code wurde in die Zwischenablage kopiert!', 'OK', false);
-  });
-}
-
-async function startMinecraftVerification() {
+/**
+ * Holt die vom Bot geschriebene Verknüpfung zum angemeldeten Konto.
+ *
+ * Rückgabe: { mc_name, mc_uuid, plattform } oder null.
+ */
+async function ladeDiscordVerknuepfung() {
   const user = firebase.auth().currentUser;
-  if (!user) return;
-
-  const ignInput = document.getElementById('minecraft-ign-input').value.trim();
-  const code = document.getElementById('minecraft-generated-code').textContent;
-
-  const startBtn = document.getElementById('start-verification-btn');
-  const spinner = document.getElementById('verification-spinner-container');
-
-  if (startBtn) startBtn.style.display = 'none';
-  if (spinner) spinner.style.display = 'block';
-
-  minecraftVerificationStartTime = Date.now();
-  minecraftVerificationInterval = setInterval(() => checkMinecraftAuction(user, ignInput, code), 30000); // Check every 30s
-
-  // Initial check
-  checkMinecraftAuction(user, ignInput, code);
-}
-
-async function checkMinecraftAuction(user, ignInput, code) {
-  const now = Date.now();
-  const elapsed = now - minecraftVerificationStartTime;
-  const maxTime = 10 * 60 * 1000; // 10 minutes
-
-  if (elapsed > maxTime) {
-    stopMinecraftVerification();
-    showConfirmModal('Zeit abgelaufen', 'Die Verifizierung ist zeitlich abgelaufen. Bitte versuche es erneut.', 'OK', false);
-    return;
-  }
-
-  const remainingMinutes = Math.ceil((maxTime - elapsed) / 60000);
-  const timerText = document.getElementById('verification-timer-text');
-  if (timerText) timerText.textContent = `Suche im Auktionshaus... (Noch ca. ${remainingMinutes} Min.)`;
+  if (!user?.discordId) return null;
 
   try {
-    const response = await fetch("https://api.opsucht.net/auctions/active");
-    const auctions = await response.json();
-
-    const match = auctions.find(a => a.item.displayName === code);
-
-    if (match) {
-      const sellerUuid = match.seller;
-      const sellerName = await uuidToUsername(sellerUuid);
-
-      // Normalize names: remove dots and lowercase
-      const normalizedInput = ignInput.toLowerCase().replace(/\./g, '');
-      const normalizedSeller = sellerName.toLowerCase().replace(/\./g, '');
-
-      if (normalizedInput === normalizedSeller) {
-        // SUCCESS!
-        stopMinecraftVerification();
-        await finalizeMinecraftVerification(user, sellerName, sellerUuid, code);
-      }
-    }
+    const { data } = await supabaseClient
+      .from('discord_verifications')
+      .select('mc_name, mc_uuid, plattform')
+      .eq('discord_id', user.discordId)
+      .maybeSingle();
+    return data || null;
   } catch (e) {
-    console.error("Error during AH verification check:", e);
-  }
-}
-
-function stopMinecraftVerification() {
-  if (minecraftVerificationInterval) {
-    clearInterval(minecraftVerificationInterval);
-    minecraftVerificationInterval = null;
-  }
-  const startBtn = document.getElementById('start-verification-btn');
-  const spinner = document.getElementById('verification-spinner-container');
-  const timerText = document.getElementById('verification-timer-text');
-
-  if (startBtn) startBtn.style.display = 'inline-block';
-  if (spinner) spinner.style.display = 'none';
-  if (timerText) timerText.textContent = "";
-}
-
-async function finalizeMinecraftVerification(user, mcName, mcUuid, code) {
-  const verificationData = {
-    minecraftName: mcName,
-    minecraftUuid: mcUuid,
-    verificationCode: code,
-    verifiedAt: firebase.database.ServerValue.TIMESTAMP,
-    isVerified: true
-  };
-
-  try {
-    await firebase.database().ref(`users/${user.uid}/minecraftVerification`).set(verificationData);
-    showConfirmModal('Erfolg!', `Dein Account ist jetzt erfolgreich mit ${mcName} verknüpft.`, 'Super!', false);
-    loadMinecraftVerificationStatus();
-  } catch (e) {
-    console.error("Error saving verification data:", e);
-    showConfirmModal('Fehler', 'Fehler beim Speichern der Verifizierung. Bitte versuche es später erneut.', 'Verstanden', false);
+    console.error('Verknüpfung nicht ladbar:', e);
+    return null;
   }
 }
 
@@ -6297,56 +6290,24 @@ async function loadMinecraftVerificationStatus() {
   const user = firebase.auth().currentUser;
   if (!user) return;
 
-  try {
-    const snapshot = await firebase.database().ref(`users/${user.uid}/minecraftVerification`).once('value');
-    const data = snapshot.val();
+  const data = await ladeDiscordVerknuepfung();
 
-    const unverifiedUI = document.getElementById('minecraft-unverified-ui');
-    const verifiedUI = document.getElementById('minecraft-verified-ui');
-    const instructionHeader = document.getElementById('minecraft-instruction-header');
-    const profileTab = document.getElementById('tab-profile');
+  const unverifiedUI = document.getElementById('minecraft-unverified-ui');
+  const verifiedUI = document.getElementById('minecraft-verified-ui');
+  const instructionHeader = document.getElementById('minecraft-instruction-header');
 
-    if (data && data.isVerified) {
-      if (unverifiedUI) unverifiedUI.style.display = 'none';
-      if (verifiedUI) verifiedUI.style.display = 'block';
-      if (instructionHeader) instructionHeader.style.display = 'none';
-      const nameEl = document.getElementById('verified-mc-name');
-      const uuidEl = document.getElementById('verified-mc-uuid');
-      if (nameEl) nameEl.textContent = data.minecraftName;
-      if (uuidEl) uuidEl.textContent = data.minecraftUuid;
-    } else {
-      if (unverifiedUI) unverifiedUI.style.display = 'block';
-      if (verifiedUI) verifiedUI.style.display = 'none';
-      if (instructionHeader) instructionHeader.style.display = 'block';
-      // Reset fields
-      const ignInput = document.getElementById('minecraft-ign-input');
-      const generateBtn = document.getElementById('generate-code-btn');
-      const verificationStep = document.getElementById('minecraft-verification-step');
-      if (ignInput) ignInput.disabled = false;
-      if (generateBtn) generateBtn.style.display = 'block';
-      if (verificationStep) verificationStep.style.display = 'none';
-    }
-  } catch (e) {
-    console.error("Error loading verification status:", e);
-  }
-}
-
-async function unlinkMinecraftAccount() {
-  const user = firebase.auth().currentUser;
-  if (!user) return;
-
-  const confirmUnlink = await showConfirmModal(
-    'Verknüpfung aufheben?',
-    'Möchtest du die Verknüpfung mit deinem Minecraft-Account wirklich aufheben?'
-  );
-
-  if (confirmUnlink) {
-    try {
-      await firebase.database().ref(`users/${user.uid}/minecraftVerification`).remove();
-      loadMinecraftVerificationStatus();
-    } catch (e) {
-      console.error("Error unlinking account:", e);
-    }
+  if (data?.mc_name) {
+    if (unverifiedUI) unverifiedUI.style.display = 'none';
+    if (verifiedUI) verifiedUI.style.display = 'block';
+    if (instructionHeader) instructionHeader.style.display = 'none';
+    const nameEl = document.getElementById('verified-mc-name');
+    const uuidEl = document.getElementById('verified-mc-uuid');
+    if (nameEl) nameEl.textContent = data.mc_name;
+    if (uuidEl) uuidEl.textContent = data.mc_uuid || '';
+  } else {
+    if (unverifiedUI) unverifiedUI.style.display = 'block';
+    if (verifiedUI) verifiedUI.style.display = 'none';
+    if (instructionHeader) instructionHeader.style.display = 'block';
   }
 }
 
@@ -6412,16 +6373,15 @@ async function renderMyProfile(silent = false) {
   }
 
   try {
-    const snapshot = await firebase.database().ref(`users/${user.uid}/minecraftVerification`).once('value');
-    const data = snapshot.val();
+    const data = await ladeDiscordVerknuepfung();
 
-    if (!data || !data.isVerified) {
+    if (!data?.mc_uuid) {
       renderProfileLock('verify');
       return;
     }
 
-    const mcUuid = data.minecraftUuid;
-    const mcName = data.minecraftName;
+    const mcUuid = data.mc_uuid;
+    const mcName = data.mc_name;
 
     await loadAuctions();
 
@@ -6607,9 +6567,10 @@ function openProfileSettingsModal() {
     if (document.getElementById('overbidNotificationToggle')) {
       document.getElementById('overbidNotificationToggle').checked = App.settings.notifications.overbid;
     }
-    if (document.getElementById('emailNotificationToggle')) {
-      document.getElementById('emailNotificationToggle').checked = App.settings.notifications.email;
-    }
+    // Die Discord-Einstellungen liegen unter der Discord-ID in Supabase und
+    // nicht in App.settings - sie werden beim Öffnen frisch geholt, damit
+    // eine Änderung auf einem anderen Gerät hier nicht veraltet dasteht.
+    ladeDcEinstellungen();
   }
 }
 
@@ -6671,8 +6632,8 @@ function renderProfileLock(type) {
         <h3 class="lock-screen-title">${type === 'auth' ? 'Anmeldung erforderlich' : 'Verifizierung erforderlich'}</h3>
         <p class="lock-screen-text">
           ${type === 'auth'
-      ? 'Bitte melde dich an und verknüpfe deinen Minecraft Account, um dein Profil zu sehen.'
-      : 'Bitte verknüpfe deinen Minecraft Account in den Einstellungen, um dein Profil zu sehen.'}
+      ? 'Bitte melde dich mit Discord an und verifiziere dich dort, um dein Profil zu sehen.'
+      : 'Verifiziere dich im Discord — danach steht dein Profil hier automatisch bereit.'}
         </p>
         <button class="auth-submit-btn" style="width: auto; padding: 1rem 3rem;" 
                 onclick="${type === 'auth' ? 'openAuthModal()' : 'openSettingsTab(\'minecraft\')'}">
