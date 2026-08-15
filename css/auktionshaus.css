@@ -458,8 +458,22 @@
   overflow: hidden;
 }
 
-.auction-art {
-  font-size: 0.78rem;
+/* Die Zeile trägt weiterhin die Klasse item-variante, wenn dort wirklich
+   eine Variante steht — daran hängt anderes im Projekt. Deren alte Regeln
+   (zentriert, Versalien, negativer Außenabstand) stammen aber aus der Zeit
+   der mittigen Karten: Der negative Abstand zog die Zeile in die zweite
+   Titelzeile hinein. Hier wird beides zurückgenommen. */
+#auctionContainer .card .auction-art,
+#dealsContainer .card .auction-art,
+#historyContainer .card .auction-art,
+#profile-activity-container .card .auction-art {
+  margin: 0 !important;
+  font-family: inherit !important;
+  font-size: 0.78rem !important;
+  font-weight: 500;
+  letter-spacing: normal !important;
+  text-align: left !important;
+  text-transform: none !important;
   color: var(--text-secondary);
   white-space: nowrap;
   overflow: hidden;
@@ -486,15 +500,28 @@
   min-width: 0;
 }
 
-/* Klein halten: Wer verkauft, ist eine Nebenangabe. Groß gezeigt würde der
-   Kopf mit dem Item um den Blick streiten, und das Item gewinnt. */
-.auction-verkaeufer__kopf {
-  width: 14px;
-  height: 14px;
-  border-radius: 3px;
+/* Winzig halten: Wer verkauft, ist eine Nebenangabe. Der Kopf ist nur die
+   Marke vor dem Namen, kein zweites Bild — größer würde er mit dem Item um
+   den Blick streiten, und das Item gewinnt.
+   Die !important stehen hier, weil das Bild aus derselben Funktion kommt
+   wie der große Spielerkopf und dessen Regeln sonst durchschlagen. */
+#auctionContainer .card .auction-verkaeufer__kopf,
+#dealsContainer .card .auction-verkaeufer__kopf,
+#historyContainer .card .auction-verkaeufer__kopf,
+#profile-activity-container .card .auction-verkaeufer__kopf {
+  width: 11px !important;
+  height: 11px !important;
+  min-width: 0 !important;
+  max-width: 11px !important;
+  border-radius: 2px;
   flex-shrink: 0;
+  margin: 0 !important;
   image-rendering: pixelated;
   background: var(--ah-eingabe, rgba(0, 0, 0, 0.28));
+}
+
+.auction-verkaeufer__name {
+  font-size: 0.78rem;
 }
 
 .auction-verkaeufer__name {
@@ -686,5 +713,143 @@ body.light-mode #history::before {
   #historyContainer .grid {
     grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
     gap: 0.7rem;
+  }
+}
+
+/* ── Podest: die ersten Fünf ───────────────────────────────────────
+   Eine Rangliste beantwortet zwei Fragen — "wer ist ganz oben" und "wo
+   stehe ich". Das Podest übernimmt die erste, damit man dafür nicht mehr
+   die lange Liste lesen muss. */
+.ah-podest {
+  border: 1px solid var(--ah-rand, rgba(255, 255, 255, 0.09));
+  border-radius: 16px;
+  background: var(--ah-flaeche, #101019);
+  padding: 1.1rem;
+  margin-bottom: 1.5rem;
+}
+
+.ah-podest__kopf {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.9rem;
+  font-family: var(--schrift-display, inherit);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.ah-podest__symbol {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  background: var(--ah-symbolgrund, rgba(169, 126, 240, 0.12));
+  color: var(--accent-color1);
+}
+
+.ah-podest__symbol svg {
+  width: 17px;
+  height: 17px;
+}
+
+.ah-podest__reihe {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 0.6rem;
+}
+
+.ah-podest__platz {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--ah-rand, rgba(255, 255, 255, 0.07));
+  border-radius: 11px;
+  background: var(--ah-eingabe, rgba(0, 0, 0, 0.28));
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.16s ease, transform 0.16s ease;
+  min-width: 0;
+}
+
+.ah-podest__platz:hover {
+  border-color: var(--accent-glow, rgba(169, 126, 240, 0.4));
+  transform: translateY(-2px);
+}
+
+/* Platz 4 und 5 bekommen eine Ziffer statt einer Medaille — Rang vier ist
+   keine Auszeichnung, und eine vierte Medaille würde das behaupten. */
+.ah-podest__rang {
+  flex-shrink: 0;
+  width: 22px;
+  text-align: center;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.ah-podest__rang--edel {
+  font-size: 1.05rem;
+}
+
+.ah-podest__kopf-bild {
+  width: 30px !important;
+  height: 30px !important;
+  max-width: 30px !important;
+  margin: 0 !important;
+  border-radius: 6px;
+  flex-shrink: 0;
+  image-rendering: pixelated;
+  background: var(--ah-flaeche, #101019);
+}
+
+.ah-podest__text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.ah-podest__name {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Die Plattform steht als Marke dabei: Ein führender Punkt im Namen ist
+   die einzige andere Anzeige dafür, und den übersieht man. */
+.ah-podest__plattform {
+  flex-shrink: 0;
+  padding: 0.05rem 0.3rem;
+  border-radius: 4px;
+  background: var(--ah-symbolgrund, rgba(169, 126, 240, 0.14));
+  color: var(--accent-color1);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.ah-podest__wert {
+  font-family: var(--schrift-mono, inherit);
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--accent-color1);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 760px) {
+  .ah-podest__reihe {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   }
 }
