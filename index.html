@@ -979,46 +979,24 @@
         </div>
 
         <div id="minecraft-unverified-ui">
-          <div class="settings-item">
-            <div class="settings-item-info">
-              <span class="settings-item-label">Minecraft Name</span>
-              <span class="settings-item-description">Gib deinen Ingame-Namen ein</span>
-            </div>
-            <div class="bg-url-input-wrapper" style="flex: 1; margin-left: 1rem;">
-              <input type="text" id="minecraft-ign-input" placeholder="z.B. Notch" style="width: 100%; padding: 0.5rem; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text-primary); font-size: 0.9rem;">
-            </div>
+          <div class="verification-instructions">
+            <ol>
+              <li>Geh auf den DarkNova-Discord in den Verifizieren-Channel.</li>
+              <li>Klicke dort auf <strong>„Discord verifizieren"</strong> und wähle Java oder Bedrock.</li>
+              <li>Gib deinen Ingame-Namen ein und stelle das Code-Item ins Auktionshaus.</li>
+            </ol>
           </div>
 
-          <div id="minecraft-verification-step" style="display: none;">
-            <div class="verification-code-box">
-              <span class="verification-code-label">Dein Code:</span>
-              <div class="verification-code-value" id="minecraft-generated-code">XXXXXX</div>
-              <button class="verify-copy-btn" onclick="copyVerificationCode()">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
-                  <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
-                </svg>
-              </button>
-            </div>
+          <p class="settings-abschnitt-text" style="margin-top: 1rem;">
+            Sobald der Bot dich verifiziert hat, steht dein Account auch hier —
+            einmal verknüpfen reicht für Discord und Website zusammen.
+          </p>
 
-            <div class="verification-instructions">
-              <ol>
-                <li>Benenne ein beliebiges Item in <strong><span id="instruction-code">CODE</span></strong> um.</li>
-                <li>Stelle dieses Item für mindestens <strong>10 Minuten</strong> in das Auktionshaus.</li>
-                <li>Klicke unten auf "Verifizierung starten".</li>
-              </ol>
-            </div>
-
-            <div id="verification-status-area" style="margin-top: 1.5rem; text-align: center;">
-              <div id="verification-spinner-container" style="display: none;">
-                <div class="verification-spinner"></div>
-              </div>
-              <p id="verification-timer-text" style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 0.5rem;"></p>
-              <button id="start-verification-btn" class="auth-submit-btn" onclick="startMinecraftVerification()" style="width: auto; padding: 0.75rem 2rem;">Verifizierung starten</button>
-            </div>
-          </div>
-
-          <button id="generate-code-btn" class="auth-submit-btn" onclick="prepareMinecraftVerification()" style="margin-top: 1rem;">Code generieren</button>
+          <a id="verify-discord-link" class="auth-submit-btn"
+             href="https://discord.gg/CD4VWsjBqw" target="_blank" rel="noopener"
+             style="display: inline-block; width: auto; padding: 0.75rem 2rem; margin-top: 1rem; text-decoration: none; text-align: center;">
+            Zum Discord
+          </a>
         </div>
 
         <div id="minecraft-verified-ui" style="display: none;">
@@ -1032,9 +1010,10 @@
             <h3 id="verified-mc-name" style="margin: 1rem 0 0.5rem 0;">Username</h3>
             <p id="verified-mc-uuid" style="font-size: 0.8rem; color: var(--text-secondary); font-family: monospace;">
             </p>
-            <button class="settings-reset-btn" onclick="unlinkMinecraftAccount()" style="position: static; margin-top: 2rem; width: auto; background: rgba(255, 68, 68, 0.1); color: #ff4444; border-color: rgba(255, 68, 68, 0.2);">
-              Verknüpfung aufheben
-            </button>
+            <p class="settings-abschnitt-text" style="margin-top: 1.5rem;">
+              Verknüpft über den Discord-Bot. Zum Ändern oder Aufheben melde dich
+              im Discord bei der Clan-Leitung.
+            </p>
           </div>
         </div>
       </div>
@@ -1053,16 +1032,10 @@
           </label>
         </div>
 
-        <div class="settings-item">
-          <div class="settings-item-info">
-            <span class="settings-item-label">E-Mail Benachrichtigungen</span>
-            <span class="settings-item-description">Erinnerung 5 Min. vor Auktionsende</span>
-          </div>
-          <label class="toggle-switch">
-            <input type="checkbox" id="accountEmailToggle" onchange="toggleEmailNotification(this.checked)">
-            <span class="toggle-slider"></span>
-          </label>
-        </div>
+        <p class="settings-abschnitt-text">
+          Nachrichten per Discord — verkaufte Auktionen und Erinnerungen —
+          stellst du im Profil-Fenster unter „Discord-Benachrichtigungen" ein.
+        </p>
 
         <h3 style="margin: 2rem 0 1rem 0; color: var(--text-primary); font-size: 1rem; border-top: 1px solid var(--border); padding-top: 1.5rem;">
           Account Management</h3>
@@ -1094,15 +1067,22 @@
 
       <div id="authError" class="auth-error" style="display: none;"></div>
 
-      <form id="authForm" onsubmit="handleAuthSubmit(event)">
-        <input type="email" id="authEmail" class="auth-input" placeholder="E-Mail Adresse" required="">
-        <input type="password" id="authPassword" class="auth-input" placeholder="Passwort" required="">
-        <input type="password" id="authPasswordConfirm" class="auth-input" placeholder="Passwort bestätigen" style="display: none;">
-        <button type="submit" class="auth-submit-btn" id="authSubmitBtn">Anmelden</button>
-      </form>
+      <p class="auth-hinweis">
+        Die Anmeldung läuft über Discord. Damit weiß der Bot, wem er schreiben
+        darf — und du bekommst eine Nachricht, wenn eine deiner Auktionen
+        verkauft wurde oder gleich ausläuft.
+      </p>
 
-      <p class="auth-switch" id="authSwitchText">
-        Noch kein Konto? <a onclick="switchAuthMode('register')">Registrieren</a>
+      <button type="button" class="auth-discord-btn" id="authDiscordBtn" onclick="anmeldenMitDiscord()">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
+          <path d="M20.3 4.4A19.8 19.8 0 0 0 15.4 3l-.2.4a14 14 0 0 1 4.2 2 16.6 16.6 0 0 0-14.7 0 14 14 0 0 1 4.2-2L8.6 3a19.8 19.8 0 0 0-4.9 1.4C.6 9 0 13.4.3 17.8a19.9 19.9 0 0 0 6 3l1.2-1.7a13 13 0 0 1-2-1l.5-.4a14.2 14.2 0 0 0 12 0l.5.4a13 13 0 0 1-2 1l1.2 1.7a19.9 19.9 0 0 0 6-3c.4-5-.6-9.4-3.4-13.4ZM8.3 15.3c-1.2 0-2.1-1.1-2.1-2.4 0-1.3.9-2.4 2.1-2.4s2.2 1.1 2.2 2.4c0 1.3-1 2.4-2.2 2.4Zm7.4 0c-1.2 0-2.1-1.1-2.1-2.4 0-1.3.9-2.4 2.1-2.4s2.2 1.1 2.2 2.4c0 1.3-1 2.4-2.2 2.4Z" />
+        </svg>
+        Mit Discord anmelden
+      </button>
+
+      <p class="auth-switch">
+        Noch nicht auf dem Server?
+        <a href="https://discord.gg/CD4VWsjBqw" target="_blank" rel="noopener noreferrer">Discord beitreten</a>
       </p>
     </div>
   </div>
@@ -1445,13 +1425,56 @@
         </label>
       </div>
 
+      <h3 id="benachrichtigungen" class="settings-abschnitt">Discord-Benachrichtigungen</h3>
+      <p class="settings-abschnitt-text" id="dcNotizNichtVerknuepft" style="display: none;">
+        Damit der Bot dir schreiben kann, musst du deinen Minecraft-Account
+        verknüpfen — das läuft im Verifizieren-Channel auf dem Discord.
+      </p>
+
       <div class="settings-item">
         <div class="settings-item-info">
-          <span class="settings-item-label">E-Mail Benachrichtigungen</span>
-          <span class="settings-item-description">Erinnerung 5 Min. vor Auktionsende</span>
+          <span class="settings-item-label">Auktion verkauft</span>
+          <span class="settings-item-description">Nachricht mit Preis und Käufer</span>
         </div>
         <label class="toggle-switch">
-          <input type="checkbox" id="emailNotificationToggle" onchange="toggleEmailNotification(this.checked)">
+          <input type="checkbox" id="dcVerkaufToggle" onchange="setzeDcEinstellung('sold_dm', this.checked)">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <div class="settings-item">
+        <div class="settings-item-info">
+          <span class="settings-item-label">Erinnerung vor Auktionsende</span>
+          <span class="settings-item-description">Kommt auch, wenn die Seite zu ist</span>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="dcErinnerungToggle" onchange="setzeDcEinstellung('reminder_dm', this.checked)">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <div class="settings-item">
+        <div class="settings-item-info">
+          <span class="settings-item-label">Vorlaufzeit</span>
+          <span class="settings-item-description">Wie lange vor Schluss die Erinnerung kommt</span>
+        </div>
+        <select id="dcVorlaufSelect" class="auction-sort"
+                onchange="setzeDcEinstellung('reminder_lead_minutes', Number(this.value))">
+          <option value="5">5 Minuten</option>
+          <option value="10" selected>10 Minuten</option>
+          <option value="15">15 Minuten</option>
+          <option value="30">30 Minuten</option>
+          <option value="60">1 Stunde</option>
+        </select>
+      </div>
+
+      <div class="settings-item">
+        <div class="settings-item-info">
+          <span class="settings-item-label">Fenster im Browser</span>
+          <span class="settings-item-description">Zusätzlich, solange die Seite offen ist</span>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="dcBrowserToggle" onchange="setzeDcEinstellung('browser_popup', this.checked)">
           <span class="toggle-slider"></span>
         </label>
       </div>

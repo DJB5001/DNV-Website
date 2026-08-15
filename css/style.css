@@ -1837,6 +1837,25 @@ button:focus-visible {
   color: var(--text-secondary);
 }
 
+/* Zwischenüberschrift in den Einstellungen.
+   Die Schalter sind alle gleich gebaut - ohne eine Trennlinie liest sich die
+   Liste als eine einzige Gruppe, und die Discord-Nachrichten gehören
+   sichtbar zusammen. */
+.settings-abschnitt {
+  margin: 2rem 0 1rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border);
+  font-size: 1.05rem;
+  color: var(--text-primary);
+}
+
+.settings-abschnitt-text {
+  margin: -0.5rem 0 1rem;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
 .player-initial-avatar:hover {
   filter: none !important;
   box-shadow: 0 0 8px var(--accent-glow) !important;
