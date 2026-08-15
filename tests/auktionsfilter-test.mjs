@@ -46,6 +46,13 @@ const auktionen = [
     item: { material: 'PURPLE_SHULKER_BOX', displayName: 'Shulker', amount: 1, lore: [], enchantments: {} } },
   { id: 'a6', seller: 's6', startBid: 7, currentBid: 9, endTime: ende(180), bids: {},
     item: { material: 'STONE', displayName: 'Ganz normaler Stein', amount: 64, lore: [], enchantments: {} } },
+  // Eine Waffe ohne besonderen Namen — sie muss in "Werkzeuge & Kampf" landen
+  // und nicht in "Custom Items", obwohl sie einen Anzeigenamen hat.
+  { id: 'a7', seller: 's7', startBid: 20, currentBid: 25, endTime: ende(200), bids: {},
+    item: { material: 'DIAMOND_SWORD', displayName: 'Drachentöter', amount: 1, lore: [], enchantments: {} } },
+  // Ein Item, dessen Name nur das Material wiederholt: der Auffangkorb.
+  { id: 'a8', seller: 's8', startBid: 3, currentBid: 3, endTime: ende(220), bids: {},
+    item: { material: 'DIRT', displayName: 'Dirt', amount: 64, lore: [], enchantments: {} } },
 ];
 
 const browser = await chromium.launch();
@@ -174,25 +181,43 @@ try {
   pruefe('Alle vier stehen im Titel', hacke.titel.split('·').length === 4, hacke.titel);
   pruefe('Ohne Verzauberung keine Leiste', stein.verzauberungen.length === 0);
 
-  // ── Filter nach Art ─────────────────────────────────────────
-  console.log('\n— Filter nach Art —');
-  const arten = await seite.evaluate(() =>
-    [...document.querySelectorAll('#auction-filters optgroup[label="Nach Art"] option')].map((o) => ({
-      wert: o.value,
-      text: o.textContent,
+  // ── Filter nach Gruppe ──────────────────────────────────────
+  //
+  // Die Leiste zeigt sechs Gruppen, und jede Auktion gehoert in genau eine.
+  // Das ist die eigentliche Zusage: Wenn sich die Trefferzahlen zur
+  // Gesamtzahl addieren, kann keine Auktion doppelt gezaehlt sein und
+  // keine durchs Raster fallen.
+  console.log('\n— Filter nach Gruppe —');
+
+  const chips = await seite.evaluate(() =>
+    [...document.querySelectorAll('.ah-chip')].map((c) => ({
+      wert: c.dataset.wert,
+      text: c.textContent.replace(/\s+/g, ' ').trim(),
+      zahl: Number(c.querySelector('.ah-chip__zahl')?.textContent ?? 0),
     }))
   );
-  pruefe('Gruppe "Nach Art" existiert', arten.length > 0, `${arten.length} Einträge`);
-  pruefe('OP-Items dabei', arten.some((a) => a.wert === 'art:op'));
-  pruefe('Spawn-Eier dabei', arten.some((a) => a.wert === 'art:spawnegg'));
-  pruefe('Verzauberte dabei', arten.some((a) => a.wert === 'art:verzaubert'));
-  pruefe('Trefferzahl steht dabei', arten.find((a) => a.wert === 'art:op')?.text.includes('(1)'),
-    arten.find((a) => a.wert === 'art:op')?.text);
-  pruefe('Leere Arten fehlen', !arten.some((a) => a.wert === 'art:platte'), arten.map((a) => a.wert).join(', '));
 
-  // Gefiltert wird über die Chips — das Auswahlfeld dahinter ist nur noch
-  // die Datenquelle und für den Besucher unsichtbar. Der Test geht deshalb
-  // denselben Weg wie er: klicken, nicht auswählen.
+  pruefe('Alle-Chip steht vorn', chips[0]?.wert === 'Alle', chips[0]?.text);
+  pruefe('Nur Gruppen, keine API-Kategorien',
+    chips.slice(1).every((c) => c.wert.startsWith('art:')),
+    chips.map((c) => c.wert).join(', '));
+  pruefe('Werkzeuge & Kampf dabei', chips.some((c) => c.wert === 'art:werkzeug'));
+  pruefe('Ruestungen dabei', chips.some((c) => c.wert === 'art:ruestung'));
+  pruefe('Custom Items dabei', chips.some((c) => c.wert === 'art:custom'));
+  pruefe('OP Items dabei', chips.some((c) => c.wert === 'art:op'));
+  pruefe('Jeder Chip traegt ein Symbol',
+    await seite.evaluate(() => [...document.querySelectorAll('.ah-chip')].every((c) => c.querySelector('.ah-chip__symbol'))));
+
+  const summe = chips.slice(1).reduce((s, c) => s + c.zahl, 0);
+  pruefe('Die Gruppen decken alle Auktionen ab', summe === auktionen.length,
+    `${summe} von ${auktionen.length}`);
+
+  pruefe('Leere Gruppen fehlen', chips.every((c) => c.wert === 'Alle' || c.zahl > 0),
+    chips.map((c) => `${c.wert}=${c.zahl}`).join(', '));
+
+  // Gefiltert wird ueber die Chips — das Auswahlfeld dahinter ist nur noch
+  // die Datenquelle und fuer den Besucher unsichtbar. Der Test geht deshalb
+  // denselben Weg wie er: klicken, nicht auswaehlen.
   const waehle = async (wert) => {
     await seite.click(`.ah-chip[data-wert="${wert}"]`);
     await seite.waitForTimeout(400);
@@ -200,35 +225,37 @@ try {
   };
 
   let treffer = await waehle('art:op');
-  pruefe('OP-Items filtert richtig', treffer.length === 1 && treffer[0].name === 'OP Spitzhacke',
+  pruefe('OP Items filtert richtig', treffer.length === 1 && treffer[0].name === 'OP Spitzhacke',
     treffer.map((k) => k.name).join(', '));
 
-  treffer = await waehle('art:spawnegg');
-  pruefe('Spawn-Eier über das Material erkannt', treffer.length === 1 && treffer[0].name.includes('Spawn-Ei'));
+  treffer = await waehle('art:ruestung');
+  pruefe('Elytra zaehlt zur Ruestung', treffer.some((k) => k.name === 'Odins Schwingen'),
+    treffer.map((k) => k.name).join(', '));
 
-  treffer = await waehle('art:verzaubert');
-  pruefe('Verzauberte: nur die beiden', treffer.length === 2, treffer.map((k) => k.name).join(', '));
+  treffer = await waehle('art:werkzeug');
+  pruefe('Das Schwert ist hier', treffer.some((k) => k.name === 'Drachentöter'),
+    treffer.map((k) => k.name).join(', '));
+  // Der Kern der Rangfolge: Die OP-Spitzhacke ist ein Werkzeug, zaehlt aber
+  // zuerst als OP-Item — sonst stuende sie in zwei Gruppen.
+  pruefe('Die OP-Spitzhacke steht nicht doppelt drin',
+    !treffer.some((k) => k.name === 'OP Spitzhacke'),
+    treffer.map((k) => k.name).join(', '));
 
-  treffer = await waehle('art:talisman');
-  pruefe('Talisman über den Namen erkannt', treffer.length === 1 && treffer[0].name.includes('Talisman'));
-
-  treffer = await waehle('art:kopf');
-  pruefe('Spielerkopf über das Material', treffer.length === 1 && treffer[0].name.includes('Talisman'));
-
-  treffer = await waehle('art:shulker');
-  pruefe('Shulker erkannt', treffer.length === 1 && treffer[0].name === 'Shulker');
-
-  treffer = await waehle('art:elytra');
-  pruefe('Elytra erkannt', treffer.length === 1 && treffer[0].name === 'Odins Schwingen');
+  treffer = await waehle('art:anderes');
+  pruefe('Der Auffangkorb nimmt, was uebrig bleibt',
+    treffer.length === 1 && treffer[0].name === 'Dirt',
+    treffer.map((k) => k.name).join(', '));
 
   treffer = await waehle('Alle');
-  pruefe('Zurück auf Alle', treffer.length === auktionen.length);
+  pruefe('Zurueck auf Alle', treffer.length === auktionen.length);
 
-  // Suche und Art greifen zusammen
+  // Suche und Gruppe greifen zusammen
   await feld.fill('spitzhacke');
   await seite.waitForTimeout(300);
-  treffer = await waehle('art:spawnegg');
-  pruefe('Suche und Art zusammen ergeben nichts', treffer.length === 0);
+  treffer = await waehle('art:ruestung');
+  pruefe('Suche und Gruppe zusammen ergeben nichts', treffer.length === 0);
+  await feld.fill('');
+  await seite.waitForTimeout(300);
 
   pruefe('Keine Skriptfehler auf der Seite', seitenfehler.length === 0, seitenfehler.join(' | '));
 } finally {

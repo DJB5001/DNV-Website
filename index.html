@@ -1364,29 +1364,48 @@
     </div>
 
     <div id="players" class="section">
-      <div class="market-controls">
-        <div class="search-wrapper" style="flex: 1;">
-          <input type="text" id="searchPlayers" class="search-input"
-                 placeholder="🔍 Minecraft-Namen suchen …"
-                 oninput="renderPlayers()"
-                 onkeydown="if (event.key === 'Enter') spielerNachschlagen()">
+      <div class="ah-kopf">
+        <span class="ah-marke">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/></svg>
+          Spieler
+        </span>
+        <h1 class="ah-titel">Spieler<span>rangliste</span></h1>
+        <p class="ah-lead">
+          Wer wie viel umgesetzt hat — aus jedem erfassten Verkauf und jedem
+          Gebot der letzten Wochen zusammengerechnet.
+        </p>
+      </div>
+
+      <div id="spielerZahlen" class="ah-zahlen"></div>
+      <div id="spielerPodest"></div>
+
+      <div class="ah-steuerung">
+        <div class="ah-zeile">
+          <label class="ah-suche">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            <input type="text" id="searchPlayers" class="search-input"
+                   placeholder="Minecraft-Namen suchen …"
+                   oninput="renderPlayers()"
+                   onkeydown="if (event.key === 'Enter') spielerNachschlagen()">
+          </label>
+          <select id="playerSortSelect" class="auction-sort" onchange="setPlayerSort(this.value)">
+            <option value="SUM">Höchste Summe</option>
+            <option value="EARNED">Meiste Einnahmen</option>
+            <option value="SPENT">Meiste Ausgaben</option>
+            <option value="WON">Meiste Gewonnen</option>
+            <option value="SOLD">Meiste Verkauft</option>
+            <option value="ACTIVE">Aktive Auktionen</option>
+            <option value="NAME">Name: A-Z</option>
+          </select>
+          <button type="button" class="ah-knopf" onclick="spielerNachschlagen()" title="Spieler nachschlagen">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>Nachschlagen
+          </button>
+          <button type="button" class="ah-knopf" onclick="refreshTab('players', this)" title="Spielerliste neu aufbauen">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>Aktualisieren
+          </button>
         </div>
-        <button class="filter-btn" onclick="spielerNachschlagen()" title="Spieler nachschlagen">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-        </button>
       </div>
-      <div class="auction-controls">
-        <select id="playerSortSelect" class="auction-sort" onchange="setPlayerSort(this.value)">
-          <option value="SUM">Höchste Summe</option>
-          <option value="EARNED">Meiste Einnahmen</option>
-          <option value="SPENT">Meiste Ausgaben</option>
-          <option value="WON">Meiste Gewonnen</option>
-          <option value="SOLD">Meiste Verkauft</option>
-          <option value="ACTIVE">Aktive Auktionen</option>
-          <option value="NAME">Name: A-Z</option>
-        </select>
-      </div>
-      <button class="refresh-btn" onclick="refreshTab('players', this)" title="Spielerliste neu aufbauen">⟳ Aktualisieren</button>
+
       <div id="playersContainer"></div>
     </div>
 

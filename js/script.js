@@ -2433,29 +2433,59 @@ function setStarFilter(star) {
    beruht — die ändert sich nicht, wenn die API ihre Kategorien umbenennt.
    Die Werte tragen "art:" davor, damit sie nie mit einem Kategorieschlüssel
    zusammenfallen. */
+/**
+ * Die Filterleiste über den Auktionen.
+ *
+ * Vorher standen dort die Kategorien der API — je nach Angebot ein Dutzend
+ * und mehr, in zwei Reihen umgebrochen. Eine Leiste, die man lesen muss,
+ * ist keine Abkürzung mehr.
+ *
+ * Jetzt sind es sechs Gruppen, die zusammen alles abdecken: Was in keine
+ * der fünf ersten fällt, landet in "Anderes". Deshalb ist die Reihenfolge
+ * hier auch die Prüfreihenfolge — "Anderes" fragt, ob keine andere passt.
+ */
 const auktionsArten = [
-  { id: 'op', label: 'OP-Items', passt: (i, n) => /\bOP\b/i.test(n) },
-  { id: 'verzaubert', label: 'Verzauberte Items', passt: (i) => verzauberungenListe(i).length > 0 },
-  { id: 'spawnegg', label: 'Spawn-Eier', passt: (i, n, m) => m.includes('SPAWN_EGG') },
-  { id: 'talisman', label: 'Talismane', passt: (i, n) => n.toLowerCase().includes('talisman') },
-  { id: 'kopf', label: 'Spielerköpfe', passt: (i, n, m) => m === 'PLAYER_HEAD' },
-  { id: 'shulker', label: 'Shulker-Kisten', passt: (i, n, m) => m.includes('SHULKER') },
-  {
-    id: 'elytra',
-    label: 'Elytren & Schwingen',
-    passt: (i, n, m) => m.includes('ELYTRA') || /schwing/i.test(n),
-  },
-  { id: 'trank', label: 'Tränke', passt: (i, n, m) => m.includes('POTION') },
-  { id: 'platte', label: 'Musikplatten', passt: (i, n, m) => m.includes('MUSIC_DISC') },
+  { id: 'op', label: 'OP Items' },
+  { id: 'karten', label: 'Karten & Boosterpacks' },
+  { id: 'ruestung', label: 'Rüstungen' },
+  { id: 'werkzeug', label: 'Werkzeuge & Kampf' },
+  { id: 'custom', label: 'Custom Items' },
+  { id: 'anderes', label: 'Anderes' },
 ];
+
+/**
+ * In welche Gruppe gehört diese Auktion?
+ *
+ * Genau eine — deshalb eine Kette von Prüfungen und keine Liste
+ * unabhängiger Bedingungen. Vorher konnte ein Item in drei Gruppen
+ * gleichzeitig sein: Eine umbenannte Spitzhacke war "Custom", "Werkzeug"
+ * und, wenn sie OP hieß, auch "OP Item". Dann addieren sich die
+ * Trefferzahlen nicht mehr zur Gesamtzahl, und "Anderes" bleibt für immer
+ * leer, weil ja alles schon irgendwo passt.
+ *
+ * Die Reihenfolge ist die Rangfolge: Ein OP-Schwert ist zuerst ein
+ * OP-Item und erst danach eine Waffe — so würde man es auch suchen.
+ */
+function auktionsGruppe(item) {
+  const name = item?.displayName || '';
+  const material = (item?.material || '').toUpperCase();
+
+  if (/\bOP\b/i.test(name)) return 'op';
+  if (/SAMMELKARTE|BOOSTER|_CARD/.test(material) || /sammelkarte|booster(pack)?\b/i.test(name)) return 'karten';
+  if (/HELMET|CHESTPLATE|LEGGINGS|BOOTS|ELYTRA/.test(material)) return 'ruestung';
+  if (/PICKAXE|AXE|SHOVEL|SPADE|HOE|SHEARS|SWORD|BOW|TRIDENT|SHIELD|MACE/.test(material)) return 'werkzeug';
+
+  // Ein eigener Anzeigename, der nicht bloß das Material wiederholt.
+  const schlicht = (t) => String(t).replace(/[\s_]/g, '').toLowerCase();
+  if (name && schlicht(name) !== schlicht(material)) return 'custom';
+
+  return 'anderes';
+}
 
 /** Gehört diese Auktion zur gewählten Art? */
 function passtZurArt(auktion, artId) {
-  const art = auktionsArten.find(a => a.id === artId);
-  if (!art) return true;
-
-  const item = auktion.item || {};
-  return Boolean(art.passt(item, item.displayName || '', (item.material || '').toUpperCase()));
+  if (!auktionsArten.some(a => a.id === artId)) return true;
+  return auktionsGruppe(auktion.item || {}) === artId;
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -2495,7 +2525,9 @@ function ahIcon(name) {
     runter: '<path d="M12 5v14"/><path d="m19 12-7 7-7-7"/>',
     hoch: '<path d="M12 19V5"/><path d="m5 12 7-7 7 7"/>',
     diagramm: '<path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="m19 9-5 5-4-4-3 3"/>',
+    leute: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
     splitter: '<path d="M12 2 4 9l8 13 8-13Z"/><path d="M4 9h16"/><path d="m12 2-3 7 3 13 3-13-3-7Z"/>',
+    pokal: '<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>',
   };
   return ahSymbol(pfade[name] ?? pfade.paket);
 }
@@ -2644,6 +2676,108 @@ function zeigeVerlaufZahlen() {
   ]);
 }
 
+/** Java oder Bedrock — Geyser-Konten tragen eine UUID aus lauter Nullen. */
+function spielerPlattform(uuid) {
+  return String(uuid || '').startsWith('00000000-0000-0000-') ? 'Bedrock' : 'Java';
+}
+
+/** Spieler: wie viele, wie viel Geld, wer vorn liegt. */
+function zeigeSpielerZahlen() {
+  const liste = spielerBestenliste();
+
+  // Umsatz statt Summe der Konten: Jeder Handel steht bei zwei Leuten in
+  // den Büchern — einmal als Einnahme, einmal als Ausgabe. Beides zu
+  // addieren würde jeden Betrag doppelt zählen.
+  const umsatz = liste.reduce((s, k) => s + k.einnahmen, 0);
+
+  const bester = liste.reduce((a, b) => (b.einnahmen > (a?.einnahmen ?? -1) ? b : a), null);
+  const aktivster = liste.reduce((a, b) => (b.aktiv + b.gebote > ((a?.aktiv ?? 0) + (a?.gebote ?? 0)) ? b : a), null);
+
+  // Solange ein Name noch nicht aufgelöst ist, steht dort ein Strich statt
+  // einer rohen UUID — die sagt niemandem etwas.
+  const name = (k) => (k && spielerName(k.uuid)) || '–';
+
+  zeigeZahlen('spielerZahlen', [
+    { label: 'Spieler', wert: zahl(liste.length), symbol: ahIcon('leute') },
+    { label: 'Gesamt-Umsatz', wert: ahZahlKurz(umsatz), symbol: ahIcon('diagramm') },
+    { label: 'Top-Verkäufer', wert: name(bester), symbol: ahIcon('pokal') },
+    { label: 'Aktivster', wert: name(aktivster), symbol: ahIcon('etikett') },
+  ]);
+}
+
+/**
+ * Die ersten Fünf als eigenes Feld über der Liste.
+ *
+ * Eine Rangliste beantwortet zwei verschiedene Fragen: "wer ist ganz oben"
+ * und "wo stehe ich". Das Feld übernimmt die erste, damit man dafür nicht
+ * mehr die Liste lesen muss — und die Liste darunter bleibt für die zweite.
+ */
+function zeigeSpielerPodest() {
+  const ziel = document.getElementById('spielerPodest');
+  if (!ziel) return;
+
+  const art = SPIELER_SORTIERUNG[App.playerSortMode] || SPIELER_SORTIERUNG.SUM;
+  const liste = spielerBestenliste();
+
+  // Nach Namen sortiert gibt es kein "oben" — dann bleibt das Feld weg,
+  // statt eine Rangfolge zu behaupten, die keine ist.
+  if (!liste.length || App.playerSortMode === 'NAME') {
+    ziel.innerHTML = '';
+    return;
+  }
+
+  const fuenf = liste.slice().sort((a, b) => art.wert(b) - art.wert(a)).slice(0, 5);
+  const medaillen = ['🥇', '🥈', '🥉'];
+  const alsGeld = ['SUM', 'EARNED', 'SPENT'].includes(App.playerSortMode);
+
+  ziel.innerHTML = `
+    <div class="ah-podest">
+      <div class="ah-podest__kopf">
+        <span class="ah-podest__symbol">${ahIcon('pokal')}</span>
+        Top 5 — ${art.titel}
+      </div>
+      <div class="ah-podest__reihe">
+        ${fuenf
+          .map((k, i) => {
+            const name = spielerName(k.uuid);
+            const wert = art.wert(k);
+            return `
+            <button type="button" class="ah-podest__platz" data-uuid="${k.uuid}">
+              <span class="ah-podest__rang${i < 3 ? ' ah-podest__rang--edel' : ''}">${medaillen[i] ?? i + 1}</span>
+              ${spielerKopfBild(k.uuid).replace('class="player-kopf"', 'class="ah-podest__kopf-bild"')}
+              <span class="ah-podest__text">
+                <span class="ah-podest__name">
+                  ${name || '…'}
+                  <span class="ah-podest__plattform">${spielerPlattform(k.uuid)}</span>
+                </span>
+                <span class="ah-podest__wert">${alsGeld ? ahZahlKurz(wert) : zahl(wert)}</span>
+              </span>
+            </button>`;
+          })
+          .join('')}
+      </div>
+    </div>`;
+
+  ziel.querySelectorAll('.ah-podest__platz').forEach((knopf) => {
+    knopf.onclick = () => {
+      App.selectedPlayerUuid = knopf.dataset.uuid;
+      renderPlayers();
+    };
+  });
+
+  // Namen nachholen, falls sie noch nicht bekannt sind. Bewusst nur für
+  // diese fünf: Ein Punkt statt eines Namens ist ausgerechnet ganz oben am
+  // auffälligsten, und fünf Abfragen sind ein überschaubarer Preis.
+  const offen = fuenf.filter((k) => !spielerName(k.uuid));
+  if (offen.length) {
+    Promise.all(offen.map((k) => uuidToUsername(k.uuid))).then(() => {
+      // Nur zeichnen, wenn der Reiter noch der Reiter ist — sonst schreibt
+      // eine späte Antwort in eine Ansicht, die niemand mehr sieht.
+      if (document.getElementById('spielerPodest') === ziel) zeigeSpielerPodest();
+    });
+  }
+}
+
 /** Shards: wie viele Kurse und was der beste hergibt. */
 function zeigeShardZahlen() {
   const kurse = App.shardRates || [];
@@ -2740,74 +2874,38 @@ function zeigeAhChips() {
 
 function setupAuctionFilters() {
   const filterContainer = document.getElementById('auction-filters');
+  if (!filterContainer) return;
   filterContainer.innerHTML = '';
-  const categories = ["Alle"];
-  if (firebase.auth().currentUser) {
-    categories.push("Erinnerungen");
-  }
-  categories.push("Spieler");
-  const apiCategoryKeys = new Set(App.auctionsData.map(getAuctionCategoryKey));
 
-  let hasSammelkarten = false;
-  let hasToolsArmorMerged = false;
-  const otherCategories = [];
+  // "Alle" zuerst, danach die sechs Gruppen. Andere Werte (Spieler,
+  // Erinnerungen, eine einzelne API-Kategorie) kann weiterhin jede Stelle
+  // von aussen setzen - sie stehen nur nicht mehr in der Leiste.
+  const eintraege = [{ wert: 'Alle', text: 'Alle' }];
 
-  apiCategoryKeys.forEach(key => {
-    const upperKey = key.toUpperCase().replace(/ /g, "_");
-    if (upperKey === "UNKATEGORISIERT") return;
-
-    // Detektiere Sammelkarten (BOOSTER_PACK_CARD oder SAMMELKARTE mit Sternen ODER BOOSTER_PACKS)
-    if (((upperKey.startsWith("SAMMELKARTE") || upperKey.startsWith("BOOSTER_PACK_CARD")) && (upperKey.includes("STERN") || upperKey.includes("STARS"))) || upperKey === "BOOSTER_PACKS") {
-      hasSammelkarten = true;
-    } else if (upperKey === "TOOLS_ARMOR") {
-      hasToolsArmorMerged = true;
-    } else {
-      otherCategories.push(key);
-    }
-  });
-
-  if (hasSammelkarten) categories.push("Karten & Booster");
-  if (hasToolsArmorMerged) {
-    categories.push("Tools");
-    categories.push("Armor");
+  for (const art of auktionsArten) {
+    const anzahl = (App.auctionsData || []).filter(a => passtZurArt(a, art.id)).length;
+    // Eine Gruppe ohne Treffer waere ein Knopf, der nichts tut.
+    if (anzahl === 0) continue;
+    eintraege.push({ wert: `art:${art.id}`, text: `${art.label} (${anzahl})` });
   }
 
-  const sortedApiCategories = otherCategories.sort((a, b) => getAuctionCategoryLabel(a).localeCompare(getAuctionCategoryLabel(b), 'de-DE'));
-  categories.push(...sortedApiCategories);
-
-  categories.forEach(catKey => {
-    const label = (catKey === "Alle" || catKey === "Spieler" || catKey === "Karten & Booster" || catKey === "Tools" || catKey === "Armor") ? catKey : getAuctionCategoryLabel(catKey);
+  for (const e of eintraege) {
     const option = document.createElement('option');
-    option.value = catKey;
-    option.textContent = label;
-    if (catKey === App.auctionCategoryFilter) option.selected = true;
+    option.value = e.wert;
+    option.textContent = e.text;
+    if (e.wert === App.auctionCategoryFilter) option.selected = true;
     filterContainer.appendChild(option);
-  });
-
-  // Zweite Achse, abgesetzt in einer eigenen Gruppe: Sie beschreibt, was ein
-  // Item ist, nicht wo die API es einsortiert. Nur Arten, zu denen es gerade
-  // auch etwas gibt — eine Auswahl, die null Treffer liefert, hilft niemandem.
-  const vorhanden = auktionsArten.filter(art =>
-    App.auctionsData.some(a => passtZurArt(a, art.id))
-  );
-
-  if (vorhanden.length > 0) {
-    const gruppe = document.createElement('optgroup');
-    gruppe.label = 'Nach Art';
-
-    vorhanden.forEach(art => {
-      const anzahl = App.auctionsData.filter(a => passtZurArt(a, art.id)).length;
-      const option = document.createElement('option');
-      option.value = `art:${art.id}`;
-      option.textContent = `${art.label} (${anzahl})`;
-      if (option.value === App.auctionCategoryFilter) option.selected = true;
-      gruppe.appendChild(option);
-    });
-
-    filterContainer.appendChild(gruppe);
   }
 
-  // Die Chips und die Zahlen hängen an denselben Daten - sie werden hier
+  // Steht ein Filter aus alten Zeiten im Zustand, den es hier nicht mehr
+  // gibt, wuerde die Liste leer bleiben und kein Chip waere hervorgehoben.
+  if (!eintraege.some(e => e.wert === App.auctionCategoryFilter)
+      && !['Spieler', 'Erinnerungen'].includes(App.auctionCategoryFilter)) {
+    App.auctionCategoryFilter = 'Alle';
+    filterContainer.value = 'Alle';
+  }
+
+  // Die Chips und die Zahlen haengen an denselben Daten - sie werden hier
   // gleich mitgezogen, damit sie nie hinterherhinken.
   zeigeAhChips();
   zeigeAhZahlen();
@@ -3649,6 +3747,9 @@ function spielerKarte(konto, rang) {
 async function renderPlayers() {
   const container = document.getElementById('playersContainer');
   if (!container) return;
+
+  zeigeSpielerZahlen();
+  zeigeSpielerPodest();
 
   const suchfeld = document.getElementById('searchPlayers');
   const suche = (suchfeld?.value || '').toLowerCase().replace(/^\./, '').trim();
