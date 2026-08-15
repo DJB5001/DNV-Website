@@ -54,32 +54,36 @@
   -webkit-mask-image: radial-gradient(ellipse 80% 70% at 50% 30%, #000 40%, transparent 100%);
 }
 
-/* ── Kopf ─────────────────────────────────────────────────────── */
+/* ── Kopf ─────────────────────────────────────────────────────────
+   Linksbündig und knapp. Zentriert und groß war er ein Plakat: schön
+   beim ersten Mal, aber er schiebt bei jedem Besuch die Auktionen aus
+   dem Bild. Links beginnt jede Zeile an derselben Kante wie die Karten
+   darunter — das Auge muss nicht springen. */
 .ah-kopf {
-  text-align: center;
-  max-width: 46rem;
-  margin: 0 auto 2.5rem;
+  text-align: left;
+  max-width: 52rem;
+  margin: 0 0 1.75rem;
 }
 
 .ah-marke {
   display: inline-flex;
   align-items: center;
-  gap: 0.45rem;
-  padding: 0.4rem 0.95rem;
+  gap: 0.4rem;
+  padding: 0.28rem 0.7rem;
   border-radius: 999px;
   border: 1px solid var(--ah-rand, rgba(255, 255, 255, 0.1));
   background: var(--ah-flaeche-2, #16162340);
   color: var(--accent-color1);
   font-family: var(--schrift-text, inherit);
-  font-size: 0.82rem;
+  font-size: 0.74rem;
   font-weight: 700;
   letter-spacing: 0.02em;
-  margin-bottom: 1.4rem;
+  margin-bottom: 0.7rem;
 }
 
 .ah-marke svg {
-  width: 15px;
-  height: 15px;
+  width: 13px;
+  height: 13px;
 }
 
 /* Die !important stehen hier nicht aus Bequemlichkeit: In style.css gibt es
@@ -88,12 +92,15 @@
    Aussehen, das mit dem Rest der Seite nichts zu tun hat. */
 .ah-kopf h1.ah-titel {
   font-family: var(--schrift-display, system-ui, sans-serif) !important;
-  font-size: clamp(2.3rem, 5vw, 3.6rem) !important;
+  font-size: clamp(1.7rem, 2.6vw, 2.15rem) !important;
   font-weight: 800 !important;
-  line-height: 1.02;
-  letter-spacing: -0.03em;
+  line-height: 1.1;
+  letter-spacing: -0.025em;
   text-transform: none;
-  margin: 0 0 1rem !important;
+  /* Die globale h1-Regel zentriert; hier soll die Zeile an derselben Kante
+     beginnen wie das Abzeichen darüber und die Karten darunter. */
+  text-align: left !important;
+  margin: 0 0 0.5rem !important;
   color: var(--text-primary);
 }
 
@@ -110,10 +117,11 @@
 }
 
 .ah-lead {
-  font-size: 1.02rem;
-  line-height: 1.65;
+  font-size: 0.92rem;
+  line-height: 1.55;
   color: var(--text-secondary);
   margin: 0;
+  max-width: 44rem;
 }
 
 /* ── Kennzahlen ───────────────────────────────────────────────── */
@@ -304,11 +312,11 @@
 .ah-chip {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  height: 36px;
-  padding: 0 0.85rem;
+  gap: 0.45rem;
+  height: 38px;
+  padding: 0 0.9rem;
   border: 1px solid transparent;
-  border-radius: 9px;
+  border-radius: 10px;
   background: transparent;
   color: var(--text-secondary);
   font-family: inherit;
@@ -324,16 +332,32 @@
   background: var(--ah-chip-hover, rgba(255, 255, 255, 0.045));
 }
 
-.ah-chip--aktiv {
+/* Der gewählte Filter ist gefüllt, nicht nur eingefärbt. Auf einer Leiste
+   aus acht gleich gebauten Knöpfen ist eine Fläche schneller zu finden als
+   ein Farbunterschied in der Schrift. */
+.ah-chip--aktiv,
+.ah-chip--aktiv:hover {
   color: var(--accent-color1);
-  background: var(--ah-symbolgrund, rgba(169, 126, 240, 0.12));
-  border-color: var(--accent-glow, rgba(169, 126, 240, 0.28));
+  background: var(--ah-symbolgrund, rgba(169, 126, 240, 0.14));
+  border-color: var(--accent-glow, rgba(169, 126, 240, 0.4));
+}
+
+/* Das Symbol trägt keine Bedeutung, die nicht auch im Wort steht — es ist
+   ein Ankerpunkt fürs Auge, damit man den gesuchten Filter beim zweiten
+   Besuch an der Form wiederfindet statt jedes Mal zu lesen. */
+.ah-chip__symbol {
+  font-size: 0.95rem;
+  line-height: 1;
+  /* Emoji bringen ihre eigene Farbe mit und würden sonst den einzigen
+     Farbakzent der Leiste stehlen. Gedämpft ordnen sie sich unter. */
+  filter: saturate(0.85);
 }
 
 .ah-chip__zahl {
-  font-size: 0.78rem;
+  font-size: 0.76rem;
   font-weight: 700;
-  opacity: 0.62;
+  opacity: 0.55;
+  font-variant-numeric: tabular-nums;
 }
 
 /* ── Karten ───────────────────────────────────────────────────── */
@@ -382,13 +406,15 @@
   min-width: 0;
 }
 
+/* Das Item ist das, wonach gesucht wird — es darf die Karte anführen.
+   Vorher war es ein Icon neben dem Namen und ging beim Überfliegen unter. */
 .auction-symbol {
   flex-shrink: 0;
-  width: 46px;
-  height: 46px;
+  width: 64px;
+  height: 64px;
   display: grid;
   place-items: center;
-  border-radius: 11px;
+  border-radius: 13px;
   border: 1px solid var(--ah-rand, rgba(255, 255, 255, 0.07));
   background: var(--ah-eingabe, rgba(0, 0, 0, 0.28));
 }
@@ -399,8 +425,8 @@
 #dealsContainer .card .auction-symbol img,
 #historyContainer .card .auction-symbol img,
 #profile-activity-container .card .auction-symbol img {
-  width: 30px;
-  height: 30px;
+  width: 46px;
+  height: 46px;
   margin: 0;
   object-fit: contain;
   image-rendering: pixelated;
@@ -460,10 +486,12 @@
   min-width: 0;
 }
 
+/* Klein halten: Wer verkauft, ist eine Nebenangabe. Groß gezeigt würde der
+   Kopf mit dem Item um den Blick streiten, und das Item gewinnt. */
 .auction-verkaeufer__kopf {
-  width: 18px;
-  height: 18px;
-  border-radius: 4px;
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
   flex-shrink: 0;
   image-rendering: pixelated;
   background: var(--ah-eingabe, rgba(0, 0, 0, 0.28));

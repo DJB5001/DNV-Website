@@ -1812,6 +1812,7 @@ function loadTrendsCache() {
 }
 
 async function renderMarket(isPagination = false) {
+  zeigeMarktZahlen();
   const container = document.getElementById("marketContainer");
   const searchInput = document.getElementById("searchMarket");
   const search = searchInput.value.toLowerCase();
@@ -2470,57 +2471,48 @@ function ahZahlKurz(wert) {
   return String(Math.round(n));
 }
 
-/**
- * Die vier Zahlen über der Liste.
+/** Ein Strichsymbol im Stil der Seite. */
+function ahSymbol(pfade) {
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${pfade}</svg>`;
+}
+
+/* Ein kleiner Vorrat, damit jede Kennzahl dasselbe Symbol bekommt wie
+   anderswo dieselbe Sache — ein Preis sieht überall gleich aus.
  *
- * Sie beziehen sich bewusst auf alle laufenden Auktionen und nicht auf die
- * gefilterte Auswahl: Sie sollen sagen, wie das Auktionshaus gerade
- * aussieht — nicht, wie viele Treffer die eigene Suche hatte. Die Trefferzahl
- * steht ohnehin am Chip.
+ * Bewusst eine Funktion und kein const-Objekt: Die Reiter zeichnen sich
+ * teils schon, während diese Datei noch durchläuft. Ein const wäre bis zu
+ * seiner Zeile in der temporalen Totzone und würde dann werfen —
+ * Funktionsdeklarationen stehen dagegen von Anfang an bereit. */
+function ahIcon(name) {
+  const pfade = {
+    hammer: '<path d="m14 13-7.5 7.5a2.12 2.12 0 0 1-3-3L11 10"/><path d="m16 16 6-6"/><path d="m8 8 6-6"/><path d="m9 7 8 8"/><path d="m21 11-8-8"/>',
+    geld: '<circle cx="12" cy="12" r="9"/><path d="M14.5 9.5a2.5 2.5 0 0 0-2.5-1.5c-1.4 0-2.5.8-2.5 2s1.1 2 2.5 2 2.5.8 2.5 2-1.1 2-2.5 2a2.5 2.5 0 0 1-2.5-1.5"/><path d="M12 6v12"/>',
+    uhr: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+    flamme: '<path d="M12 22c4.4 0 8-3.1 8-7 0-4.5-4-6.5-4-11-2.5 1.5-3.5 3.5-3.5 5.5C11 7 9.5 5.5 9.5 4 7 6 4 8.5 4 15c0 3.9 3.6 7 8 7Z"/>',
+    paket: '<path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>',
+    etikett: '<path d="M12.6 2.6A2 2 0 0 0 11.2 2H4a2 2 0 0 0-2 2v7.2a2 2 0 0 0 .6 1.4l8.2 8.2a2 2 0 0 0 2.8 0l7.2-7.2a2 2 0 0 0 0-2.8Z"/><circle cx="7.5" cy="7.5" r="1.5"/>',
+    runter: '<path d="M12 5v14"/><path d="m19 12-7 7-7-7"/>',
+    hoch: '<path d="M12 19V5"/><path d="m5 12 7-7 7 7"/>',
+    diagramm: '<path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="m19 9-5 5-4-4-3 3"/>',
+    splitter: '<path d="M12 2 4 9l8 13 8-13Z"/><path d="M4 9h16"/><path d="m12 2-3 7 3 13 3-13-3-7Z"/>',
+  };
+  return ahSymbol(pfade[name] ?? pfade.paket);
+}
+
+/**
+ * Kennzahlen in einen Behälter zeichnen.
+ *
+ * Der Sinn dieser Zeile ist nicht Schmuck: Sie beantwortet die Frage, mit
+ * der man auf einen solchen Reiter kommt ("wie viel ist da los, was ist es
+ * wert"), ohne dass man dafür scrollen und zählen muss.
  */
-function zeigeAhZahlen() {
-  const ziel = document.getElementById('ahZahlen');
+function zeigeZahlen(zielId, zahlen) {
+  const ziel = document.getElementById(zielId);
   if (!ziel) return;
 
-  const alle = App.auctionsData || [];
-  const jetzt = Date.now();
-  const stunde = 60 * 60 * 1000;
-
-  const gesamtwert = alle.reduce((summe, a) => summe + (a.currentBid ?? a.startBid ?? 0), 0);
-  const baldVorbei = alle.filter(a => {
-    const ende = new Date(a.endTime).getTime() - jetzt;
-    return ende > 0 && ende <= stunde;
-  }).length;
-  const begehrt = alle.filter(a => Object.keys(a.bids || {}).length >= 3).length;
-
-  const symbol = (pfade) =>
-    `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-          stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${pfade}</svg>`;
-
-  const zahlen = [
-    {
-      label: 'Aktive Auktionen',
-      wert: alle.length.toLocaleString('de-DE'),
-      symbol: symbol('<path d="m14 13-7.5 7.5a2.12 2.12 0 0 1-3-3L11 10"/><path d="m16 16 6-6"/><path d="m8 8 6-6"/><path d="m9 7 8 8"/><path d="m21 11-8-8"/>'),
-    },
-    {
-      label: 'Gesamtwert',
-      wert: ahZahlKurz(gesamtwert),
-      symbol: symbol('<circle cx="12" cy="12" r="9"/><path d="M14.5 9.5a2.5 2.5 0 0 0-2.5-1.5c-1.4 0-2.5.8-2.5 2s1.1 2 2.5 2 2.5.8 2.5 2-1.1 2-2.5 2a2.5 2.5 0 0 1-2.5-1.5"/><path d="M12 6v12"/>'),
-    },
-    {
-      label: 'Endet in einer Stunde',
-      wert: baldVorbei.toLocaleString('de-DE'),
-      symbol: symbol('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'),
-    },
-    {
-      label: 'Heiß begehrt',
-      wert: begehrt.toLocaleString('de-DE'),
-      symbol: symbol('<path d="M12 22c4.4 0 8-3.1 8-7 0-4.5-4-6.5-4-11-2.5 1.5-3.5 3.5-3.5 5.5C11 7 9.5 5.5 9.5 4 7 6 4 8.5 4 15c0 3.9 3.6 7 8 7Z"/>'),
-    },
-  ];
-
   ziel.innerHTML = zahlen
+    .filter(Boolean)
     .map(
       (z) => `
       <div class="ah-zahl">
@@ -2532,6 +2524,173 @@ function zeigeAhZahlen() {
       </div>`
     )
     .join('');
+}
+
+/* Auch hier eine Deklaration statt const - siehe ahIcon(). */
+function zahl(n) {
+  return Number(n || 0).toLocaleString('de-DE');
+}
+
+/**
+ * Die vier Zahlen über der Auktionsliste.
+ *
+ * Sie beziehen sich bewusst auf alle laufenden Auktionen und nicht auf die
+ * gefilterte Auswahl: Sie sollen sagen, wie das Auktionshaus gerade
+ * aussieht — nicht, wie viele Treffer die eigene Suche hatte. Die Trefferzahl
+ * steht ohnehin am Chip.
+ */
+function zeigeAhZahlen() {
+  const alle = App.auctionsData || [];
+  const jetzt = Date.now();
+
+  const gesamtwert = alle.reduce((summe, a) => summe + (a.currentBid ?? a.startBid ?? 0), 0);
+  const baldVorbei = alle.filter(a => {
+    const ende = new Date(a.endTime).getTime() - jetzt;
+    return ende > 0 && ende <= 3_600_000;
+  }).length;
+  const begehrt = alle.filter(a => Object.keys(a.bids || {}).length >= 3).length;
+
+  zeigeZahlen('ahZahlen', [
+    { label: 'Aktive Auktionen', wert: zahl(alle.length), symbol: ahIcon('hammer') },
+    { label: 'Gesamtwert', wert: ahZahlKurz(gesamtwert), symbol: ahIcon('geld') },
+    { label: 'Endet in einer Stunde', wert: zahl(baldVorbei), symbol: ahIcon('uhr') },
+    { label: 'Heiß begehrt', wert: zahl(begehrt), symbol: ahIcon('flamme') },
+  ]);
+}
+
+/** Markt: wie viele Waren, wie teuer, wie breit gestreut. */
+function zeigeMarktZahlen() {
+  const kategorien = Object.keys(App.marketPrices || {});
+  let waren = 0;
+  let teuerster = 0;
+  let summe = 0;
+
+  for (const kategorie of kategorien) {
+    for (const material in App.marketPrices[kategorie]) {
+      const eintraege = App.marketPrices[kategorie][material] || [];
+      const verkauf = (Array.isArray(eintraege) ? eintraege : []).find(e => e?.type === 'SELL') || eintraege[0];
+      const preis = Number(verkauf?.price) || 0;
+      waren += 1;
+      summe += preis;
+      if (preis > teuerster) teuerster = preis;
+    }
+  }
+
+  zeigeZahlen('marktZahlen', [
+    { label: 'Waren im Shop', wert: zahl(waren), symbol: ahIcon('paket') },
+    { label: 'Kategorien', wert: zahl(kategorien.length), symbol: ahIcon('etikett') },
+    { label: 'Teuerste Ware', wert: ahZahlKurz(teuerster), symbol: ahIcon('hoch') },
+    { label: 'Durchschnittspreis', wert: waren ? ahZahlKurz(summe / waren) : '–', symbol: ahIcon('geld') },
+  ]);
+}
+
+/** Schnäppchen: wie viele, wie günstig, wie viel spart man zusammen. */
+function zeigeSchnaeppchenZahlen() {
+  const jetzt = Date.now();
+  let anzahl = 0;
+  let bester = 0;
+  let ersparnis = 0;
+  let eilig = 0;
+
+  for (const a of App.auctionsData || []) {
+    const endet = new Date(a.endTime).getTime();
+    if (endet <= jetzt) continue;
+
+    const rabatt = getAuctionDiscount(a);
+    if (rabatt === null || rabatt < App.dealsMinDiscount) continue;
+
+    anzahl += 1;
+    if (rabatt > bester) bester = rabatt;
+    if (endet - jetzt <= 3_600_000) eilig += 1;
+
+    // Was man gegenüber dem 30-Tage-Schnitt spart. Der Schnitt gilt pro
+    // Stück, der Preis für die ganze Auktion — also hochrechnen.
+    const schnitt = getMonthlyAveragePerUnit(a);
+    const preis = a.currentBid ?? a.startBid ?? 0;
+    if (schnitt !== null) ersparnis += Math.max(0, schnitt * (a.item?.amount || 1) - preis);
+  }
+
+  zeigeZahlen('schnaeppchenZahlen', [
+    { label: 'Schnäppchen', wert: zahl(anzahl), symbol: ahIcon('etikett') },
+    { label: 'Bester Rabatt', wert: bester ? `${Math.round(bester)} %` : '–', symbol: ahIcon('runter') },
+    { label: 'Ersparnis gesamt', wert: ahZahlKurz(ersparnis), symbol: ahIcon('geld') },
+    { label: 'Endet in einer Stunde', wert: zahl(eilig), symbol: ahIcon('uhr') },
+  ]);
+}
+
+/** Verlauf: was insgesamt über den Tisch ging. */
+function zeigeVerlaufZahlen() {
+  let verkaeufe = 0;
+  let umsatz = 0;
+  let teuerster = 0;
+  const items = Object.keys(App.auctionHistory || {});
+
+  for (const name of items) {
+    const liste = App.auctionHistory[name];
+    if (!Array.isArray(liste)) continue;
+    for (const verkauf of liste) {
+      const preis = Number(verkauf.currentBid) || 0;
+      verkaeufe += 1;
+      umsatz += preis;
+      if (preis > teuerster) teuerster = preis;
+    }
+  }
+
+  zeigeZahlen('verlaufZahlen', [
+    { label: 'Verkäufe erfasst', wert: zahl(verkaeufe), symbol: ahIcon('diagramm') },
+    { label: 'Umsatz gesamt', wert: ahZahlKurz(umsatz), symbol: ahIcon('geld') },
+    { label: 'Teuerster Verkauf', wert: ahZahlKurz(teuerster), symbol: ahIcon('hoch') },
+    { label: 'Verschiedene Items', wert: zahl(items.length), symbol: ahIcon('paket') },
+  ]);
+}
+
+/** Shards: wie viele Kurse und was der beste hergibt. */
+function zeigeShardZahlen() {
+  const kurse = App.shardRates || [];
+  const werte = kurse.map(k => Number(k.amount) || 0).filter(w => w > 0);
+  const bester = werte.length ? Math.max(...werte) : 0;
+  const schnitt = werte.length ? werte.reduce((s, w) => s + w, 0) / werte.length : 0;
+
+  zeigeZahlen('shardZahlen', [
+    { label: 'Kurse gelistet', wert: zahl(kurse.length), symbol: ahIcon('splitter') },
+    { label: 'Bester Kurs', wert: ahZahlKurz(bester), symbol: ahIcon('hoch') },
+    { label: 'Durchschnitt', wert: ahZahlKurz(schnitt), symbol: ahIcon('geld') },
+  ]);
+}
+
+/**
+ * Ein Symbol zum Filternamen.
+ *
+ * Bewusst über Stichwörter im Namen und nicht über die Kategorie-Schlüssel:
+ * Die kommen aus der API und ändern sich, wenn dort etwas umsortiert wird.
+ * Ein Name, der "Rüstung" enthält, zeigt einen Schild — egal wie der
+ * Schlüssel dahinter gerade heißt.
+ */
+const CHIP_SYMBOLE = [
+  [/^alle$/i, '📋'],
+  [/spieler/i, '👤'],
+  [/erinnerung/i, '🔔'],
+  [/\bop\b/i, '🌀'],
+  [/custom/i, '🧪'],
+  [/verzaubert/i, '✨'],
+  [/rüstung|armor|helm|brustplatte|hose|schuh|stiefel/i, '🛡️'],
+  [/werkzeug|tool|waffe|kampf|schwert|axt|spitzhacke/i, '⚔️'],
+  [/karte|booster|sammelkarte/i, '🎴'],
+  [/spawn|ei\b/i, '🥚'],
+  [/talisman/i, '🔮'],
+  [/kopf|köpfe/i, '🗿'],
+  [/shulker|kiste/i, '📦'],
+  [/elytra|elytren|schwinge/i, '🪽'],
+  [/trank|potion/i, '⚗️'],
+  [/platte|disc|musik/i, '💿'],
+  [/block|bau/i, '🧱'],
+  [/nahrung|essen|food/i, '🍗'],
+  [/rede|schrift|buch/i, '📖'],
+];
+
+function chipSymbol(name) {
+  const treffer = CHIP_SYMBOLE.find(([muster]) => muster.test(name));
+  return treffer ? treffer[1] : '🔸';
 }
 
 /**
@@ -2564,6 +2723,7 @@ function zeigeAhChips() {
                 class="ah-chip${aktiv ? ' ah-chip--aktiv' : ''}"
                 data-wert="${o.value.replace(/"/g, '&quot;')}"
                 aria-pressed="${aktiv}">
+          <span class="ah-chip__symbol" aria-hidden="true">${chipSymbol(name)}</span>
           ${name}${treffer ? `<span class="ah-chip__zahl">${treffer[1]}</span>` : ''}
         </button>`;
     })
@@ -3132,6 +3292,7 @@ function sortDealsByMode(a, b) {
 }
 
 function renderDeals(isPagination = false) {
+  zeigeSchnaeppchenZahlen();
   const container = document.getElementById("dealsContainer");
   if (!container) return;
   const search = "";
@@ -3696,6 +3857,7 @@ function setupHistoryFilters() {
 }
 
 async function renderHistory(isPagination = false) {
+  zeigeVerlaufZahlen();
   const container = document.getElementById("historyContainer");
   if (!container) return;
 
@@ -3966,7 +4128,7 @@ function createAuctionCard(auction, historyType = null, personalData = null) {
       <div class="auction-symbol">${itemBildTag(auction.item.material, iconUrl, displayName)}</div>
       <div class="auction-kopf__text">
         <h3 class="auction-name">${displayName}</h3>
-        <div class="auction-art">${variantenLabel(auction.item) || getAuctionCategoryLabel(getAuctionCategoryKey(auction))}${auction.item.amount > 1 ? ` · ${auction.item.amount}×` : ''}</div>
+        <div class="auction-art${variantenLabel(auction.item) ? ' item-variante' : ''}">${variantenLabel(auction.item) || getAuctionCategoryLabel(getAuctionCategoryKey(auction))}${auction.item.amount > 1 ? ` · ${auction.item.amount}×` : ''}</div>
       </div>
     </div>
     ${verzauberungenHtml(auction.item)}
@@ -4383,6 +4545,7 @@ function parseShardItem(source) {
 
 
 async function renderShards() {
+  zeigeShardZahlen();
   const container = document.getElementById("shardsContainer");
   const search = "";
   container.innerHTML = `<div class="content-loader"><span class="loading-spinner"></span><span>Lade Shards...</span></div>`;
