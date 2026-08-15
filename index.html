@@ -1142,10 +1142,23 @@
     </div>
 
     <div id="market" class="section">
-      <div class="market-controls">
-        <div class="search-wrapper" style="flex: 1;">
-          <input type="text" id="searchMarket" class="search-input" placeholder="🔍 Item oder Kategorie suchen …" oninput="renderMarket()">
-        </div>
+      <div class="ah-kopf">
+        <span class="ah-marke">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+          Markt
+        </span>
+        <h1 class="ah-titel">Server<span>markt</span></h1>
+        <p class="ah-lead">Alle Ankaufs- und Verkaufspreise des Servershops — mit Spanne, Trend und dem Vergleich zum Auktionshaus.</p>
+      </div>
+
+      <div id="marktZahlen" class="ah-zahlen"></div>
+
+      <div class="ah-steuerung">
+        <div class="ah-zeile">
+          <label class="ah-suche">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            <input type="text" id="searchMarket" class="search-input" placeholder="Item oder Kategorie suchen …" oninput="renderMarket()">
+          </label>
         <div class="market-filter-dropdown" id="marketTrendFilterContainer">
           <button class="filter-btn" id="marketTrendBtn" onclick="toggleMarketFilterMenu(event)" title="Trends">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line><line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line><line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line><line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line></svg>
@@ -1168,8 +1181,9 @@
         <div class="trend-progress-bar" id="trendProgressBar"></div>
       </div>
 
-      <div id="marketContainer"></div>
-      <button class="refresh-btn" onclick="refreshTab('market', this)" title="Marktdaten neu laden">⟳ Aktualisieren</button>
+      <div id="marketContainer">          <button type="button" class="ah-knopf" onclick="refreshTab('market', this)" title="Marktdaten neu laden"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>Aktualisieren</button>
+        </div>
+      </div>
     </div>
 
     <div id="auctions" class="section">
@@ -1241,7 +1255,19 @@
     </div>
 
     <div id="deals" class="section">
-      <div class="auction-controls">
+      <div class="ah-kopf">
+        <span class="ah-marke">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.6 2.6A2 2 0 0 0 11.2 2H4a2 2 0 0 0-2 2v7.2a2 2 0 0 0 .6 1.4l8.2 8.2a2 2 0 0 0 2.8 0l7.2-7.2a2 2 0 0 0 0-2.8Z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>
+          Schnäppchen
+        </span>
+        <h1 class="ah-titel">Schnäpp<span>chen</span></h1>
+        <p class="ah-lead">Laufende Auktionen, die deutlich unter ihrem 30-Tage-Durchschnitt liegen. Je größer der Rabatt, desto weiter oben.</p>
+      </div>
+
+      <div id="schnaeppchenZahlen" class="ah-zahlen"></div>
+
+      <div class="ah-steuerung">
+        <div class="ah-zeile">
         <div class="filter-group">
           <select id="dealsMinDiscount" class="auction-sort" onchange="setDealsMinDiscount(this.value)">
             <option value="5">Mind. 5% günstiger</option>
@@ -1259,13 +1285,26 @@
           <option value="PRICE_LOW">Niedrigster Preis</option>
           <option value="BIDS_HIGH">Meiste Gebote</option>
         </select>
+                <button type="button" class="ah-knopf" onclick="refreshTab('deals', this)" title="Schnäppchen neu laden"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>Aktualisieren</button>
+        </div>
       </div>
-      <button class="refresh-btn" onclick="refreshTab('deals', this)" title="Schnäppchen neu laden">⟳ Aktualisieren</button>
       <div id="dealsContainer"></div>
     </div>
 
     <div id="history" class="section">
-      <div class="auction-controls">
+      <div class="ah-kopf">
+        <span class="ah-marke">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+          Verlauf
+        </span>
+        <h1 class="ah-titel">Verkaufs<span>verlauf</span></h1>
+        <p class="ah-lead">Was tatsächlich verkauft wurde und für wie viel — die Grundlage für jeden Durchschnitt und jedes Schnäppchen auf dieser Seite.</p>
+      </div>
+
+      <div id="verlaufZahlen" class="ah-zahlen"></div>
+
+      <div class="ah-steuerung">
+        <div class="ah-zeile">
         <div class="filter-group">
           <select id="history-filters" class="auction-sort" onchange="setHistoryFilter(this.value)"></select>
           <select id="historyStarSelect" class="auction-sort" onchange="setHistoryStarFilter(this.value)" style="display: none;">
@@ -1282,13 +1321,29 @@
           <option value="PRICE_HIGH">Höchster Preis</option>
           <option value="PRICE_LOW">Niedrigster Preis</option>
         </select>
+                <button type="button" class="ah-knopf" onclick="refreshTab('history', this)" title="Verlauf neu laden"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>Aktualisieren</button>
+        </div>
       </div>
-      <button class="refresh-btn" onclick="refreshTab('history', this)" title="Verlauf neu laden">⟳ Aktualisieren</button>
       <div id="historyContainer"></div>
     </div>
 
     <div id="shards" class="section">
-      <button class="refresh-btn" onclick="refreshTab('shards', this)" title="Shard-Kurse neu laden">⟳ Aktualisieren</button>
+      <div class="ah-kopf">
+        <span class="ah-marke">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2 4 9l8 13 8-13Z"/><path d="M4 9h16"/></svg>
+          Shards
+        </span>
+        <h1 class="ah-titel">Shard<span>kurse</span></h1>
+        <p class="ah-lead">Was der Händler gerade für welche Splitter gibt — samt Rechner, der dir sagt, was dein Bestand wert ist.</p>
+      </div>
+
+      <div id="shardZahlen" class="ah-zahlen"></div>
+
+      <div class="ah-steuerung">
+        <div class="ah-zeile">
+          <button type="button" class="ah-knopf" onclick="refreshTab('shards', this)" title="Shard-Kurse neu laden"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>Aktualisieren</button>
+        </div>
+      </div>
       <div id="shardsContainer"></div>
 
       <!-- Shard Rechner -->
@@ -1296,8 +1351,15 @@
     </div>
 
     <div id="items" class="section">
-      <input type="text" id="searchItems" class="search-input" placeholder="🔍 Item suchen (alle je gesehenen Items) …" oninput="renderItemSearch()">
-      <button class="refresh-btn" onclick="refreshTab('items', this)" title="Item-Liste neu laden">⟳ Aktualisieren</button>
+      <div class="ah-steuerung">
+        <div class="ah-zeile">
+          <label class="ah-suche">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            <input type="text" id="searchItems" class="search-input" placeholder="Item suchen … alle je gesehenen" oninput="renderItemSearch()">
+          </label>
+          <button type="button" class="ah-knopf" onclick="refreshTab('items', this)" title="Item-Liste neu laden"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>Aktualisieren</button>
+        </div>
+      </div>
       <div id="itemsContainer"></div>
     </div>
 
