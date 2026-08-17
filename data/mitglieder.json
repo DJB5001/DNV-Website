@@ -1,6 +1,6 @@
 {
-  "stand": "2026-08-17T20:42:28.610Z",
-  "anzahl": 24,
+  "stand": "2026-08-17T21:12:35.749Z",
+  "anzahl": 25,
   "hinweis": "Automatisch vom DNV-Bot aus den Discord-Rollen erzeugt. Änderungen hier werden überschrieben.",
   "mitglieder": [
     {
@@ -42,6 +42,16 @@
       "verifiziert": true,
       "plattform": "bedrock",
       "uuid": "00000000-0000-0000-0009-01fbd60ec40c"
+    },
+    {
+      "name": "Braxan26",
+      "rolle": "Allrounder",
+      "farbe": "allround",
+      "rang": 10,
+      "seit": "2026-08-17",
+      "verifiziert": true,
+      "plattform": "java",
+      "uuid": "c61a4344-8e91-486c-8755-0fe2fc09d7a4"
     },
     {
       "name": ".Toastbrot251",
