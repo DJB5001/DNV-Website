@@ -26,6 +26,7 @@ npx http-server . -p 8123      # abweichender Port über PORT=...
 |---|---|---|
 | `varianten-test.mjs` | Sammelkarte und Werkzeug unter gleichem Namen werden getrennt | Verlauf |
 | `index-test.mjs` | Der Item-Index teilt Varianten auf, ohne Verkäufe zu verlieren | Verlauf |
+| `tieferlink-test.mjs` | `#item=…` und `#spieler=…` — die Adressen, auf die die Discord-Befehle zeigen | Verlauf |
 | `bilder-test.mjs` | Aus Materialnamen entstehen brauchbare Bildadressen. Mit `--abrufen` wird jede Adresse wirklich geholt (dauert Minuten) | Verlauf |
 | `kette-test.mjs` | Bild-Rückfall: eigenes Bild → Wiki → Spieltextur → Verbotsschild, und dass die Adresse, die es geschafft hat, gemerkt wird | Browser |
 | `anzeige-test.mjs` | Marktname ohne API-Feld, Variante auf der Auktionskarte | Browser |

@@ -15,7 +15,7 @@ const schnipsel = (von, bis) => {
 // Die Verzauberungsnamen stehen weiter oben im Anzeige-Abschnitt,
 // variantenLabel braucht sie aber.
 const block =
-  schnipsel('const verzauberungsNamen = {', '// Ladeverhalten und Rückfallkette überall gleich sind.') +
+  schnipsel('const verzauberungsNamen = {', '// Rückfallbild, wenn auch das Typ-Bild') +
   schnipsel('function loreAlsText(item)', 'function getMonthlyAveragePerUnit');
 
 // Der Verlauf liegt im Datenrepo DJB5001/opsuchtinfo. Pfad per Argument

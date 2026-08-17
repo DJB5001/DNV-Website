@@ -5,6 +5,59 @@
 // lassen — und damit die gesamte Reiternavigation lahmzulegen.
 let partnerInterval;
 
+// Steht bewusst ganz oben, aus demselben Grund wie partnerInterval:
+// variantenLabel() braucht diese Tabelle, und variantenLabel() steckt in
+// jeder Auktionskarte und im Item-Index. Lag sie wie zuvor in der
+// Dateimitte, genuegte ein Abbruch weiter oben (etwa weil ein CDN
+// klemmt), um sie in der zeitlichen Totzone zu lassen — und damit jede
+// Preisanzeige mitzunehmen.
+const verzauberungsNamen = {
+  aqua_affinity: 'Wasseraffinität', bane_of_arthropods: 'Nemesis der Gliederfüßer',
+  binding_curse: 'Fluch der Bindung', blast_protection: 'Explosionsschutz',
+  breach: 'Bruch', channeling: 'Entladung', density: 'Wucht',
+  depth_strider: 'Tiefenläufer', efficiency: 'Effizienz', feather_falling: 'Federfall',
+  fire_aspect: 'Verbrennung', fire_protection: 'Feuerschutz', flame: 'Flamme',
+  fortune: 'Glück', frost_walker: 'Eisläufer', impaling: 'Harpune',
+  infinity: 'Unendlichkeit', knockback: 'Rückstoß', looting: 'Plünderung',
+  loyalty: 'Treue', luck_of_the_sea: 'Glück des Meeres', lure: 'Köder',
+  mending: 'Reparatur', multishot: 'Mehrfachschuss', piercing: 'Durchdringung',
+  power: 'Stärke', projectile_protection: 'Geschossschutz', protection: 'Schutz',
+  punch: 'Schlag', quick_charge: 'Schnellladen', respiration: 'Atmung',
+  riptide: 'Sog', sharpness: 'Schärfe', silk_touch: 'Behutsamkeit',
+  smite: 'Bann', soul_speed: 'Seelenläufer', sweeping_edge: 'Schwungkraft',
+  swift_sneak: 'Schleicher', thorns: 'Dornen', unbreaking: 'Haltbarkeit',
+  vanishing_curse: 'Fluch des Verschwindens', wind_burst: 'Windstoß'
+};
+
+const ROEMISCH = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
+
+/* Minecraft schreibt Stufen römisch — aber nur bis zehn. Auf OPSUCHT gibt es
+   Haltbarkeit 160, und "CLX" liest niemand. */
+function stufenZeichen(stufe) {
+  const n = Number(stufe);
+  return n >= 1 && n <= 10 ? ROEMISCH[n] : String(stufe);
+}
+
+function verzauberungName(schluessel) {
+  const ohneRaum = String(schluessel).split(':').pop();
+  if (verzauberungsNamen[ohneRaum]) return verzauberungsNamen[ohneRaum];
+  // Unbekannt: wenigstens lesbar machen, statt den rohen Schlüssel zu zeigen
+  return ohneRaum
+    .split('_')
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ');
+}
+
+/** ["Behutsamkeit III", "Haltbarkeit 160"] — stärkste Verzauberung zuerst. */
+function verzauberungenListe(item) {
+  const roh = item?.enchantments;
+  if (!roh || typeof roh !== 'object') return [];
+
+  return Object.entries(roh)
+    .sort((a, b) => Number(b[1]) - Number(a[1]))
+    .map(([schluessel, stufe]) => `${verzauberungName(schluessel)} ${stufenZeichen(stufe)}`);
+}
+
 // Rückfallbild, wenn auch das Typ-Bild nicht geladen werden kann.
 const BARRIER_BILD = 'https://mcdf.wiki.gg/images/Barrier.png?ff8ff1';
 
@@ -2255,53 +2308,6 @@ function bildRueckfall(img) {
 // Deutsche Namen für alle, die im Verlauf vorkommen. OPSUCHT hat eigene
 // dazuerfunden (etwa "lunge"), die es in Minecraft nicht gibt; für die und
 // alles Künftige greift der Rückfall weiter unten.
-const verzauberungsNamen = {
-  aqua_affinity: 'Wasseraffinität', bane_of_arthropods: 'Nemesis der Gliederfüßer',
-  binding_curse: 'Fluch der Bindung', blast_protection: 'Explosionsschutz',
-  breach: 'Bruch', channeling: 'Entladung', density: 'Wucht',
-  depth_strider: 'Tiefenläufer', efficiency: 'Effizienz', feather_falling: 'Federfall',
-  fire_aspect: 'Verbrennung', fire_protection: 'Feuerschutz', flame: 'Flamme',
-  fortune: 'Glück', frost_walker: 'Eisläufer', impaling: 'Harpune',
-  infinity: 'Unendlichkeit', knockback: 'Rückstoß', looting: 'Plünderung',
-  loyalty: 'Treue', luck_of_the_sea: 'Glück des Meeres', lure: 'Köder',
-  mending: 'Reparatur', multishot: 'Mehrfachschuss', piercing: 'Durchdringung',
-  power: 'Stärke', projectile_protection: 'Geschossschutz', protection: 'Schutz',
-  punch: 'Schlag', quick_charge: 'Schnellladen', respiration: 'Atmung',
-  riptide: 'Sog', sharpness: 'Schärfe', silk_touch: 'Behutsamkeit',
-  smite: 'Bann', soul_speed: 'Seelenläufer', sweeping_edge: 'Schwungkraft',
-  swift_sneak: 'Schleicher', thorns: 'Dornen', unbreaking: 'Haltbarkeit',
-  vanishing_curse: 'Fluch des Verschwindens', wind_burst: 'Windstoß'
-};
-
-const ROEMISCH = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
-
-/* Minecraft schreibt Stufen römisch — aber nur bis zehn. Auf OPSUCHT gibt es
-   Haltbarkeit 160, und "CLX" liest niemand. */
-function stufenZeichen(stufe) {
-  const n = Number(stufe);
-  return n >= 1 && n <= 10 ? ROEMISCH[n] : String(stufe);
-}
-
-function verzauberungName(schluessel) {
-  const ohneRaum = String(schluessel).split(':').pop();
-  if (verzauberungsNamen[ohneRaum]) return verzauberungsNamen[ohneRaum];
-  // Unbekannt: wenigstens lesbar machen, statt den rohen Schlüssel zu zeigen
-  return ohneRaum
-    .split('_')
-    .map(w => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(' ');
-}
-
-/** ["Behutsamkeit III", "Haltbarkeit 160"] — stärkste Verzauberung zuerst. */
-function verzauberungenListe(item) {
-  const roh = item?.enchantments;
-  if (!roh || typeof roh !== 'object') return [];
-
-  return Object.entries(roh)
-    .sort((a, b) => Number(b[1]) - Number(a[1]))
-    .map(([schluessel, stufe]) => `${verzauberungName(schluessel)} ${stufenZeichen(stufe)}`);
-}
-
 // Ladeverhalten und Rückfallkette überall gleich sind.
 //
 // adresse ist der Wunsch (aus der API oder aus config.js), kette die
@@ -6022,6 +6028,95 @@ function pruefeBenachrichtigungsAnker() {
 
 window.addEventListener('hashchange', pruefeBenachrichtigungsAnker);
 
+// =====================================================================
+// TIEFE LINKS
+// ---------------------------------------------------------------------
+// Adressen, die direkt auf ein Item oder einen Spieler zeigen:
+//
+//   #item=Bohrer%20V3&m=NETHERITE_PICKAXE&e=efficiency%3D5,mending%3D1
+//   #spieler=069a79f4-44e9-4726-a5be-fca90e38aaf5
+//
+// Gebraucht werden sie von den Discord-Befehlen. Der Knopf unter /wert
+// führte bisher auf den Auktions-Reiter, und dort musste man das Item
+// noch einmal suchen — obwohl der Bot genau weiß, wovon die Rede ist.
+//
+// m und e sind freiwillig und bestimmen die Ausführung: "Bohrer V3" gibt
+// es als Sammelkarte aus Papier und als Netherit-Spitzhacke, und dieselbe
+// Spitzhacke schlecht oder gut verzaubert — mit dem Vielfachen im Preis.
+// Fehlen sie oder passt nichts, wird die meistgehandelte Variante des
+// Namens genommen: Die falsche Ausführung ist besser als eine leere Seite.
+//
+// e muss zeichengleich mit verzauberungsStempel() sein. Dieselbe Zeichen-
+// kette baut der Bot in DNV-Bot/src/marktdaten.js zusammen.
+// =====================================================================
+
+function tieferLink() {
+  const roh = window.location.hash.replace(/^#/, '');
+  // Ohne "=" ist es ein gewöhnlicher Anker wie #benachrichtigungen.
+  if (!roh || !roh.includes('=')) return null;
+
+  const p = new URLSearchParams(roh);
+  const item = p.get('item');
+  const spieler = p.get('spieler');
+  if (!item && !spieler) return null;
+
+  return { item, spieler, material: p.get('m'), verzauberungen: p.get('e') };
+}
+
+/** Von Name (+ Material + Verzauberungen) auf den Variantenschlüssel. */
+function schluesselZuItem(name, material, verzauberungen) {
+  const treffer = Object.values(buildItemIndex()).filter((e) => e.name === name);
+  if (!treffer.length) return null;
+
+  // Die meistgehandelte zuerst — das ist die, die gemeint ist, wenn die
+  // Angaben nicht reichen.
+  const meiste = (liste) =>
+    liste.reduce((a, b) => ((b.soldCount ?? 0) > (a.soldCount ?? 0) ? b : a));
+
+  if (!material) return meiste(treffer).schluessel;
+
+  const gleichesMaterial = treffer.filter(
+    (e) => String(e.item?.material ?? '').toUpperCase() === material.toUpperCase()
+  );
+  if (!gleichesMaterial.length) return meiste(treffer).schluessel;
+
+  if (verzauberungen !== null) {
+    const genau = gleichesMaterial.find((e) => verzauberungsStempel(e.item) === verzauberungen);
+    if (genau) return genau.schluessel;
+  }
+  return meiste(gleichesMaterial).schluessel;
+}
+
+async function folgeTiefemLink() {
+  const ziel = tieferLink();
+  if (!ziel) return;
+
+  if (ziel.spieler) {
+    App.selectedPlayerUuid = ziel.spieler;
+    // Damit der Zurück-Weg im Profil auf die Liste führt und nicht ins Leere.
+    App.previousState = { type: 'player_list', section: 'players', category: 'Alle', search: '' };
+    showSection('players'); // ruft renderPlayers(), das das Profil zeigt
+    return;
+  }
+
+  showSection('items');
+  const schluessel = schluesselZuItem(ziel.item, ziel.material, ziel.verzauberungen);
+  if (schluessel) {
+    await openItemDetail(schluessel);
+  } else {
+    // Den Namen wenigstens in die Suche schreiben: Vielleicht wurde er
+    // in den letzten 90 Tagen nicht gehandelt, vielleicht heißt er
+    // inzwischen anders. Beides sieht man dort schneller als hier.
+    const feld = document.getElementById('searchItems');
+    if (feld) {
+      feld.value = ziel.item;
+      renderItemSearch();
+    }
+  }
+}
+
+window.addEventListener('hashchange', folgeTiefemLink);
+
 async function setzeDcEinstellung(feld, wert) {
   App.dcEinstellungen[feld] = wert;
 
@@ -6312,7 +6407,20 @@ function animateHeadline() {
   });
 }
 
+// Der Besucherzähler ist Beiwerk. Er hing bisher ohne Absicherung an
+// Firebase — war das CDN blockiert oder Firebase gestört, warf schon die
+// erste Zeile, und weil der Aufruf mitten in init() steht, kam danach
+// nichts mehr: keine Auktionen, keine Timer, kein tiefer Link. Eine
+// Randfunktion darf die Seite nicht mitnehmen.
 function updateVisitorCounter() {
+  try {
+    zaehleBesuch();
+  } catch (error) {
+    console.warn('Besucherzähler nicht erreichbar:', error.message);
+  }
+}
+
+function zaehleBesuch() {
   const counterRef = database.ref('visits/count');
   const hasCounted = sessionStorage.getItem('hasCountedVisit');
 
@@ -6341,6 +6449,17 @@ async function init() {
 
   await Promise.all([loadMarket(), loadAuctions(), loadShards()]);
   setupAuctionFilters();
+
+  // Hier und nicht am Ende: Ein Link auf ein Item oder einen Spieler
+  // braucht nur den Verlauf, und der ist jetzt da. Weiter unten hinge er
+  // hinter allem, was danach noch schiefgehen kann — und käme bei einer
+  // Störung nie an.
+  try {
+    await folgeTiefemLink();
+  } catch (error) {
+    console.warn('Tiefem Link nicht gefolgt:', error.message);
+  }
+
   setupProfileCardInteractions();
   updateVisitorCounter();
   await renderMarket();
