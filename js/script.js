@@ -3258,11 +3258,33 @@ function salePricePerUnit(sale) {
 // Der Verlauf liegt aber unter EINEM Schlüssel je Anzeigename. Wer die
 // Verkäufe darunter ungefiltert mittelt, bekommt eine Zahl, die für
 // keine der beiden Varianten stimmt. Deshalb wird innerhalb eines Namens
-// zusätzlich nach Material und Lore getrennt.
+// zusätzlich nach Material, Lore und Verzauberungen getrennt.
 //
-// Verzauberungen gehen bewusst NICHT in den Schlüssel ein: Sie würden
-// die Gruppen auf einzelne Verkäufe zersplittern, und derselbe Bohrer
-// mit Glück statt Behutsamkeit ging für praktisch denselben Preis weg.
+// Die Verzauberungen standen hier einmal ausdrücklich NICHT im Schlüssel,
+// mit der Begründung, sie würden die Gruppen auf einzelne Verkäufe
+// zersplittern und derselbe Bohrer ginge mit Glück statt Behutsamkeit
+// für praktisch denselben Preis weg. Beides hält den Zahlen nicht stand:
+//
+//   Normaler ★ Helm — 274 Verkäufe lagen in EINEM Durchschnitt:
+//      256x  Ø  25.190   Haltbarkeit IV, Schutz IV
+//       32x  Ø  39.317   Haltbarkeit VI, Schutz VI, Reparatur I
+//        5x  Ø 155.080   + Atmung III, Wasseraffinität I
+//
+// 183 Gruppen mit 5.874 Verkäufen waren so vermengt, in 18 davon weicht
+// der Schnitt um Faktor 2 bis 15 ab. Und zersplittert wird nichts: Die
+// Varianten steigen von 3.278 auf 3.908, die tragfähigen mit mindestens
+// fünf Verkäufen aber von 1.268 auf 1.275 — sie werden mehr, weil
+// vermengte Gruppen in saubere zerfallen, die einzeln über der Schwelle
+// bleiben.
+//
+// Achtung: itemVariante ist auch der Gruppenschlüssel der Entdopplung
+// unten. Feinere Gruppen finden dort 6.521 statt 6.493 Zwischenstände —
+// in einer zu groben Gruppe schoben sich fremde Verkäufe zwischen die
+// Glieder einer Verlängerungskette und zerrissen sie.
+//
+// Dieselben Funktionen stehen in opsuchtinfo/history-updater/wert-index.js.
+// Wer hier etwas ändert, muss es dort mitändern — wert-index.test.js hält
+// die Zusage fest.
 // =====================================================================
 
 function loreAlsText(item) {
@@ -3272,15 +3294,29 @@ function loreAlsText(item) {
 }
 
 // Stabiler Schlüssel einer Variante. Getrennt wird mit \u0000, weil das
-// Zeichen weder in einem Material noch in einer Lore vorkommen kann: mit
-// einem Leerzeichen als Trenner könnten Material und Lore ineinander
-// laufen und zwei verschiedene Varianten denselben Schlüssel ergeben.
+// Zeichen in keinem der drei Teile vorkommen kann: mit einem Leerzeichen
+// als Trenner könnten Material, Lore und Verzauberungen ineinander laufen
+// und zwei verschiedene Varianten denselben Schlüssel ergeben.
 function itemVariante(item) {
-  return `${item?.material ?? ''}\u0000${loreAlsText(item)}`;
+  return `${item?.material ?? ''}\u0000${loreAlsText(item)}\u0000${verzauberungsStempel(item)}`;
 }
 
 function gleicheVariante(a, b) {
   return itemVariante(a) === itemVariante(b);
+}
+
+// Verzauberungen als sortierte Kette, z.B. "efficiency=5,mending=1".
+//
+// Sortiert, weil die Reihenfolge im JSON nicht verlässlich ist — sonst
+// bekäme derselbe Gegenstand je nach Laune der API zwei Schlüssel. Der
+// Namensraum "minecraft:" fällt weg, er steht vor jedem Eintrag.
+function verzauberungsStempel(item) {
+  const roh = item?.enchantments;
+  if (!roh || typeof roh !== 'object') return '';
+  return Object.entries(roh)
+    .map(([k, v]) => `${String(k).split(':').pop()}=${v}`)
+    .sort()
+    .join(',');
 }
 
 // ── Verlängerte Auktionen zusammenfassen ────────────────────────
@@ -3380,17 +3416,39 @@ function istInLetztenTagen(sale, tage) {
 }
 
 // Kurzes Unterscheidungsmerkmal für die Anzeige, damit zwei gleichnamige
-// Einträge auseinanderzuhalten sind: "Sammelkarte", "Zustand ✯✯✩", sonst
-// das Material.
-function variantenLabel(item) {
+// Einträge auseinanderzuhalten sind: "Sammelkarte", "Zustand ✯✯✩",
+// "Jackpot · Effizienz VI, Glück IV", sonst das Material.
+//
+// Seltenheit und Verzauberungen stehen mit drin, weil sie ohne das nicht
+// zu unterscheiden waren: Die Knochenspitzhacke gibt es als "Episch" für
+// Ø 220 Tsd und als "Jackpot" für Ø 5,5 Mio, und beide fielen auf
+// "Netherite Pickaxe" zurück — zwei gleich benannte Einträge im
+// Auswahlmenü. Von den Namen mit mehreren Varianten waren so 73 %
+// doppeldeutig benannt.
+//
+// mitVerzauberungen: Auf einer Auktionskarte stehen sie schon als eigene
+// Abzeichen darunter (verzauberungenHtml) — dort wären sie doppelt, und
+// die Karte hat für die lange Zeile keinen Platz. Überall sonst, wo nur
+// dieses eine Etikett zwei Varianten auseinanderhalten muss, gehören sie
+// hinein. Deshalb ist mitVerzauberungen die Vorgabe und die Karte die
+// Ausnahme.
+function variantenLabel(item, { mitVerzauberungen = true } = {}) {
   const lore = loreAlsText(item);
   const teile = [];
 
   const typ = lore.match(/Gewinntyp\s*»\s*(.+)/);
   if (typ && typ[1].trim() && typ[1].trim() !== 'Item') teile.push(typ[1].trim());
 
+  const selten = lore.match(/Seltenheit\s*»\s*(.+)/);
+  if (selten && selten[1].trim()) teile.push(selten[1].trim());
+
   const zustand = lore.match(/Zustand:\s*(\S+)/);
   if (zustand) teile.push(zustand[1]);
+
+  if (mitVerzauberungen) {
+    const verzauberungen = verzauberungenListe(item);
+    if (verzauberungen.length) teile.push(verzauberungen.join(', '));
+  }
 
   if (!teile.length && item?.material) teile.push(materialLesbar(item.material));
   return teile.join(' · ');
@@ -4253,6 +4311,10 @@ function createAuctionCard(auction, historyType = null, personalData = null) {
   const zeile = (klasse, label, wert) =>
     `<div class="price-info ${klasse}"><span>${label}</span><span class="price-info__wert">${wert}</span></div>`;
 
+  // Ohne die Verzauberungen: Die stehen als eigene Abzeichen darunter
+  // (verzauberungenHtml), und die Karte hat für die lange Zeile keinen Platz.
+  const kartenArt = variantenLabel(auction.item, { mitVerzauberungen: false });
+
   const hauptLabel = historyType ? 'Verkauft für' : bidCount > 0 ? 'Aktuelles Gebot' : 'Startgebot';
   const hauptWert = historyType
     ? auction.currentBid ?? auction.startBid
@@ -4268,7 +4330,7 @@ function createAuctionCard(auction, historyType = null, personalData = null) {
       <div class="auction-symbol">${itemBildTag(auction.item.material, iconUrl, displayName)}</div>
       <div class="auction-kopf__text">
         <h3 class="auction-name">${displayName}</h3>
-        <div class="auction-art${variantenLabel(auction.item) ? ' item-variante' : ''}">${variantenLabel(auction.item) || getAuctionCategoryLabel(getAuctionCategoryKey(auction))}${auction.item.amount > 1 ? ` · ${auction.item.amount}×` : ''}</div>
+        <div class="auction-art${kartenArt ? ' item-variante' : ''}">${kartenArt || getAuctionCategoryLabel(getAuctionCategoryKey(auction))}${auction.item.amount > 1 ? ` · ${auction.item.amount}×` : ''}</div>
       </div>
     </div>
     ${verzauberungenHtml(auction.item)}

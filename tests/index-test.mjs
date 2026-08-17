@@ -10,9 +10,10 @@ const schnipsel = (von, bis) => {
   return quelle.slice(a, b);
 };
 
-// materialLesbar steht im Bild-Abschnitt weiter oben, wird von
-// variantenLabel aber gebraucht.
+// materialLesbar steht im Bild-Abschnitt weiter oben und die
+// Verzauberungsnamen im Anzeige-Abschnitt; variantenLabel braucht beides.
 const block =
+  schnipsel('const verzauberungsNamen = {', '// Ladeverhalten und Rückfallkette überall gleich sind.') +
   schnipsel('// NETHERITE_PICKAXE wird zu', '// Rückfallkette für Item-Bilder') +
   schnipsel('function loreAlsText(item)', 'function getMonthlyAveragePerUnit') +
   schnipsel('function buildItemIndex()', 'function renderItemSearch()');
@@ -53,13 +54,32 @@ const bohrer = eintraege.filter(e => e.name === 'Bohrer V3');
 console.log('\n=== Bohrer V3 im Index ===');
 bohrer.forEach(e => console.log(`  ${e.item.material.padEnd(20)} label="${e.label}"  verkauft=${e.soldCount}`));
 
-// Drei, nicht zwei: die Sammelkarte plus zwei Zustandsstufen der Spitzhacke.
-pruefe(bohrer.length === 3, 'Bohrer V3 erscheint als drei getrennte Einträge');
+// Mindestens drei: die Sammelkarte plus zwei Zustandsstufen der
+// Spitzhacke. Keine feste Zahl, weil die Verzauberungen mittlerweile
+// mittrennen und der Verlauf wächst — geprüft wird, dass getrennt wird,
+// nicht wie oft.
+pruefe(bohrer.length >= 3, `Bohrer V3 erscheint als getrennte Einträge (${bohrer.length})`);
 pruefe(
   new Set(bohrer.map(e => e.item.material)).size === 2,
   'Sammelkarte (Papier) und Werkzeug (Netherit) sind getrennt'
 );
-pruefe(bohrer.some(e => e.label === 'Sammelkarte'), 'eine Variante ist als Sammelkarte beschriftet');
+pruefe(
+  bohrer.some(e => e.label.startsWith('Sammelkarte')),
+  'eine Variante ist als Sammelkarte beschriftet'
+);
+
+// Jede Ausführung muss ein eigenes Etikett tragen, sonst stehen im
+// Auswahlmenü zwei gleich benannte Zeilen mit verschiedenen Preisen.
+const etiketten = bohrer.map(e => e.label);
+pruefe(
+  new Set(etiketten).size === etiketten.length,
+  'keine zwei Ausführungen heißen gleich'
+);
+pruefe(
+  bohrer.filter(e => e.item.material === 'NETHERITE_PICKAXE')
+    .every(e => /Effizienz|Haltbarkeit|Reparatur/.test(e.label)),
+  'die Werkzeuge nennen ihre Verzauberungen'
+);
 pruefe(bohrer.every(e => e.soldCount > 0), 'beide Varianten haben eigene Verkaufszahlen');
 pruefe(
   bohrer.reduce((s, e) => s + e.soldCount, 0) <= historie['Bohrer V3'].length,

@@ -5,10 +5,18 @@ const quelle = fs.readFileSync(new URL('../js/script.js', import.meta.url), 'utf
 
 // Nur den Varianten-Block aus script.js herausschneiden und ausfuehren,
 // damit wirklich der ausgelieferte Code getestet wird und keine Kopie.
-const von = quelle.indexOf('function loreAlsText(item)');
-const bis = quelle.indexOf('function getMonthlyAveragePerUnit');
-if (von < 0 || bis < 0) throw new Error('Varianten-Block nicht gefunden');
-const block = quelle.slice(von, bis);
+const schnipsel = (von, bis) => {
+  const a = quelle.indexOf(von);
+  const b = quelle.indexOf(bis);
+  if (a < 0 || b < 0) throw new Error(`Block nicht gefunden: ${von}`);
+  return quelle.slice(a, b);
+};
+
+// Die Verzauberungsnamen stehen weiter oben im Anzeige-Abschnitt,
+// variantenLabel braucht sie aber.
+const block =
+  schnipsel('const verzauberungsNamen = {', '// Ladeverhalten und Rückfallkette überall gleich sind.') +
+  schnipsel('function loreAlsText(item)', 'function getMonthlyAveragePerUnit');
 
 // Der Verlauf liegt im Datenrepo DJB5001/opsuchtinfo. Pfad per Argument
 // oder Umgebungsvariable, damit der Test nicht an einem Rechner klebt.
