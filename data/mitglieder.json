@@ -1,6 +1,6 @@
 {
-  "stand": "2026-08-17T14:12:37.730Z",
-  "anzahl": 19,
+  "stand": "2026-08-17T18:26:41.880Z",
+  "anzahl": 20,
   "hinweis": "Automatisch vom DNV-Bot aus den Discord-Rollen erzeugt. Änderungen hier werden überschrieben.",
   "mitglieder": [
     {
@@ -192,6 +192,16 @@
       "verifiziert": true,
       "plattform": "java",
       "uuid": "aae61f79-0401-4377-8024-a336d63a1963"
+    },
+    {
+      "name": "yPanda_x3",
+      "rolle": "Farmer",
+      "farbe": "farmer",
+      "rang": 12,
+      "seit": "2026-08-17",
+      "verifiziert": true,
+      "plattform": "java",
+      "uuid": "5aa74c53-efe0-472b-ba80-7ccf851a3a60"
     }
   ]
 }
