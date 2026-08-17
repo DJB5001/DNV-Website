@@ -13,7 +13,7 @@ const schnipsel = (von, bis) => {
 // materialLesbar steht im Bild-Abschnitt weiter oben und die
 // Verzauberungsnamen im Anzeige-Abschnitt; variantenLabel braucht beides.
 const block =
-  schnipsel('const verzauberungsNamen = {', '// Ladeverhalten und Rückfallkette überall gleich sind.') +
+  schnipsel('const verzauberungsNamen = {', '// Rückfallbild, wenn auch das Typ-Bild') +
   schnipsel('// NETHERITE_PICKAXE wird zu', '// Rückfallkette für Item-Bilder') +
   schnipsel('function loreAlsText(item)', 'function getMonthlyAveragePerUnit') +
   schnipsel('function buildItemIndex()', 'function renderItemSearch()');
