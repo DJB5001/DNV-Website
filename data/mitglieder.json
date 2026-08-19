@@ -1,6 +1,6 @@
 {
-  "stand": "2026-08-19T16:41:15.161Z",
-  "anzahl": 37,
+  "stand": "2026-08-19T18:39:15.620Z",
+  "anzahl": 38,
   "hinweis": "Automatisch vom DNV-Bot aus den Discord-Rollen erzeugt. Änderungen hier werden überschrieben.",
   "mitglieder": [
     {
@@ -72,6 +72,16 @@
       "verifiziert": true,
       "plattform": "java",
       "uuid": "f10ae33c-1700-4daf-b6d9-abce6fb62f2b"
+    },
+    {
+      "name": "CrxckerCraft547",
+      "rolle": "Allrounder",
+      "farbe": "allround",
+      "rang": 10,
+      "seit": "2026-08-19",
+      "verifiziert": true,
+      "plattform": "java",
+      "uuid": "cfb13375-a020-4d1b-bdba-3150459f798e"
     },
     {
       "name": ".Toastbrot251",
