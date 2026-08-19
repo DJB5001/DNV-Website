@@ -38,7 +38,9 @@
     geschenk:
       '<path d="M20 12v10H4V12M2 7h20v5H2zM12 22V7M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z" />',
     kiste:
-      '<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /><path d="M3.3 7L12 12l8.7-5M12 22V12" />'
+      '<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /><path d="M3.3 7L12 12l8.7-5M12 22V12" />',
+    stern:
+      '<path d="M12 2.5l2.95 5.98 6.6.96-4.77 4.65 1.12 6.57L12 17.56l-5.9 3.1 1.12-6.57L2.45 9.44l6.6-.96z" />'
   };
 
   function svg(name) {
@@ -154,6 +156,12 @@
           'Item-Verleih',
           'Gegenstände im Clan-Bestand. Der Bot führt Buch darüber, was gerade draußen ist und bei wem — mit Bild zu jedem Item.',
           '31 Items'
+        )}
+        ${karte(
+          'stern',
+          'Nova Points',
+          'Wer im Talk sitzt, sammelt nebenbei Punkte: eine Stunde ist ein Nova Point. Die tauschst du im Discord gegen Ingame-Geld, ohne dafür etwas farmen zu müssen.',
+          '1 Punkt je Stunde'
         )}
       </div>
     </section>`,
