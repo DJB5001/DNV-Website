@@ -1,6 +1,6 @@
 {
-  "stand": "2026-08-19T14:24:01.426Z",
-  "anzahl": 35,
+  "stand": "2026-08-19T15:04:01.585Z",
+  "anzahl": 36,
   "hinweis": "Automatisch vom DNV-Bot aus den Discord-Rollen erzeugt. Änderungen hier werden überschrieben.",
   "mitglieder": [
     {
@@ -352,6 +352,16 @@
       "verifiziert": true,
       "plattform": "java",
       "uuid": "28e95a97-251e-4824-9853-91c3480a5747"
+    },
+    {
+      "name": "Luisthekid31",
+      "rolle": "Farmer",
+      "farbe": "farmer",
+      "rang": 12,
+      "seit": "2026-08-19",
+      "verifiziert": true,
+      "plattform": "java",
+      "uuid": "8de74a15-cd06-41e4-acbb-69ef0ddafd27"
     }
   ]
 }
