@@ -1,6 +1,6 @@
 {
-  "stand": "2026-08-18T22:01:43.458Z",
-  "anzahl": 30,
+  "stand": "2026-08-19T09:08:45.788Z",
+  "anzahl": 31,
   "hinweis": "Automatisch vom DNV-Bot aus den Discord-Rollen erzeugt. Änderungen hier werden überschrieben.",
   "mitglieder": [
     {
@@ -232,6 +232,16 @@
       "verifiziert": true,
       "plattform": "java",
       "uuid": "1f7d59b7-307f-4b82-97eb-5a49f41349d7"
+    },
+    {
+      "name": "EinfachFlo123",
+      "rolle": "Farmer",
+      "farbe": "farmer",
+      "rang": 12,
+      "seit": "2026-08-17",
+      "verifiziert": true,
+      "plattform": "java",
+      "uuid": "ee89a658-0d6b-4c8a-8052-70f169bc175b"
     },
     {
       "name": "Quenking",
