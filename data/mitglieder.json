@@ -1,6 +1,6 @@
 {
-  "stand": "2026-08-20T09:16:52.653Z",
-  "anzahl": 38,
+  "stand": "2026-08-20T11:39:53.546Z",
+  "anzahl": 39,
   "hinweis": "Automatisch vom DNV-Bot aus den Discord-Rollen erzeugt. Änderungen hier werden überschrieben.",
   "mitglieder": [
     {
@@ -382,6 +382,16 @@
       "verifiziert": true,
       "plattform": "java",
       "uuid": "227c7906-ae5c-4cb5-98a1-e5f709442fd5"
+    },
+    {
+      "name": "EinfachKasii",
+      "rolle": "Farmer",
+      "farbe": "farmer",
+      "rang": 12,
+      "seit": "2026-08-20",
+      "verifiziert": true,
+      "plattform": "java",
+      "uuid": "1cf4f846-640f-4afe-a2ee-d479751fe604"
     }
   ]
 }
