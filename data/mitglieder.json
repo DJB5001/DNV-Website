@@ -1,6 +1,6 @@
 {
-  "stand": "2026-08-20T22:01:36.754Z",
-  "anzahl": 41,
+  "stand": "2026-08-21T09:07:41.026Z",
+  "anzahl": 42,
   "hinweis": "Automatisch vom DNV-Bot aus den Discord-Rollen erzeugt. Änderungen hier werden überschrieben.",
   "mitglieder": [
     {
@@ -402,6 +402,16 @@
       "verifiziert": true,
       "plattform": "java",
       "uuid": "4ec90d48-ecd4-4397-92f3-35265aac7718"
+    },
+    {
+      "name": "KerschiP",
+      "rolle": "Farmer",
+      "farbe": "farmer",
+      "rang": 12,
+      "seit": "2026-08-20",
+      "verifiziert": true,
+      "plattform": "java",
+      "uuid": "f9768f4b-8751-4a42-b4ac-3f44ec9208e3"
     },
     {
       "name": "Phantom4108",
