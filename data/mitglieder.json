@@ -1,6 +1,6 @@
 {
-  "stand": "2026-08-22T17:41:08.183Z",
-  "anzahl": 42,
+  "stand": "2026-08-22T19:03:09.070Z",
+  "anzahl": 43,
   "hinweis": "Automatisch vom DNV-Bot aus den Discord-Rollen erzeugt. Änderungen hier werden überschrieben.",
   "mitglieder": [
     {
@@ -32,6 +32,16 @@
       "verifiziert": false,
       "plattform": null,
       "uuid": null
+    },
+    {
+      "name": "GetTheMoney",
+      "rolle": "Supporter",
+      "farbe": "team",
+      "rang": 9,
+      "seit": "2026-08-22",
+      "verifiziert": true,
+      "plattform": "java",
+      "uuid": "095ea30b-fe4c-438f-93bf-c6b30a3c5c7a"
     },
     {
       "name": ".Acolone8",
