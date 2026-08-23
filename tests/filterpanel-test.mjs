@@ -24,6 +24,7 @@ const block =
   schnipsel('function getAuctionCategoryKey(auction)', 'function getAuctionCategoryLabel') +
   schnipsel('/**\n * In welche Gruppe gehört diese Auktion?', '/** Gehört diese Auktion zur gewählten Art? */') +
   schnipsel('/* Die Listen des Filter-Panels', '// Zeitfenster, in dem zwei Aufnahmen') +
+  schnipsel('function stufenVorhanden', '/** Zeichnet Knopf-Abzeichen') +
   schnipsel('/** Der leere Filter.', '/* ═══════════════════════════════════════════════════════════════\n   Kopfzeile des Auktionshauses');
 
 const kontext = { console, App: { auctionsData: [] } };
@@ -31,12 +32,13 @@ vm.createContext(kontext);
 vm.runInContext(
   block +
     '\nglobalThis.__api = { passtZumFilter, lesePreis, stufeVon, sterneVonAuktion,' +
-    ' filterKategorien, filterVerzauberungen, leererAuktionsFilter, anzahlAktiverFilter, auktionsPreis };',
+    ' filterKategorien, filterVerzauberungen, leererAuktionsFilter, anzahlAktiverFilter,' +
+    ' auktionsPreis, stufenVorhanden };',
   kontext
 );
 const {
   passtZumFilter, lesePreis, stufeVon, sterneVonAuktion,
-  filterKategorien, filterVerzauberungen, leererAuktionsFilter, anzahlAktiverFilter,
+  filterKategorien, filterVerzauberungen, leererAuktionsFilter, anzahlAktiverFilter, stufenVorhanden,
 } = kontext.__api;
 
 let fehler = 0;
@@ -181,6 +183,29 @@ pruefe(
   anzahlAktiverFilter(filter({ preisBis: 5, stufen: { a: 1 }, kategorien: ['helm'] })) === 3,
   'Und alles zusammen'
 );
+
+// Der Regler laeuft ueber die Stufen, die es gibt, nicht ueber die
+// Zahlen dazwischen: Haltbarkeit kommt als 3, 6, 10 und 160 vor. Ueber
+// die Zahlen gezogen waeren neun Zehntel des Weges tote Strecke.
+console.log('\n— Die Rasten des Reglers —');
+kontext.App.auctionsData = [
+  { item: { enchantments: { unbreaking: 6 } } },
+  { item: { enchantments: { unbreaking: 3 } } },
+  { item: { enchantments: { unbreaking: 160 } } },
+  { item: { enchantments: { unbreaking: 6, efficiency: 5 } } },
+  { item: { material: 'STONE' } },
+];
+const rasten = stufenVorhanden('unbreaking');
+pruefe(rasten.join(',') === '3,6,160', 'Nur vorhandene Stufen, aufsteigend', rasten.join(','));
+pruefe(stufenVorhanden('efficiency').join(',') === '5', 'Auch wenn es nur eine gibt');
+pruefe(stufenVorhanden('fortune').length === 0, 'Fehlt sie ganz, gibt es keinen Regler');
+
+// Raste n bedeutet Stufe rasten[n-1], Raste 0 bedeutet aus.
+pruefe(passtZumFilter({ item: { enchantments: { unbreaking: 6 } } }, filter({ stufen: { unbreaking: rasten[1] } })), 'Raste 2 trifft die 6');
+pruefe(!passtZumFilter({ item: { enchantments: { unbreaking: 3 } } }, filter({ stufen: { unbreaking: rasten[1] } })), 'Und nicht die 3');
+pruefe(passtZumFilter({ item: { enchantments: { unbreaking: 3 } } }, filter()), 'Raste 0 heißt kein Filter');
+
+kontext.App.auctionsData = [];
 
 console.log('\n— Die Listen selbst —');
 pruefe(filterVerzauberungen.length >= 5, 'Verzauberungen stehen zur Wahl', String(filterVerzauberungen.length));

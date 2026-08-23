@@ -3194,22 +3194,13 @@ function kategorieTreffer(kategorie) {
  * sechs, gleichmäßig über das vorhandene Feld verteilt — eine Reihe aus
  * dreißig Knöpfen wäre so unbrauchbar wie gar keine.
  */
-function stufenAuswahl(schluessel) {
+function stufenVorhanden(schluessel) {
   const vorhanden = new Set();
   for (const a of App.auctionsData || []) {
     const stufe = stufeVon(a.item, schluessel);
     if (stufe > 0) vorhanden.add(stufe);
   }
-
-  const alle = [...vorhanden].sort((a, b) => a - b);
-  if (alle.length <= 6) return alle;
-
-  // Gleichmäßig ausdünnen, aber die höchste Stufe bleibt immer drin:
-  // Nach der sucht man am ehesten.
-  const schritt = (alle.length - 1) / 5;
-  const gewaehlt = new Set();
-  for (let i = 0; i < 6; i += 1) gewaehlt.add(alle[Math.round(i * schritt)]);
-  return [...gewaehlt].sort((a, b) => a - b);
+  return [...vorhanden].sort((a, b) => a - b);
 }
 
 /** Zeichnet Knopf-Abzeichen, Chip-Reihe und - wenn offen - das Panel. */
@@ -3345,27 +3336,39 @@ function zeichneFilterPanel() {
     )
     .join('');
 
+  /* Ein Schieberegler je Verzauberung.
+
+     Der Regler läuft nicht über die Zahlen, sondern über die Stufen, die
+     es wirklich gibt: Haltbarkeit kommt als 3, 6, 10 und 160 vor, aber
+     nichts dazwischen. Über die Zahlen gezogen wären neun Zehntel des
+     Weges tote Strecke; über die Stufen ist jede Raste ein Treffer.
+
+     Ganz links steht "aus" — sonst wäre nicht zu unterscheiden, ob
+     jemand die niedrigste Stufe verlangt oder gar nichts. */
   const verzauberungHtml = filterVerzauberungen
     .map((schluessel) => {
-      const stufen = stufenAuswahl(schluessel);
+      const stufen = stufenVorhanden(schluessel);
       if (stufen.length === 0) return '';
+
       const gesetzt = f.stufen[schluessel] ?? null;
+      const index = gesetzt === null ? 0 : stufen.indexOf(gesetzt) + 1;
 
       return `
-        <div class="ah-filter-verz">
+        <div class="ah-filter-verz" data-verz-zeile="${schluessel}">
           <div class="ah-filter-verz__kopf">
             <span>${verzauberungName(schluessel)}</span>
-            ${gesetzt !== null ? `<button type="button" class="ah-filter-weg" data-stufe-weg="${schluessel}">ab ${stufenZeichen(gesetzt)} ×</button>` : ''}
+            <span class="ah-filter-verz__wert${gesetzt === null ? '' : ' ah-filter-verz__wert--aktiv'}"
+                  data-wert-fuer="${schluessel}">${
+              gesetzt === null ? 'aus' : `ab ${stufenZeichen(gesetzt)}`
+            }</span>
           </div>
-          <div class="ah-filter-knoepfe">
-            ${stufen
-              .map(
-                (s) => `<button type="button" class="ah-chip ah-chip--stufe${gesetzt === s ? ' ah-chip--aktiv' : ''}"
-                                data-verz="${schluessel}" data-stufe="${s}" aria-pressed="${gesetzt === s}">
-                          ${stufenZeichen(s)}
-                        </button>`
-              )
-              .join('')}
+          <input type="range" class="ah-regler${gesetzt === null ? '' : ' ah-regler--aktiv'}"
+                 data-verz="${schluessel}"
+                 min="0" max="${stufen.length}" step="1" value="${index}"
+                 aria-label="${verzauberungName(schluessel)}: Mindeststufe">
+          <div class="ah-filter-verz__skala">
+            <span>aus</span>
+            <span>${stufenZeichen(stufen[stufen.length - 1])}</span>
           </div>
         </div>`;
     })
@@ -3427,24 +3430,37 @@ function zeichneFilterPanel() {
     };
   });
 
-  ziel.querySelectorAll('[data-verz]').forEach((knopf) => {
-    knopf.onclick = () => {
-      const schluessel = knopf.dataset.verz;
-      const stufe = Number(knopf.dataset.stufe);
-      // Dieselbe Stufe noch einmal nimmt den Filter wieder heraus.
-      if (f.stufen[schluessel] === stufe) delete f.stufen[schluessel];
-      else f.stufen[schluessel] = stufe;
-      zeigeAhFilter();
-      renderAuctions();
-    };
-  });
+  /* Die Regler.
 
-  ziel.querySelectorAll('[data-stufe-weg]').forEach((knopf) => {
-    knopf.onclick = () => {
-      delete f.stufen[knopf.dataset.stufeWeg];
-      zeigeAhFilter();
-      renderAuctions();
-    };
+     Beim Ziehen wird das Panel bewusst NICHT neu gezeichnet: Der Regler
+     hängt am Finger, und ein neu gebautes Element verliert ihn mitten in
+     der Bewegung. Aktualisiert werden nur die Zahl daneben, das Abzeichen
+     und die Chip-Reihe — alles Stellen, die den Regler nicht anfassen.
+     Die Auktionsliste zieht entprellt nach. */
+  const listeNachziehen = entprellt(() => renderAuctions(), 250);
+
+  ziel.querySelectorAll('.ah-regler[data-verz]').forEach((regler) => {
+    const schluessel = regler.dataset.verz;
+    const stufen = stufenVorhanden(schluessel);
+    const anzeige = ziel.querySelector(`[data-wert-fuer="${schluessel}"]`);
+
+    regler.addEventListener('input', () => {
+      const index = Number(regler.value);
+
+      if (index === 0) delete f.stufen[schluessel];
+      else f.stufen[schluessel] = stufen[index - 1];
+
+      const gesetzt = f.stufen[schluessel] ?? null;
+      if (anzeige) {
+        anzeige.textContent = gesetzt === null ? 'aus' : `ab ${stufenZeichen(gesetzt)}`;
+        anzeige.classList.toggle('ah-filter-verz__wert--aktiv', gesetzt !== null);
+      }
+      regler.classList.toggle('ah-regler--aktiv', gesetzt !== null);
+
+      zeigeFilterAbzeichen();
+      zeigeAktiveFilter();
+      listeNachziehen();
+    });
   });
 
   const reset = ziel.querySelector('#ahFilterReset');

@@ -507,26 +507,101 @@
   gap: 0.4rem;
 }
 
-/* Stufen sind kurz und stehen in einer Reihe — sie brauchen die Breite
-   der Wort-Chips nicht und lesen sich als Zahlenreihe besser. */
-.ah-chip--stufe {
-  min-width: 46px;
-  justify-content: center;
-  height: 34px;
-  padding: 0 0.6rem;
-  border-color: var(--ah-rand, rgba(255, 255, 255, 0.09));
+/* ── Die Regler der Verzauberungen ────────────────────────────── */
+/* Der Wert steht neben dem Namen und nicht unter dem Regler: Beim Ziehen
+   schaut man auf den Griff, und was sich ändert, soll in derselben Zeile
+   stehen wie das, was man gerade anfasst. */
+.ah-filter-verz__wert {
+  margin-left: auto;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-secondary);
   font-variant-numeric: tabular-nums;
 }
 
-.ah-filter-weg {
-  border: 0;
-  padding: 0;
-  background: none;
+.ah-filter-verz__wert--aktiv {
   color: var(--accent-color1);
-  font-family: inherit;
-  font-size: 0.8rem;
-  font-weight: 700;
+}
+
+.ah-filter-verz__skala {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Eigene Gestaltung, weil die Vorgabe des Browsers in jedem anders
+   aussieht — und die Leiste daneben ist überall dieselbe. */
+.ah-regler {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 22px;
+  margin: 0;
+  background: transparent;
   cursor: pointer;
+}
+
+.ah-regler::-webkit-slider-runnable-track {
+  height: 5px;
+  border-radius: 999px;
+  background: var(--ah-eingabe, rgba(0, 0, 0, 0.28));
+  border: 1px solid var(--ah-rand, rgba(255, 255, 255, 0.09));
+}
+
+.ah-regler::-moz-range-track {
+  height: 5px;
+  border-radius: 999px;
+  background: var(--ah-eingabe, rgba(0, 0, 0, 0.28));
+  border: 1px solid var(--ah-rand, rgba(255, 255, 255, 0.09));
+}
+
+/* 18 Pixel Griff: Kleiner trifft man auf dem Handy nicht zuverlässig. */
+.ah-regler::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  margin-top: -7px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--text-secondary);
+  transition: background 0.16s ease, transform 0.16s ease;
+}
+
+.ah-regler::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--text-secondary);
+  transition: background 0.16s ease, transform 0.16s ease;
+}
+
+/* Ganz links steht "aus". Erst wenn der Regler wirklich filtert, bekommt
+   er Farbe — so sieht man an einer Reihe von acht auf einen Blick,
+   welche davon etwas tun. */
+.ah-regler--aktiv::-webkit-slider-thumb {
+  background: var(--accent-color1);
+  transform: scale(1.08);
+}
+
+.ah-regler--aktiv::-moz-range-thumb {
+  background: var(--accent-color1);
+  transform: scale(1.08);
+}
+
+.ah-regler:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 4px var(--ah-symbolgrund, rgba(169, 126, 240, 0.14));
+}
+
+.ah-regler:focus-visible::-moz-range-thumb {
+  box-shadow: 0 0 0 4px var(--ah-symbolgrund, rgba(169, 126, 240, 0.14));
+}
+
+.ah-regler:focus {
+  outline: none;
 }
 
 .ah-filter-fuss {
@@ -955,10 +1030,19 @@ body.light-mode #history::before {
   }
 
   /* Nebeneinander bleiben zwei Preisfelder auf dem Handy je 90 Pixel
-     breit — untereinander sind sie beide bequem zu treffen. */
+     breit — untereinander sind sie beide bequem zu treffen.
+
+     Das flex: 1 von oben muss dabei weg: In einer Spalte wächst es nicht
+     in die Breite, sondern in die Höhe, und die zwei Felder standen mit
+     zwei Fingerbreit Luft dazwischen. */
   .ah-filter-preis {
     flex-direction: column;
     gap: 0.5rem;
+  }
+
+  .ah-filter-preis label {
+    flex: none;
+    max-width: none;
   }
 
   /* Die Filterknöpfe laufen seitlich weiter, statt vier Reihen hoch zu
