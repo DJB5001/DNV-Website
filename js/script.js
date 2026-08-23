@@ -29,6 +29,60 @@ const verzauberungsNamen = {
   vanishing_curse: 'Fluch des Verschwindens', wind_burst: 'Windstoß'
 };
 
+/* Was Minecraft selbst höchstens vergibt.
+
+   Gebraucht für die Frage, ob eine Verzauberung überhaupt aus dem Spiel
+   stammt: Auf OPSUCHT gibt es Effizienz VI und Haltbarkeit 160, und
+   beides ist im normalen Minecraft nicht zu bekommen. Die Schlüssel sind
+   dieselben wie in verzauberungsNamen - was dort fehlt, ist gar keine
+   Vanilla-Verzauberung und braucht hier deshalb keine Stufe. */
+const VANILLA_HOECHSTSTUFE = {
+  aqua_affinity: 1, bane_of_arthropods: 5, binding_curse: 1, blast_protection: 4,
+  breach: 4, channeling: 1, density: 5, depth_strider: 3, efficiency: 5,
+  feather_falling: 4, fire_aspect: 2, fire_protection: 4, flame: 1, fortune: 3,
+  frost_walker: 2, impaling: 5, infinity: 1, knockback: 2, looting: 3, loyalty: 3,
+  luck_of_the_sea: 3, lure: 3, mending: 1, multishot: 1, piercing: 4, power: 5,
+  projectile_protection: 4, protection: 4, punch: 2, quick_charge: 3,
+  respiration: 3, riptide: 3, sharpness: 5, silk_touch: 1, smite: 5, soul_speed: 3,
+  sweeping_edge: 3, swift_sneak: 3, thorns: 3, unbreaking: 3, vanishing_curse: 1,
+  wind_burst: 3
+};
+
+/* Ab wie vielen Stufen über dem Vanilla-Maximum ein Item als OP gilt.
+
+   Nicht ab der ersten, und dafür gibt es einen gemessenen Grund: Über
+   dem Maximum liegen auf OPSUCHT 40,8 % aller je verkauften Items.
+   Haltbarkeit IV statt III hat dort fast jede Spitzhacke - das ist kein
+   Merkmal, das etwas heraushebt, sondern der Normalzustand des Servers.
+   Eine Kategorie, in die zwei von fünf Items fallen, sortiert nichts mehr.
+
+   Ab zwei Stufen bleiben 33 %: Effizienz X und Schutz XXII sind drin,
+   die gewöhnliche Server-Spitzhacke nicht. */
+const OP_STUFEN_ABSTAND = 2;
+
+/**
+ * Trägt das Item eine Verzauberung, die es im normalen Minecraft nicht gibt?
+ *
+ * Zwei Fälle, und beide zählen:
+ *
+ *   1. Die Verzauberung selbst kennt das Spiel nicht - alles, was nicht in
+ *      der Vanilla-Liste steht, ist vom Server dazugebaut.
+ *   2. Die Verzauberung gibt es, aber deutlich über ihrer höchsten Stufe.
+ *      Effizienz geht bis V, Haltbarkeit bis III; Effizienz X kommt aus
+ *      keinem Amboss der Welt.
+ */
+function hatEigeneVerzauberung(item) {
+  const roh = item?.enchantments;
+  if (!roh || typeof roh !== 'object') return false;
+
+  return Object.entries(roh).some(([schluessel, stufe]) => {
+    const name = String(schluessel).split(':').pop().toLowerCase();
+    const hoechste = VANILLA_HOECHSTSTUFE[name];
+    if (hoechste === undefined) return true;
+    return Number(stufe) >= hoechste + OP_STUFEN_ABSTAND;
+  });
+}
+
 const ROEMISCH = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
 
 /* Minecraft schreibt Stufen römisch — aber nur bis zehn. Auf OPSUCHT gibt es
@@ -84,6 +138,52 @@ try {
 } catch {
   bildGedaechtnis = {};
 }
+
+/* Der Item-Index und die 30-Tage-Durchschnitte, einmal gerechnet.
+
+   Beides entsteht aus dem gesamten Verlauf: rund 50.000 Verkäufe, für
+   jeden ein Variantenschlüssel aus Material, Lore und Verzauberungen.
+   Das kostet auf einem Rechner zwei Zehntelsekunden, auf einem Handy gut
+   eine ganze - und renderItemSearch() rief es bei JEDEM Tastendruck neu
+   auf. Wer "diamant" tippte, wartete siebenmal darauf; dazwischen stand
+   die Seite, und der Browser hielt sie irgendwann für abgestürzt.
+
+   Verworfen wird nicht nach Zeit, sondern wenn neue Daten geladen sind:
+   An etwas anderem hängt hier nichts. Siehe itemIndexVerwerfen(). */
+let itemIndexCache = null;
+const schnittCache = new Map();
+
+/* Ruft fn erst, wenn eine Weile nichts mehr passiert ist.
+
+   Für die Suchfelder: Zwischen zwei Anschlägen liegen beim Tippen 100
+   bis 200 Millisekunden, eine vollständige Neuberechnung dauert länger.
+   Ohne das hier staut sich die Arbeit, während man noch tippt. */
+function entprellt(fn, ms = 200) {
+  let warte = null;
+  return (...args) => {
+    clearTimeout(warte);
+    warte = setTimeout(() => fn(...args), ms);
+  };
+}
+
+/* Die vier Suchfelder hängen an diesen hier und nicht direkt an ihrer
+   Zeichenfunktion.
+
+   Jede von ihnen geht über alle Daten: die Auktionssuche über jede
+   laufende Auktion samt ihren Verzauberungen, die Item-Suche über den
+   ganzen Verlauf. Bei jedem Anschlag von vorn ist das mehr Arbeit, als
+   zwischen zwei Tastendrücken Zeit ist - die Seite bleibt stehen, und
+   getippt wird trotzdem weiter.
+
+   200 Millisekunden sind knapp über dem Abstand beim flüssigen Tippen
+   und noch unter dem, was man als Verzögerung bemerkt.
+
+   Die Aufrufe stehen in Pfeilfunktionen, damit hier nicht schon beim
+   Durchlaufen der Datei nach den Zeichenfunktionen gegriffen wird. */
+const sucheAuktionen = entprellt((text) => setAuctionSearch(text));
+const sucheItems = entprellt(() => renderItemSearch());
+const sucheMarkt = entprellt(() => renderMarket());
+const sucheSpieler = entprellt(() => renderPlayers());
 
 // Zeitfenster, in dem zwei Aufnahmen als dieselbe, nur verlängerte
 // Auktion gelten. Gemessen an den echten Daten: 96 % aller Verlängerungen
@@ -2143,6 +2243,7 @@ async function loadAuctions() {
 
   App.playerStatsCache = {}; // Cache leeren wenn neue Daten geladen werden
   App.spielerListe = null;   // dasselbe für die Bestenliste im Spieler-Reiter
+  itemIndexVerwerfen();      // und für Item-Index und Durchschnitte
   setupAuctionFilters();
   setupHistoryFilters();
 
@@ -2476,7 +2577,12 @@ function auktionsGruppe(item) {
   const name = item?.displayName || '';
   const material = (item?.material || '').toUpperCase();
 
-  if (/\bOP\b/i.test(name)) return 'op';
+  // "OP" im Namen ist die Absicht des Verkäufers, die Verzauberung der
+  // Beweis: Effizienz VI oder eine, die es im Spiel gar nicht gibt, kommt
+  // aus keinem Amboss. Vorher fielen genau diese Items durch - ein
+  // Schwert mit Schärfe X hieß eben "Schwert" und landete bei
+  // "Werkzeuge & Kampf", zwischen den gewöhnlichen.
+  if (/\bOP\b/i.test(name) || hatEigeneVerzauberung(item)) return 'op';
   if (/SAMMELKARTE|BOOSTER|_CARD/.test(material) || /sammelkarte|booster(pack)?\b/i.test(name)) return 'karten';
   if (/HELMET|CHESTPLATE|LEGGINGS|BOOTS|ELYTRA/.test(material)) return 'ruestung';
   if (/PICKAXE|AXE|SHOVEL|SPADE|HOE|SHEARS|SWORD|BOW|TRIDENT|SHIELD|MACE/.test(material)) return 'werkzeug';
@@ -2776,7 +2882,7 @@ function zeigeSpielerPodest() {
     <div class="ah-podest">
       <div class="ah-podest__kopf">
         <span class="ah-podest__symbol">${ahIcon('pokal')}</span>
-        Top 5 — ${art.titel}
+        Top 5 · ${art.titel}
       </div>
       <div class="ah-podest__reihe">
         ${fuenf
@@ -3460,14 +3566,31 @@ function variantenLabel(item, { mitVerzauberungen = true } = {}) {
   return teile.join(' · ');
 }
 
-function getMonthlyAveragePerUnit(auction) {
-  const relevant = verkaeufeZurVariante(auction.item).filter(sale => istInLetztenTagen(sale, 30));
+/* Derselbe Durchschnitt wird oft hintereinander gebraucht: einmal je
+   Karte in der Auktionsliste, noch einmal in den Schnäppchen, noch
+   einmal in der Item-Suche. Jedes Mal wird dafür der Verlaufseintrag
+   dieses Namens durchgegangen und Variante für Variante verglichen.
+   Gemerkt wird deshalb in schnittCache (oben), geleert zusammen mit dem
+   Item-Index.
 
-  if (relevant.length === 0) return null;
+   Der Schlüssel trägt den Namen mit, nicht nur die Variante: Zwei Items
+   können dasselbe Material, dieselbe Lore und dieselben Verzauberungen
+   haben und trotzdem unter verschiedenen Namen im Verlauf liegen. */
+function getMonthlyAveragePerUnit(auction) {
+  const item = auction?.item;
+  const schluessel = `${item?.displayName ?? item?.material ?? ''} ${itemVariante(item)}`;
+  if (schnittCache.has(schluessel)) return schnittCache.get(schluessel);
+
+  const relevant = verkaeufeZurVariante(item).filter(sale => istInLetztenTagen(sale, 30));
+
   // Verkaufspreis: finalPrice ist der echte Endpreis (bei Sofortkauf der
   // Sofortkaufpreis), currentBid als Fallback für ältere Einträge.
-  const sum = relevant.reduce((acc, sale) => acc + salePricePerUnit(sale), 0);
-  return sum / relevant.length;
+  const schnitt = relevant.length === 0
+    ? null
+    : relevant.reduce((acc, sale) => acc + salePricePerUnit(sale), 0) / relevant.length;
+
+  schnittCache.set(schluessel, schnitt);
+  return schnitt;
 }
 
 // Rabatt in Prozent gegenüber dem 30-Tage-Durchschnitt (pro Stück).
@@ -3864,7 +3987,7 @@ async function renderPlayers() {
 
   const liste = spielerBestenliste();
   if (!liste.length) {
-    container.innerHTML = `<div class="content-loader"><span>Noch keine Spielerdaten — der Verlauf wird geladen.</span></div>`;
+    container.innerHTML = `<div class="content-loader"><span>Noch keine Spielerdaten, der Verlauf wird geladen.</span></div>`;
     return;
   }
 
@@ -4439,13 +4562,25 @@ async function refreshTab(tabId, btn) {
 // Jedes Item genau EINMAL, durchsuchbar. Klick -> Durchschnitt + Kurve + Aktionen.
 // =====================================================================
 
+/** Wirft Index und Durchschnitte weg. Nach jedem Laden neuer Daten. */
+function itemIndexVerwerfen() {
+  itemIndexCache = null;
+  schnittCache.clear();
+}
+
 // Baut eine Map aller eindeutigen Items. Schlüssel ist NICHT der Name,
 // sondern Name + Variante: "Bohrer V3" als Sammelkarte und "Bohrer V3"
 // als Spitzhacke sind zwei Einträge, weil sie zwei verschiedene Dinge
 // sind. Vorher landeten beide in einem Eintrag — die Zähler summierten
 // über beide, während der angezeigte Durchschnitt nur zu der Variante
 // gehörte, die zufällig als repräsentatives Objekt gespeichert war.
+//
+// Das Ergebnis wird gemerkt (itemIndexCache oben): Bei rund 50.000
+// Verkäufen dauert der Aufbau zu lange, um ihn bei jedem Tastendruck in
+// der Suche zu wiederholen.
 function buildItemIndex() {
+  if (itemIndexCache) return itemIndexCache;
+
   const index = {};
 
   const add = (itemObj, source) => {
@@ -4480,6 +4615,7 @@ function buildItemIndex() {
     }
   }
 
+  itemIndexCache = index;
   return index;
 }
 
@@ -4522,6 +4658,11 @@ function renderItemSearch() {
 
   // Aus Performance-Gründen erstmal maximal 120 anzeigen
   const MAX = 120;
+
+  // Erst sammeln, dann einmal einhängen: Jede Karte einzeln an ein
+  // Element im Dokument zu hängen lässt den Browser 120-mal neu rechnen.
+  const sammler = document.createDocumentFragment();
+
   items.slice(0, MAX).forEach(entry => {
     const card = document.createElement('div');
     card.className = 'card animated';
@@ -4535,8 +4676,10 @@ function renderItemSearch() {
       <div class="price-info" style="font-size:0.8rem; color:var(--text-secondary)">${entry.activeCount} aktiv · ${entry.soldCount} verkauft</div>
     `;
     card.onclick = () => openItemDetail(entry.schluessel);
-    grid.appendChild(card);
+    sammler.appendChild(card);
   });
+
+  grid.appendChild(sammler);
 
   if (items.length > MAX) {
     const more = document.createElement('p');
@@ -5309,9 +5452,9 @@ async function openAuctionChart(auction) {
   const isExpired = new Date(auction.endTime) <= new Date();
 
   const fmtDate = (val) => {
-    if (!val) return '—';
+    if (!val) return 'unbekannt';
     const d = new Date(val);
-    return isNaN(d.getTime()) ? '—' : d.toLocaleString('de-DE');
+    return isNaN(d.getTime()) ? 'unbekannt' : d.toLocaleString('de-DE');
   };
 
   infoBox.innerHTML = `
@@ -7288,7 +7431,7 @@ function renderProfileLock(type) {
         <p class="lock-screen-text">
           ${type === 'auth'
       ? 'Bitte melde dich mit Discord an und verifiziere dich dort, um dein Profil zu sehen.'
-      : 'Verifiziere dich im Discord — danach steht dein Profil hier automatisch bereit.'}
+      : 'Verifiziere dich im Discord, danach steht dein Profil hier automatisch bereit.'}
         </p>
         <button class="auth-submit-btn" style="width: auto; padding: 1rem 3rem;" 
                 onclick="${type === 'auth' ? 'openAuthModal()' : 'openSettingsTab(\'minecraft\')'}">

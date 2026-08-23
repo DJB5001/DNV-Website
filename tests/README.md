@@ -37,6 +37,7 @@ npx http-server . -p 8123      # abweichender Port über PORT=...
 | `verlaengerung-test.mjs` | Verlängerte Auktionen zählen nur einmal — gegen die echten Daten | Verlauf |
 | `mitglieder-test.mjs` | Die Mitgliederliste kommt aus `data/mitglieder.json`; fehlt oder klemmt sie, trägt die hinterlegte Liste | Browser |
 | `auktionsfilter-test.mjs` | Suchleiste über den Auktionen, Filter nach Item-Art, Verzauberungen auf den Karten | Browser |
+| `opitems-test.mjs` | Was in „OP Items" gehört: die Verzauberungsregel an Beispielen und ihre Wirkung auf den ganzen Verlauf | Verlauf (optional) |
 | `benachrichtigungen-test.mjs` | Discord-Anmeldung, die vier Einstellungen, die Vorlaufzeit beim Erinnern, die vom Bot gelesene Verknüpfung | Browser |
 | `clan-inhalt-test.mjs` | Die Clan-Abschnitte stehen auf beiden Seiten gleich, und die Kennzahl passt zur Zahl der Karten | Browser |
 
@@ -60,6 +61,24 @@ aber zweierlei — eine Sammelkarte aus Papier (Ø rund 590 Tsd) und eine
 Netherit-Spitzhacke (Ø rund 870 Mio). Wer beides zusammen mittelt,
 bekommt eine Zahl, die für keines von beidem stimmt. Betroffen sind 396
 der 2569 Namen im Verlauf.
+
+## Was in „OP Items" gehört
+
+Der Filter kannte lange nur ein Merkmal: das Wort „OP" im Namen. Damit
+fiel jedes Item durch, dessen Besitzer es nicht so getauft hat, und das
+sind die meisten. Jetzt zählt auch die Verzauberung.
+
+Wo die Grenze liegt, ist an den echten Daten gemessen. Der erste Ansatz
+war „alles über dem Vanilla-Maximum", also Haltbarkeit IV statt III. Das
+trifft **40,8 % aller 49.363 erfassten Verkäufe**: Auf OPSUCHT ist ein
+Item über dem Maximum nicht die Ausnahme, sondern der Normalfall. Eine
+Kategorie, in die zwei von fünf Items fallen, sortiert nichts mehr.
+
+Deshalb zählt erst ab **zwei Stufen** über dem Maximum (`OP_STUFEN_ABSTAND`
+in `js/script.js`). Damit bleiben 33 %: Effizienz X und Schutz XXII sind
+drin, die gewöhnliche Server-Spitzhacke nicht. Verzauberungen, die es im
+Spiel gar nicht gibt, zählen immer — davon gibt es im ganzen Verlauf
+allerdings genau eine (`lunge`, 80 Verkäufe).
 
 ## Zu den Bildern
 

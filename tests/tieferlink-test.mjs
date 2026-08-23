@@ -26,7 +26,11 @@ const block =
   schnipsel('const verzauberungsNamen = {', '// Rückfallbild, wenn auch das Typ-Bild') +
   schnipsel('// NETHERITE_PICKAXE wird zu', '// Rückfallkette für Item-Bilder') +
   schnipsel('function loreAlsText(item)', 'function getMonthlyAveragePerUnit') +
-  schnipsel('function buildItemIndex()', 'function renderItemSearch()') +
+  // Der Index merkt sich sein Ergebnis; die Bindungen dafür stehen
+  // oben in der Datei bei den anderen, die aus Funktionen heraus
+  // benutzt werden.
+  schnipsel('let itemIndexCache = null;', '/* Ruft fn erst,') +
+  schnipsel('/** Wirft Index und Durchschnitte weg', 'function renderItemSearch()') +
   schnipsel('function tieferLink()', 'async function folgeTiefemLink()');
 
 let fehler = 0;
