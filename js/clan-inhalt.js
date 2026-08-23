@@ -74,7 +74,7 @@
         'leute',
         'Mehr als nur ein',
         'Minecraft-Clan',
-        'Wir sind noch am Anfang — und genau das ist der Punkt. Wer jetzt einsteigt, entscheidet mit, wie dieser Clan aussieht.'
+        'Wir sind noch am Anfang, und genau das ist der Punkt. Wer jetzt einsteigt, entscheidet mit, wie dieser Clan aussieht.'
       )}
       <div class="dnv-raster dnv-raster--zwei">
         ${karte(
@@ -111,7 +111,7 @@
         ${karte(
           'felder',
           'Clan-Grundstücke',
-          'Der Ausbau läuft. Jedes Mitglied bekommt eigene Fläche und darf sich dort austoben — inklusive Mitsprache bei der Gesamtplanung.',
+          'Der Ausbau läuft. Jedes Mitglied bekommt eigene Fläche und darf sich dort austoben, inklusive Mitsprache bei der Gesamtplanung.',
           'Laufend'
         )}
         ${karte(
@@ -130,7 +130,7 @@
         'zahnrad',
         'Eigene',
         'Infrastruktur',
-        'Kein Baukasten von der Stange — auf unsere Abläufe zugeschnitten und selbst gebaut.'
+        'Kein Baukasten von der Stange, sondern auf unsere Abläufe zugeschnitten und selbst gebaut.'
       )}
       <div class="dnv-raster">
         ${karte(
@@ -154,7 +154,7 @@
         ${karte(
           'kiste',
           'Item-Verleih',
-          'Gegenstände im Clan-Bestand. Der Bot führt Buch darüber, was gerade draußen ist und bei wem — mit Bild zu jedem Item.',
+          'Gegenstände im Clan-Bestand. Der Bot führt Buch darüber, was gerade draußen ist und bei wem, mit Bild zu jedem Item.',
           '31 Items'
         )}
         ${karte(
@@ -182,7 +182,7 @@
         'geschenk',
         '250.000 $ für jedes neue',
         'Mitglied',
-        'Wer jemanden mitbringt, bekommt dafür 250.000 $ — ohne Obergrenze. Kein Zeitraum, keine Bedingung außer der einen: Der Neue muss das Bewerbungsgespräch bestehen.'
+        'Wer jemanden mitbringt, bekommt dafür 250.000 $, ohne Obergrenze. Kein Zeitraum, keine Bedingung außer der einen: Der Neue muss das Bewerbungsgespräch bestehen.'
       )}
       <div class="dnv-raster">
         ${karte(
@@ -208,7 +208,7 @@
         <li>Ausgezahlt wird, sobald die Aufnahme durch ist</li>
         <li>Es zählt nur, wer das Bewerbungsgespräch besteht</li>
         <li>Zweitaccounts und Fake-Bewerbungen zählen nicht</li>
-        <li>Wie viele du anwirbst, ist dir überlassen — es gibt keine Grenze</li>
+        <li>Wie viele du anwirbst, ist dir überlassen, es gibt keine Grenze</li>
       </ul>
     </section>`,
 
@@ -222,7 +222,7 @@
         'Die Bewerbung läuft über unser Discord und dauert keine zwei Minuten. Danach melden wir uns für ein kurzes Kennenlerngespräch.'
       )}
       <ul class="dnv-liste">
-        <li>Ab 13 Jahren — Ausnahmen nach Absprache</li>
+        <li>Ab 13 Jahren, Ausnahmen nach Absprache</li>
         <li>Regelmäßig aktiv auf dem Server und im Discord</li>
         <li>Freundlicher, respektvoller Umgang</li>
         <li>Lust auf gemeinsame Projekte statt nur alleine farmen</li>

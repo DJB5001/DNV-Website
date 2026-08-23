@@ -991,8 +991,8 @@
           </div>
 
           <p class="settings-abschnitt-text" style="margin-top: 1rem;">
-            Sobald der Bot dich verifiziert hat, steht dein Account auch hier —
-            einmal verknüpfen reicht für Discord und Website zusammen.
+            Sobald der Bot dich verifiziert hat, steht dein Account auch hier.
+            Einmal verknüpfen reicht für Discord und Website zusammen.
           </p>
 
           <a id="verify-discord-link" class="auth-submit-btn"
@@ -1036,8 +1036,8 @@
         </div>
 
         <p class="settings-abschnitt-text">
-          Nachrichten per Discord — verkaufte Auktionen und Erinnerungen —
-          stellst du im Profil-Fenster unter „Discord-Benachrichtigungen" ein.
+          Ob dir Discord schreibt, wenn eine Auktion verkauft wurde oder gleich
+          ausläuft, stellst du im Profil-Fenster unter „Discord-Benachrichtigungen" ein.
         </p>
 
         <h3 style="margin: 2rem 0 1rem 0; color: var(--text-primary); font-size: 1rem; border-top: 1px solid var(--border); padding-top: 1.5rem;">
@@ -1072,7 +1072,7 @@
 
       <p class="auth-hinweis">
         Die Anmeldung läuft über Discord. Damit weiß der Bot, wem er schreiben
-        darf — und du bekommst eine Nachricht, wenn eine deiner Auktionen
+        darf, und du bekommst eine Nachricht, wenn eine deiner Auktionen
         verkauft wurde oder gleich ausläuft.
       </p>
 
@@ -1148,7 +1148,7 @@
           Markt
         </span>
         <h1 class="ah-titel">Server<span>markt</span></h1>
-        <p class="ah-lead">Alle Ankaufs- und Verkaufspreise des Servershops — mit Spanne, Trend und dem Vergleich zum Auktionshaus.</p>
+        <p class="ah-lead">Alle Ankaufs- und Verkaufspreise des Servershops, mit Spanne, Trend und dem Vergleich zum Auktionshaus.</p>
       </div>
 
       <div id="marktZahlen" class="ah-zahlen"></div>
@@ -1157,7 +1157,7 @@
         <div class="ah-zeile">
           <label class="ah-suche">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-            <input type="text" id="searchMarket" class="search-input" placeholder="Item oder Kategorie suchen …" oninput="renderMarket()">
+            <input type="text" id="searchMarket" class="search-input" placeholder="Item oder Kategorie suchen …" oninput="sucheMarkt()">
           </label>
         <div class="market-filter-dropdown" id="marketTrendFilterContainer">
           <button class="filter-btn" id="marketTrendBtn" onclick="toggleMarketFilterMenu(event)" title="Trends">
@@ -1198,7 +1198,7 @@
         </span>
         <h1 class="ah-titel">Auktions<span>haus</span></h1>
         <p class="ah-lead">
-          Alle laufenden Auktionen auf OPSUCHT — Gebote, Sofortkäufe und
+          Alle laufenden Auktionen auf OPSUCHT: Gebote, Sofortkäufe und
           Restzeit, direkt aus dem Auktionshaus geholt und um die Daten aus
           unserem Clan-Tracker ergänzt.
         </p>
@@ -1214,7 +1214,7 @@
             </svg>
             <input type="text" id="searchAuctions" class="search-input"
                    placeholder="Item suchen … z.B. „Effizienz 6“ oder „Elytra“"
-                   oninput="setAuctionSearch(this.value)">
+                   oninput="sucheAuktionen(this.value)">
           </label>
           <select id="auctionSortSelect" class="auction-sort" onchange="setAuctionSort(this.value)">
             <option value="END">Bald endend</option>
@@ -1298,7 +1298,7 @@
           Verlauf
         </span>
         <h1 class="ah-titel">Verkaufs<span>verlauf</span></h1>
-        <p class="ah-lead">Was tatsächlich verkauft wurde und für wie viel — die Grundlage für jeden Durchschnitt und jedes Schnäppchen auf dieser Seite.</p>
+        <p class="ah-lead">Was tatsächlich verkauft wurde und für wie viel. Die Grundlage für jeden Durchschnitt und jedes Schnäppchen auf dieser Seite.</p>
       </div>
 
       <div id="verlaufZahlen" class="ah-zahlen"></div>
@@ -1334,7 +1334,7 @@
           Shards
         </span>
         <h1 class="ah-titel">Shard<span>kurse</span></h1>
-        <p class="ah-lead">Was der Händler gerade für welche Splitter gibt — samt Rechner, der dir sagt, was dein Bestand wert ist.</p>
+        <p class="ah-lead">Was der Händler gerade für welche Splitter gibt, samt Rechner, der dir sagt, was dein Bestand wert ist.</p>
       </div>
 
       <div id="shardZahlen" class="ah-zahlen"></div>
@@ -1355,7 +1355,7 @@
         <div class="ah-zeile">
           <label class="ah-suche">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-            <input type="text" id="searchItems" class="search-input" placeholder="Item suchen … alle je gesehenen" oninput="renderItemSearch()">
+            <input type="text" id="searchItems" class="search-input" placeholder="Item suchen … alle je gesehenen" oninput="sucheItems()">
           </label>
           <button type="button" class="ah-knopf" onclick="refreshTab('items', this)" title="Item-Liste neu laden"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>Aktualisieren</button>
         </div>
@@ -1371,7 +1371,7 @@
         </span>
         <h1 class="ah-titel">Spieler<span>rangliste</span></h1>
         <p class="ah-lead">
-          Wer wie viel umgesetzt hat — aus jedem erfassten Verkauf und jedem
+          Wer wie viel umgesetzt hat, aus jedem erfassten Verkauf und jedem
           Gebot der letzten Wochen zusammengerechnet.
         </p>
       </div>
@@ -1385,7 +1385,7 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
             <input type="text" id="searchPlayers" class="search-input"
                    placeholder="Minecraft-Namen suchen …"
-                   oninput="renderPlayers()"
+                   oninput="sucheSpieler()"
                    onkeydown="if (event.key === 'Enter') spielerNachschlagen()">
           </label>
           <select id="playerSortSelect" class="auction-sort" onchange="setPlayerSort(this.value)">
@@ -1435,7 +1435,7 @@
         <p class="clan-tab__kicker">Minecraft-Clan auf OPSUCHT · CityBuild</p>
         <h2 class="clan-tab__titel">DarkNova <span>[DNV]</span></h2>
         <p class="clan-tab__text">
-          Aus Ideen entstehen Welten. Ein Clan, in dem niemand alleine grindet — eigene
+          Aus Ideen entstehen Welten. Ein Clan, in dem niemand alleine grindet: eigene
           Grundstücke, laufende Bauprojekte und Werkzeuge, die es sonst nirgends gibt.
           OPSucht Auctions ist eines davon.
         </p>
@@ -1552,7 +1552,7 @@
       <h3 id="benachrichtigungen" class="settings-abschnitt">Discord-Benachrichtigungen</h3>
       <p class="settings-abschnitt-text" id="dcNotizNichtVerknuepft" style="display: none;">
         Damit der Bot dir schreiben kann, musst du deinen Minecraft-Account
-        verknüpfen — das läuft im Verifizieren-Channel auf dem Discord.
+        verknüpfen. Das läuft im Verifizieren-Channel auf dem Discord.
       </p>
 
       <div class="settings-item">
