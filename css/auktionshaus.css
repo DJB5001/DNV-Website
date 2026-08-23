@@ -360,6 +360,329 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* ── Filter-Panel ─────────────────────────────────────────────── */
+/* Der Knopf trägt die Zahl der gesetzten Filter. Ohne sie wäre nicht zu
+   sehen, dass hinter einem zugeklappten Panel überhaupt etwas wirkt —
+   und eine halb leere Liste sähe nach einem Fehler aus. */
+.ah-filter-abzeichen {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 19px;
+  height: 19px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--accent-color1);
+  color: var(--ah-flaeche, #101019);
+  font-size: 0.72rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.ah-steuerung .ah-knopf--aktiv {
+  border-color: var(--accent-glow, rgba(169, 126, 240, 0.4));
+  color: var(--accent-color1);
+}
+
+/* Das Panel klappt in die Leiste hinein statt über die Seite zu legen:
+   Wer filtert, will sehen, wie sich die Liste darunter ändert. Ein
+   Vorhang würde genau das verdecken. */
+.ah-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 1.4rem;
+  padding: 1.2rem;
+  border: 1px solid var(--ah-rand, rgba(255, 255, 255, 0.09));
+  border-radius: 13px;
+  background: var(--ah-flaeche-2, rgba(255, 255, 255, 0.022));
+}
+
+.ah-filter[hidden] {
+  display: none;
+}
+
+/* min-width: 0 durch die ganze Kette: Ein Flex-Kind ist von Haus aus
+   mindestens so breit wie sein Inhalt. Ohne das schiebt die seitlich
+   scrollende Knopfreihe weiter unten ihren Behälter auf, und mit ihm die
+   ganze Seite — auf dem Handy scrollt dann alles nach rechts weg. */
+.ah-filter-abschnitt {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  min-width: 0;
+}
+
+.ah-filter-titel {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.ah-filter-hinweis {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.ah-filter-hinweis code {
+  padding: 0.1rem 0.35rem;
+  border-radius: 5px;
+  background: var(--ah-eingabe, rgba(0, 0, 0, 0.28));
+  font-size: 0.94em;
+}
+
+/* Zwei Felder statt eines Schiebereglers: Die Preise gehen hier bis in
+   die Milliarden, und ein Regler über diese Spanne trifft auf dem Handy
+   nichts Genaues. Getippt wird ohnehin lieber "50m" als neun Ziffern. */
+.ah-filter-preis {
+  display: flex;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+}
+
+/* Gedeckelt, nicht dehnend: Auf einem breiten Bildschirm wären die zwei
+   Felder sonst je 600 Pixel lang — für eine Zahl wie „50m" sieht das aus,
+   als hätte jemand vergessen, sie einzustellen. */
+.ah-filter-preis label {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex: 1 1 180px;
+  min-width: 150px;
+  max-width: 280px;
+}
+
+.ah-filter-preis label span {
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.ah-filter-preis input {
+  flex: 1;
+  min-width: 0;
+  height: 40px;
+  padding: 0 0.8rem;
+  border: 1px solid var(--ah-rand, rgba(255, 255, 255, 0.09));
+  border-radius: 10px;
+  background: var(--ah-eingabe, rgba(0, 0, 0, 0.28));
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.92rem;
+  transition: border-color 0.18s ease;
+}
+
+.ah-filter-preis input:focus {
+  outline: none;
+  border-color: var(--accent-color1);
+}
+
+.ah-filter-gruppe,
+.ah-filter-verz {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.ah-filter-gruppe__titel,
+.ah-filter-verz__kopf {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.ah-filter-knoepfe {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+/* ── Die Regler der Verzauberungen ────────────────────────────── */
+/* Der Wert steht neben dem Namen und nicht unter dem Regler: Beim Ziehen
+   schaut man auf den Griff, und was sich ändert, soll in derselben Zeile
+   stehen wie das, was man gerade anfasst. */
+.ah-filter-verz__wert {
+  margin-left: auto;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.ah-filter-verz__wert--aktiv {
+  color: var(--accent-color1);
+}
+
+.ah-filter-verz__skala {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Eigene Gestaltung, weil die Vorgabe des Browsers in jedem anders
+   aussieht — und die Leiste daneben ist überall dieselbe. */
+.ah-regler {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 22px;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.ah-regler::-webkit-slider-runnable-track {
+  height: 5px;
+  border-radius: 999px;
+  background: var(--ah-eingabe, rgba(0, 0, 0, 0.28));
+  border: 1px solid var(--ah-rand, rgba(255, 255, 255, 0.09));
+}
+
+.ah-regler::-moz-range-track {
+  height: 5px;
+  border-radius: 999px;
+  background: var(--ah-eingabe, rgba(0, 0, 0, 0.28));
+  border: 1px solid var(--ah-rand, rgba(255, 255, 255, 0.09));
+}
+
+/* 18 Pixel Griff: Kleiner trifft man auf dem Handy nicht zuverlässig. */
+.ah-regler::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  margin-top: -7px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--text-secondary);
+  transition: background 0.16s ease, transform 0.16s ease;
+}
+
+.ah-regler::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--text-secondary);
+  transition: background 0.16s ease, transform 0.16s ease;
+}
+
+/* Ganz links steht "aus". Erst wenn der Regler wirklich filtert, bekommt
+   er Farbe — so sieht man an einer Reihe von acht auf einen Blick,
+   welche davon etwas tun. */
+.ah-regler--aktiv::-webkit-slider-thumb {
+  background: var(--accent-color1);
+  transform: scale(1.08);
+}
+
+.ah-regler--aktiv::-moz-range-thumb {
+  background: var(--accent-color1);
+  transform: scale(1.08);
+}
+
+.ah-regler:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 4px var(--ah-symbolgrund, rgba(169, 126, 240, 0.14));
+}
+
+.ah-regler:focus-visible::-moz-range-thumb {
+  box-shadow: 0 0 0 4px var(--ah-symbolgrund, rgba(169, 126, 240, 0.14));
+}
+
+.ah-regler:focus {
+  outline: none;
+}
+
+.ah-filter-fuss {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 0.2rem;
+  border-top: 1px solid var(--ah-rand-schwach, rgba(255, 255, 255, 0.05));
+}
+
+.ah-filter-fuss .ah-knopf {
+  display: inline-flex;
+  align-items: center;
+  height: 40px;
+  margin-top: 1rem;
+  padding: 0 1.1rem;
+  border: 1px solid var(--ah-rand, rgba(255, 255, 255, 0.09));
+  border-radius: 11px;
+  background: var(--ah-eingabe, rgba(0, 0, 0, 0.28));
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ah-filter-fuss .ah-knopf:hover {
+  border-color: var(--accent-color1);
+}
+
+/* ── Was gerade gefiltert wird ────────────────────────────────── */
+/* Steht auch bei zugeklapptem Panel da. Ein Filter, den man nicht sieht,
+   ist der häufigste Grund für "wo sind meine Auktionen hin". */
+.ah-aktive {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.ah-aktive[hidden] {
+  display: none;
+}
+
+.ah-aktiv-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  height: 30px;
+  padding: 0 0.65rem;
+  border: 1px solid var(--accent-glow, rgba(169, 126, 240, 0.4));
+  border-radius: 999px;
+  background: var(--ah-symbolgrund, rgba(169, 126, 240, 0.14));
+  color: var(--accent-color1);
+  font-family: inherit;
+  font-size: 0.81rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.ah-aktiv-chip__x {
+  font-size: 1.05rem;
+  line-height: 1;
+  opacity: 0.7;
+}
+
+.ah-aktiv-chip:hover .ah-aktiv-chip__x {
+  opacity: 1;
+}
+
+.ah-aktiv-chip--alle {
+  border-style: dashed;
+  border-color: var(--ah-rand, rgba(255, 255, 255, 0.09));
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.ah-aktiv-chip--alle:hover {
+  color: var(--text-primary);
+  border-color: var(--accent-color1);
+}
+
 /* ── Karten ───────────────────────────────────────────────────── */
 /* Die Karten liegen in einem .grid innerhalb des Behälters — der Behälter
    selbst trägt außerdem den Lade-Hinweis und den "Mehr anzeigen"-Knopf. */
@@ -701,15 +1024,52 @@ body.light-mode #history::before {
     padding: 0.85rem;
   }
 
-  /* Die Chips laufen seitlich weiter, statt vier Reihen hoch zu werden. */
-  .ah-chips {
+  .ah-filter {
+    padding: 0.9rem;
+    gap: 1.1rem;
+  }
+
+  /* Nebeneinander bleiben zwei Preisfelder auf dem Handy je 90 Pixel
+     breit — untereinander sind sie beide bequem zu treffen.
+
+     Das flex: 1 von oben muss dabei weg: In einer Spalte wächst es nicht
+     in die Breite, sondern in die Höhe, und die zwei Felder standen mit
+     zwei Fingerbreit Luft dazwischen. */
+  .ah-filter-preis {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .ah-filter-preis label {
+    flex: none;
+    max-width: none;
+  }
+
+  /* Die Filterknöpfe laufen seitlich weiter, statt vier Reihen hoch zu
+     werden. Die Stufen bleiben umbrechend: Eine Zahlenreihe, die man
+     wegschieben muss, findet niemand. */
+  .ah-filter-gruppe .ah-filter-knoepfe {
     flex-wrap: nowrap;
     overflow-x: auto;
     scrollbar-width: none;
     padding-bottom: 0.15rem;
+    min-width: 0;
+    max-width: 100%;
   }
 
-  .ah-chips::-webkit-scrollbar {
+  .ah-filter-gruppe .ah-filter-knoepfe::-webkit-scrollbar {
+    display: none;
+  }
+
+  .ah-aktive {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .ah-aktive::-webkit-scrollbar {
     display: none;
   }
 

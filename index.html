@@ -1223,6 +1223,15 @@
             <option value="PRICE_LOW">Niedrigster Preis</option>
             <option value="BIDS_HIGH">Meiste Gebote</option>
           </select>
+          <button type="button" id="ahFilterKnopf" class="ah-knopf ah-knopf--filter"
+                  onclick="schalteFilterPanel()" aria-expanded="false" aria-controls="ahFilterPanel"
+                  title="Nach Preis, Verzauberung und Kategorie filtern">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M4 6h16"></path><path d="M7 12h10"></path><path d="M10 18h4"></path>
+            </svg>
+            Filter
+            <span id="ahFilterZahl" class="ah-filter-abzeichen" hidden></span>
+          </button>
           <button type="button" class="ah-knopf" onclick="refreshTab('auctions', this)" title="Auktionen neu laden">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path><path d="M21 3v5h-5"></path>
@@ -1232,21 +1241,27 @@
           </button>
         </div>
 
-        <div class="ah-zeile">
-          <div id="ahChips" class="ah-chips" role="group" aria-label="Nach Art filtern"></div>
-          <select id="auctionStarSelect" class="auction-sort" onchange="setStarFilter(this.value)" style="display: none;">
-            <option value="Alle">Alle Karten</option>
-            <option value="Booster">Booster Packs</option>
-            <option value="1">1 ★</option>
-            <option value="2">2 ★</option>
-            <option value="3">3 ★</option>
-            <option value="4/5">4/5 ★</option>
-          </select>
-        </div>
+        <!-- Was hier gewählt ist, steht als Chip-Reihe unter der Leiste:
+             sichtbar, ohne dass man das Panel dafür aufklappen muss. -->
+        <div id="ahAktiveFilter" class="ah-aktive" role="status" hidden></div>
 
-        <!-- Bleibt als Datenquelle für die Chips und für alles, was den Wert
-             von außen setzt (Suchtreffer, Spieleransicht). Sichtbar ist es
-             nicht mehr — die Chips zeigen dasselbe, nur schneller. -->
+        <!-- Der Inhalt kommt aus zeichneFilterPanel(): Die Kategorien und
+             ihre Trefferzahlen hängen an den geladenen Auktionen und wären
+             als festes Markup schon beim ersten Laden veraltet. -->
+        <div id="ahFilterPanel" class="ah-filter" hidden></div>
+
+        <select id="auctionStarSelect" class="auction-sort" onchange="setStarFilter(this.value)" style="display: none;">
+          <option value="Alle">Alle Karten</option>
+          <option value="Booster">Booster Packs</option>
+          <option value="1">1 ★</option>
+          <option value="2">2 ★</option>
+          <option value="3">3 ★</option>
+          <option value="4/5">4/5 ★</option>
+        </select>
+
+        <!-- Bleibt als Datenquelle für alles, was den Wert von außen setzt
+             (Suchtreffer, Spieleransicht, Erinnerungen). Sichtbar war es
+             nie; die Kategorien stehen jetzt im Filter-Panel. -->
         <select id="auction-filters" class="auction-sort" onchange="setAuctionFilter(this.value)"
                 hidden aria-hidden="true"></select>
       </div>

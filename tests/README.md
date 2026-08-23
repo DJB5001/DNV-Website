@@ -38,6 +38,7 @@ npx http-server . -p 8123      # abweichender Port über PORT=...
 | `mitglieder-test.mjs` | Die Mitgliederliste kommt aus `data/mitglieder.json`; fehlt oder klemmt sie, trägt die hinterlegte Liste | Browser |
 | `auktionsfilter-test.mjs` | Suchleiste über den Auktionen, Filter nach Item-Art, Verzauberungen auf den Karten | Browser |
 | `opitems-test.mjs` | Was in „OP Items" gehört: die Verzauberungsregel an Beispielen und ihre Wirkung auf den ganzen Verlauf | Verlauf (optional) |
+| `filterpanel-test.mjs` | Das Filter-Panel: Preisspanne samt Kurzschreibweise, Mindeststufen, Kategorien und der Zähler auf dem Knopf | Verlauf (optional) |
 | `benachrichtigungen-test.mjs` | Discord-Anmeldung, die vier Einstellungen, die Vorlaufzeit beim Erinnern, die vom Bot gelesene Verknüpfung | Browser |
 | `clan-inhalt-test.mjs` | Die Clan-Abschnitte stehen auf beiden Seiten gleich, und die Kennzahl passt zur Zahl der Karten | Browser |
 
