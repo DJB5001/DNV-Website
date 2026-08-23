@@ -202,26 +202,26 @@ const mat = (item) => (item?.material || '').toUpperCase();
  * die Zählung und das Zurücksetzen kommen von allein.
  */
 const filterKategorien = [
-  { id: 'werkzeug', gruppe: 'Werkzeuge & Kampf', label: 'Werkzeuge', symbol: '⛏️',
+  { id: 'werkzeug', gruppe: 'Werkzeuge & Kampf', label: 'Werkzeuge', bild: 'DIAMOND_PICKAXE',
     passt: (i) => /PICKAXE|_AXE|SHOVEL|SPADE|HOE|SHEARS|FISHING_ROD/.test(mat(i)) },
-  { id: 'kampf', gruppe: 'Werkzeuge & Kampf', label: 'Kampf', symbol: '⚔️',
+  { id: 'kampf', gruppe: 'Werkzeuge & Kampf', label: 'Kampf', bild: 'DIAMOND_SWORD',
     passt: (i) => /SWORD|BOW|TRIDENT|MACE|SHIELD/.test(mat(i)) },
 
-  { id: 'helm', gruppe: 'Rüstungen', label: 'Helme', symbol: '🪖',
+  { id: 'helm', gruppe: 'Rüstungen', label: 'Helme', bild: 'DIAMOND_HELMET',
     passt: (i) => /HELMET|_HEAD/.test(mat(i)) },
-  { id: 'brust', gruppe: 'Rüstungen', label: 'Brustplatten', symbol: '🦺',
+  { id: 'brust', gruppe: 'Rüstungen', label: 'Brustplatten', bild: 'DIAMOND_CHESTPLATE',
     passt: (i) => /CHESTPLATE/.test(mat(i)) },
-  { id: 'hose', gruppe: 'Rüstungen', label: 'Beinschutz', symbol: '👖',
+  { id: 'hose', gruppe: 'Rüstungen', label: 'Beinschutz', bild: 'DIAMOND_LEGGINGS',
     passt: (i) => /LEGGINGS/.test(mat(i)) },
-  { id: 'schuhe', gruppe: 'Rüstungen', label: 'Stiefel', symbol: '🥾',
+  { id: 'schuhe', gruppe: 'Rüstungen', label: 'Stiefel', bild: 'DIAMOND_BOOTS',
     passt: (i) => /BOOTS/.test(mat(i)) },
-  { id: 'elytra', gruppe: 'Rüstungen', label: 'Elytren', symbol: '🪽',
+  { id: 'elytra', gruppe: 'Rüstungen', label: 'Elytren', bild: 'ELYTRA',
     passt: (i) => /ELYTRA/.test(mat(i)) },
 
   // Drei Wege, weil keiner allein reicht: Der Kategorieschlüssel ist der
   // verlässlichste, steht aber nur an laufenden Auktionen. Material und
   // Name fangen den Rest.
-  { id: 'booster', gruppe: 'Karten & Boosterpacks', label: 'Boosterpacks', symbol: '🎁',
+  { id: 'booster', gruppe: 'Karten & Boosterpacks', label: 'Boosterpacks', bild: 'BUNDLE',
     passt: (i, a) => kartenSchluessel(a) === 'BOOSTER_PACKS'
       || /BOOSTER/.test(mat(i))
       || /booster\s*pack/i.test(i?.displayName || '') },
@@ -229,24 +229,24 @@ const filterKategorien = [
     id: `sterne${n}`,
     gruppe: 'Karten & Boosterpacks',
     label: n === 1 ? '1 Stern' : `${n} Sterne`,
-    symbol: '🎴',
+    bild: 'PAPER',
     passt: (i, a) => sterneVonAuktion(a) === n,
   })),
 
-  { id: 'op', gruppe: 'Besondere', label: 'OP Items', symbol: '💥',
+  { id: 'op', gruppe: 'Besondere', label: 'OP Items', bild: 'NETHER_STAR',
     passt: (i) => auktionsGruppe(i) === 'op' },
-  { id: 'custom', gruppe: 'Besondere', label: 'Custom Items', symbol: '✨',
+  { id: 'custom', gruppe: 'Besondere', label: 'Custom Items', bild: 'NAME_TAG',
     passt: (i) => auktionsGruppe(i) === 'custom' },
-  { id: 'verzaubert', gruppe: 'Besondere', label: 'Verzaubert', symbol: '🔮',
+  { id: 'verzaubert', gruppe: 'Besondere', label: 'Verzaubert', bild: 'ENCHANTING_TABLE',
     passt: (i) => Object.keys(i?.enchantments || {}).length > 0 },
 
-  { id: 'spawnegg', gruppe: 'Anderes', label: 'Spawn-Eier', symbol: '🥚',
+  { id: 'spawnegg', gruppe: 'Anderes', label: 'Spawn-Eier', bild: 'ZOMBIE_SPAWN_EGG',
     passt: (i) => /SPAWN_EGG/.test(mat(i)) },
-  { id: 'shulker', gruppe: 'Anderes', label: 'Shulker', symbol: '🟪',
+  { id: 'shulker', gruppe: 'Anderes', label: 'Shulker', bild: 'SHULKER_BOX',
     passt: (i) => /SHULKER_BOX/.test(mat(i)) },
-  { id: 'buch', gruppe: 'Anderes', label: 'Verzauberungsbücher', symbol: '📗',
+  { id: 'buch', gruppe: 'Anderes', label: 'Verzauberungsbücher', bild: 'ENCHANTED_BOOK',
     passt: (i) => /ENCHANTED_BOOK/.test(mat(i)) },
-  { id: 'block', gruppe: 'Anderes', label: 'Blöcke & Material', symbol: '🧱',
+  { id: 'block', gruppe: 'Anderes', label: 'Blöcke & Material', bild: 'STONE',
     passt: (i) => auktionsGruppe(i) === 'anderes' && !/SPAWN_EGG|SHULKER_BOX|ENCHANTED_BOOK/.test(mat(i)) },
 ];
 
@@ -3133,41 +3133,6 @@ function zeigeShardZahlen() {
   ]);
 }
 
-/**
- * Ein Symbol zum Filternamen.
- *
- * Bewusst über Stichwörter im Namen und nicht über die Kategorie-Schlüssel:
- * Die kommen aus der API und ändern sich, wenn dort etwas umsortiert wird.
- * Ein Name, der "Rüstung" enthält, zeigt einen Schild — egal wie der
- * Schlüssel dahinter gerade heißt.
- */
-const CHIP_SYMBOLE = [
-  [/^alle$/i, '📋'],
-  [/spieler/i, '👤'],
-  [/erinnerung/i, '🔔'],
-  [/\bop\b/i, '🌀'],
-  [/custom/i, '🧪'],
-  [/verzaubert/i, '✨'],
-  [/rüstung|armor|helm|brustplatte|hose|schuh|stiefel/i, '🛡️'],
-  [/werkzeug|tool|waffe|kampf|schwert|axt|spitzhacke/i, '⚔️'],
-  [/karte|booster|sammelkarte/i, '🎴'],
-  [/spawn|ei\b/i, '🥚'],
-  [/talisman/i, '🔮'],
-  [/kopf|köpfe/i, '🗿'],
-  [/shulker|kiste/i, '📦'],
-  [/elytra|elytren|schwinge/i, '🪽'],
-  [/trank|potion/i, '⚗️'],
-  [/platte|disc|musik/i, '💿'],
-  [/block|bau/i, '🧱'],
-  [/nahrung|essen|food/i, '🍗'],
-  [/rede|schrift|buch/i, '📖'],
-];
-
-function chipSymbol(name) {
-  const treffer = CHIP_SYMBOLE.find(([muster]) => muster.test(name));
-  return treffer ? treffer[1] : '🔸';
-}
-
 /* ── Das Filter-Panel ──────────────────────────────────────────────────
 
    Vorher stand hier eine Chip-Reihe mit sechs Kategorien, immer sichtbar.
@@ -3179,6 +3144,19 @@ function chipSymbol(name) {
    Jetzt liegt alles hinter einem Knopf, der zeigt, wie viele Filter
    gesetzt sind. Was gewählt ist, steht als Chip-Reihe darunter — man muss
    das Panel nicht aufklappen, um zu sehen, wonach gerade gesucht wird. */
+
+/**
+ * Das Bild vor einer Kategorie.
+ *
+ * Statt eines Emojis das Item selbst: Ein 👖 ist irgendeine Hose, eine
+ * Diamanthose ist die aus dem Spiel. Die Bilder kommen über dieselbe
+ * Kette wie überall sonst (Wiki, dann Spieltextur, dann Verbotsschild),
+ * also auch mit demselben Gedächtnis für die Adresse, die zuletzt
+ * geladen hat.
+ */
+function kategorieBild(kategorie) {
+  return itemBildTag(kategorie.bild, null, '', 'class="ah-chip__bild" aria-hidden="true"');
+}
 
 /** Wie viele der geladenen Auktionen fallen in diese Kategorie? */
 function kategorieTreffer(kategorie) {
@@ -3247,7 +3225,7 @@ function zeigeAktiveFilter() {
 
   for (const id of f.kategorien) {
     const k = filterKategorien.find((x) => x.id === id);
-    if (k) chips.push({ text: `${k.symbol} ${k.label}`, weg: `kat:${id}` });
+    if (k) chips.push({ text: k.label, bild: kategorieBild(k), weg: `kat:${id}` });
   }
 
   ziel.hidden = chips.length === 0;
@@ -3258,7 +3236,7 @@ function zeigeAktiveFilter() {
       .map(
         (c) => `<button type="button" class="ah-aktiv-chip" data-weg="${c.weg}"
                         aria-label="Filter „${c.text}“ entfernen">
-                  ${c.text}<span class="ah-aktiv-chip__x" aria-hidden="true">×</span>
+                  ${c.bild ?? ''}${c.text}<span class="ah-aktiv-chip__x" aria-hidden="true">×</span>
                 </button>`
       )
       .join('') +
@@ -3326,7 +3304,7 @@ function zeichneFilterPanel() {
               const aktiv = f.kategorien.includes(k.id);
               return `<button type="button" class="ah-chip${aktiv ? ' ah-chip--aktiv' : ''}"
                               data-kat="${k.id}" aria-pressed="${aktiv}">
-                        <span class="ah-chip__symbol" aria-hidden="true">${k.symbol}</span>
+                        ${kategorieBild(k)}
                         ${k.label}<span class="ah-chip__zahl">${k.treffer}</span>
                       </button>`;
             })

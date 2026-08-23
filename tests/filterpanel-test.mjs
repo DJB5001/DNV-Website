@@ -218,6 +218,21 @@ pruefe(
   'Jede Kategorie ist vollständig'
 );
 
+// Statt eines Emojis steht vor jeder Kategorie das Item aus dem Spiel.
+// Fehlt die Angabe, baut itemBildTag() ein <img> ohne Quelle - im Panel
+// klafft dann eine Luecke, und niemand sieht warum.
+const ohneBild = filterKategorien.filter((k) => !k.bild);
+pruefe(ohneBild.length === 0, 'Jede Kategorie nennt ein Minecraft-Item', ohneBild.map((k) => k.label).join(', '));
+pruefe(
+  filterKategorien.every((k) => /^[A-Z][A-Z0-9_]*$/.test(k.bild)),
+  'Und zwar als Material-Kennung',
+  filterKategorien.map((k) => k.bild).filter((b) => !/^[A-Z][A-Z0-9_]*$/.test(b)).join(', ') || 'alle sauber'
+);
+pruefe(
+  filterKategorien.find((k) => k.id === 'hose')?.bild === 'DIAMOND_LEGGINGS',
+  'Beim Beinschutz ist es eine Diamanthose'
+);
+
 // ── Gegen die echten Daten ───────────────────────────────────
 
 const pfad = process.argv[2] || process.env.AUKTIONSVERLAUF || '../opsuchtinfo/auction-history.json';
