@@ -25,7 +25,8 @@ const schnipsel = (von, bis) => {
 
 const block =
   schnipsel('/* Was Minecraft selbst höchstens vergibt.', 'const ROEMISCH =') +
-  schnipsel('const auktionsArten = [', '/** Gehört diese Auktion zur gewählten Art? */');
+  schnipsel('/* Die Listen des Filter-Panels', '// Zeitfenster, in dem zwei Aufnahmen') +
+  schnipsel('/**\n * In welche Gruppe gehört diese Auktion?', '/** Gehört diese Auktion zur gewählten Art? */');
 
 const kontext = { console };
 vm.createContext(kontext);
