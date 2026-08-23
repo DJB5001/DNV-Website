@@ -342,15 +342,20 @@
   border-color: var(--accent-glow, rgba(169, 126, 240, 0.4));
 }
 
-/* Das Symbol trägt keine Bedeutung, die nicht auch im Wort steht — es ist
+/* Das Bild trägt keine Bedeutung, die nicht auch im Wort steht — es ist
    ein Ankerpunkt fürs Auge, damit man den gesuchten Filter beim zweiten
-   Besuch an der Form wiederfindet statt jedes Mal zu lesen. */
-.ah-chip__symbol {
-  font-size: 0.95rem;
-  line-height: 1;
-  /* Emoji bringen ihre eigene Farbe mit und würden sonst den einzigen
-     Farbakzent der Leiste stehlen. Gedämpft ordnen sie sich unter. */
-  filter: saturate(0.85);
+   Besuch an der Form wiederfindet statt jedes Mal zu lesen.
+
+   Deshalb das Item aus dem Spiel und kein Emoji: Ein 👖 ist irgendeine
+   Hose, eine Diamanthose erkennt man wieder. pixelated, weil die
+   Texturen 16 Pixel breit sind und weichgezeichnet zu Matsch werden. */
+.ah-chip__bild,
+.ah-aktiv-chip img {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  object-fit: contain;
+  image-rendering: pixelated;
 }
 
 .ah-chip__zahl {
