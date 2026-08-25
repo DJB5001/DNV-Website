@@ -1,5 +1,5 @@
 {
-  "stand": "2026-08-24T22:01:57.195Z",
+  "stand": "2026-08-25T14:56:00.691Z",
   "anzahl": 45,
   "hinweis": "Automatisch vom DNV-Bot aus den Discord-Rollen erzeugt. Änderungen hier werden überschrieben.",
   "mitglieder": [
@@ -82,6 +82,16 @@
       "verifiziert": true,
       "plattform": "java",
       "uuid": "373a2328-2daa-42bf-ac22-8918c0a89d0d"
+    },
+    {
+      "name": "PascalHZ",
+      "rolle": "Allrounder",
+      "farbe": "allround",
+      "rang": 10,
+      "seit": "2026-08-18",
+      "verifiziert": true,
+      "plattform": "java",
+      "uuid": "f7830ea5-a6ae-4e17-9b73-6ab2925e1793"
     },
     {
       "name": "acebody89",
@@ -362,16 +372,6 @@
       "verifiziert": true,
       "plattform": "java",
       "uuid": "16bc97a3-b9bb-4b7c-80e9-40d02b1293c1"
-    },
-    {
-      "name": "PascalHZ",
-      "rolle": "Farmer",
-      "farbe": "farmer",
-      "rang": 12,
-      "seit": "2026-08-18",
-      "verifiziert": true,
-      "plattform": "java",
-      "uuid": "f7830ea5-a6ae-4e17-9b73-6ab2925e1793"
     },
     {
       "name": "KingBanane2208",
