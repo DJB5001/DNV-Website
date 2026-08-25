@@ -1,6 +1,6 @@
 {
-  "stand": "2026-08-25T14:56:00.691Z",
-  "anzahl": 45,
+  "stand": "2026-08-25T16:56:01.143Z",
+  "anzahl": 46,
   "hinweis": "Automatisch vom DNV-Bot aus den Discord-Rollen erzeugt. Änderungen hier werden überschrieben.",
   "mitglieder": [
     {
@@ -452,6 +452,16 @@
       "verifiziert": true,
       "plattform": "bedrock",
       "uuid": "00000000-0000-0000-0009-01fd228775e8"
+    },
+    {
+      "name": "CheeseEater6900",
+      "rolle": "Farmer",
+      "farbe": "farmer",
+      "rang": 12,
+      "seit": "2026-08-25",
+      "verifiziert": true,
+      "plattform": "java",
+      "uuid": "8b7d75cd-b06a-4d90-870f-b5c362d60ae4"
     }
   ]
 }
