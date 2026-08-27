@@ -1,6 +1,6 @@
 {
-  "stand": "2026-08-26T22:01:42.345Z",
-  "anzahl": 49,
+  "stand": "2026-08-27T12:34:45.432Z",
+  "anzahl": 50,
   "hinweis": "Automatisch vom DNV-Bot aus den Discord-Rollen erzeugt. Änderungen hier werden überschrieben.",
   "mitglieder": [
     {
@@ -442,6 +442,16 @@
       "verifiziert": true,
       "plattform": "java",
       "uuid": "75a1dbd4-9aac-40c3-8d0a-c41e5ff51567"
+    },
+    {
+      "name": "No_skill_ha",
+      "rolle": "Farmer",
+      "farbe": "farmer",
+      "rang": 12,
+      "seit": "2026-08-22",
+      "verifiziert": true,
+      "plattform": "java",
+      "uuid": "5deeca83-4ae9-43f3-b9bb-2658138a9b51"
     },
     {
       "name": ".AbleBonsai49833",
