@@ -1,6 +1,6 @@
 {
-  "stand": "2026-08-27T12:34:45.432Z",
-  "anzahl": 50,
+  "stand": "2026-08-27T14:45:46.018Z",
+  "anzahl": 51,
   "hinweis": "Automatisch vom DNV-Bot aus den Discord-Rollen erzeugt. Änderungen hier werden überschrieben.",
   "mitglieder": [
     {
@@ -152,6 +152,16 @@
       "verifiziert": true,
       "plattform": "java",
       "uuid": "4bfa6b54-9cdd-414b-bf27-8fb988c71386"
+    },
+    {
+      "name": ".StumblingSiren0",
+      "rolle": "Builder",
+      "farbe": "builder",
+      "rang": 11,
+      "seit": "2026-08-27",
+      "verifiziert": true,
+      "plattform": "bedrock",
+      "uuid": "00000000-0000-0000-0009-000006a0301f"
     },
     {
       "name": "EagleOneHD123",
