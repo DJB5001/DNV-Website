@@ -1,6 +1,6 @@
 {
-  "stand": "2026-08-28T17:47:42.636Z",
-  "anzahl": 51,
+  "stand": "2026-08-28T21:28:43.401Z",
+  "anzahl": 50,
   "hinweis": "Automatisch vom DNV-Bot aus den Discord-Rollen erzeugt. Änderungen hier werden überschrieben.",
   "mitglieder": [
     {
@@ -292,16 +292,6 @@
       "verifiziert": true,
       "plattform": "java",
       "uuid": "1228ec3f-1718-4202-8820-270bbb9c0327"
-    },
-    {
-      "name": ".Deutscheseck323",
-      "rolle": "Farmer",
-      "farbe": "farmer",
-      "rang": 12,
-      "seit": "2026-08-15",
-      "verifiziert": true,
-      "plattform": "bedrock",
-      "uuid": "00000000-0000-0000-0009-01f96fd54b62"
     },
     {
       "name": "Zocker_TV_1337",
