@@ -1,5 +1,5 @@
 {
-  "stand": "2026-08-29T11:17:46.480Z",
+  "stand": "2026-08-29T11:29:46.524Z",
   "anzahl": 54,
   "hinweis": "Automatisch vom DNV-Bot aus den Discord-Rollen erzeugt. Änderungen hier werden überschrieben.",
   "mitglieder": [
@@ -62,6 +62,16 @@
       "verifiziert": true,
       "plattform": "java",
       "uuid": "095ea30b-fe4c-438f-93bf-c6b30a3c5c7a"
+    },
+    {
+      "name": "BitFight",
+      "rolle": "Supporter",
+      "farbe": "team",
+      "rang": 9,
+      "seit": "2026-08-29",
+      "verifiziert": true,
+      "plattform": "java",
+      "uuid": "bca5ada4-54c4-4e5f-81c4-1f707e8f476f"
     },
     {
       "name": ".Acolone8",
@@ -182,16 +192,6 @@
       "verifiziert": true,
       "plattform": "bedrock",
       "uuid": "00000000-0000-0000-0009-01fb75eae760"
-    },
-    {
-      "name": "BitFight",
-      "rolle": "Builder",
-      "farbe": "builder",
-      "rang": 11,
-      "seit": "2026-08-29",
-      "verifiziert": true,
-      "plattform": "java",
-      "uuid": "bca5ada4-54c4-4e5f-81c4-1f707e8f476f"
     },
     {
       "name": "EagleOneHD123",
