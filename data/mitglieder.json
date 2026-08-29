@@ -1,6 +1,6 @@
 {
-  "stand": "2026-08-29T07:48:46.176Z",
-  "anzahl": 51,
+  "stand": "2026-08-29T11:01:46.478Z",
+  "anzahl": 52,
   "hinweis": "Automatisch vom DNV-Bot aus den Discord-Rollen erzeugt. Änderungen hier werden überschrieben.",
   "mitglieder": [
     {
@@ -172,6 +172,16 @@
       "verifiziert": true,
       "plattform": "java",
       "uuid": "d04bc1f5-e22e-462f-b486-4c55549c57cc"
+    },
+    {
+      "name": "BitFight",
+      "rolle": "Builder",
+      "farbe": "builder",
+      "rang": 11,
+      "seit": "2026-08-29",
+      "verifiziert": true,
+      "plattform": "java",
+      "uuid": "bca5ada4-54c4-4e5f-81c4-1f707e8f476f"
     },
     {
       "name": "EagleOneHD123",
