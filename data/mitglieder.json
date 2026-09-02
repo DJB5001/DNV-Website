@@ -1,5 +1,5 @@
 {
-  "stand": "2026-09-02T18:53:40.119Z",
+  "stand": "2026-09-02T18:54:40.122Z",
   "anzahl": 55,
   "hinweis": "Automatisch vom DNV-Bot aus den Discord-Rollen erzeugt. Änderungen hier werden überschrieben.",
   "mitglieder": [
@@ -54,16 +54,6 @@
       "uuid": "f7830ea5-a6ae-4e17-9b73-6ab2925e1793"
     },
     {
-      "name": "GetTheMoney",
-      "rolle": "Supporter",
-      "farbe": "team",
-      "rang": 9,
-      "seit": "2026-08-22",
-      "verifiziert": true,
-      "plattform": "java",
-      "uuid": "095ea30b-fe4c-438f-93bf-c6b30a3c5c7a"
-    },
-    {
       "name": ".Acolone8",
       "rolle": "Allrounder",
       "farbe": "allround",
@@ -102,6 +92,16 @@
       "verifiziert": true,
       "plattform": "java",
       "uuid": "cfb13375-a020-4d1b-bdba-3150459f798e"
+    },
+    {
+      "name": "GetTheMoney",
+      "rolle": "Allrounder",
+      "farbe": "allround",
+      "rang": 10,
+      "seit": "2026-08-22",
+      "verifiziert": true,
+      "plattform": "java",
+      "uuid": "095ea30b-fe4c-438f-93bf-c6b30a3c5c7a"
     },
     {
       "name": ".Toastbrot251",
