@@ -1,5 +1,5 @@
 {
-  "stand": "2026-09-02T18:51:40.111Z",
+  "stand": "2026-09-02T18:53:40.119Z",
   "anzahl": 55,
   "hinweis": "Automatisch vom DNV-Bot aus den Discord-Rollen erzeugt. Änderungen hier werden überschrieben.",
   "mitglieder": [
@@ -24,16 +24,6 @@
       "uuid": null
     },
     {
-      "name": "yPanda_x3",
-      "rolle": "Admin",
-      "farbe": "fuehrung",
-      "rang": 3,
-      "seit": "2026-08-17",
-      "verifiziert": true,
-      "plattform": "java",
-      "uuid": "5aa74c53-efe0-472b-ba80-7ccf851a3a60"
-    },
-    {
       "name": "M4Claia",
       "rolle": "Lager Leitung",
       "farbe": "leitung",
@@ -42,6 +32,16 @@
       "verifiziert": false,
       "plattform": null,
       "uuid": null
+    },
+    {
+      "name": "yPanda_x3",
+      "rolle": "Supporter",
+      "farbe": "team",
+      "rang": 9,
+      "seit": "2026-08-17",
+      "verifiziert": true,
+      "plattform": "java",
+      "uuid": "5aa74c53-efe0-472b-ba80-7ccf851a3a60"
     },
     {
       "name": "PascalHZ",
