@@ -1,6 +1,6 @@
 {
-  "stand": "2026-09-02T22:01:48.690Z",
-  "anzahl": 55,
+  "stand": "2026-09-03T16:22:52.847Z",
+  "anzahl": 54,
   "hinweis": "Automatisch vom DNV-Bot aus den Discord-Rollen erzeugt. Änderungen hier werden überschrieben.",
   "mitglieder": [
     {
@@ -212,16 +212,6 @@
       "verifiziert": true,
       "plattform": "java",
       "uuid": "0892b7b5-761d-4efb-8c5c-9f8bce435b2f"
-    },
-    {
-      "name": "yukilee9088",
-      "rolle": "Farmer",
-      "farbe": "farmer",
-      "rang": 12,
-      "seit": "2026-08-10",
-      "verifiziert": true,
-      "plattform": "java",
-      "uuid": "7b2181f7-9098-4e5f-ae85-2ec77af9537f"
     },
     {
       "name": ".Lunoking3904",
