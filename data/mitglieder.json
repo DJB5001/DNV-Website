@@ -1,8 +1,18 @@
 {
-  "stand": "2026-09-03T18:43:53.425Z",
+  "stand": "2026-09-03T18:44:53.432Z",
   "anzahl": 54,
   "hinweis": "Automatisch vom DNV-Bot aus den Discord-Rollen erzeugt. Änderungen hier werden überschrieben.",
   "mitglieder": [
+    {
+      "name": "M4Claiz",
+      "rolle": "Owner",
+      "farbe": "fuehrung",
+      "rang": 1,
+      "seit": "2026-08-07",
+      "verifiziert": false,
+      "plattform": null,
+      "uuid": null
+    },
     {
       "name": "DJB500",
       "rolle": "Co-Owner",
@@ -19,16 +29,6 @@
       "farbe": "leitung",
       "rang": 7,
       "seit": "2026-08-11",
-      "verifiziert": false,
-      "plattform": null,
-      "uuid": null
-    },
-    {
-      "name": "M4Claiz",
-      "rolle": "Supporter",
-      "farbe": "team",
-      "rang": 9,
-      "seit": "2026-08-07",
       "verifiziert": false,
       "plattform": null,
       "uuid": null
