@@ -1,6 +1,6 @@
 {
-  "stand": "2026-09-07T18:59:56.658Z",
-  "anzahl": 59,
+  "stand": "2026-09-07T19:02:56.668Z",
+  "anzahl": 60,
   "hinweis": "Automatisch vom DNV-Bot aus den Discord-Rollen erzeugt. Änderungen hier werden überschrieben.",
   "mitglieder": [
     {
@@ -582,6 +582,16 @@
       "verifiziert": true,
       "plattform": "bedrock",
       "uuid": "00000000-0000-0000-0009-01f897106cda"
+    },
+    {
+      "name": "MiniGnom5889",
+      "rolle": "Farmer",
+      "farbe": "farmer",
+      "rang": 12,
+      "seit": "2026-09-06",
+      "verifiziert": true,
+      "plattform": "java",
+      "uuid": "fa06e4b0-7f65-4d27-b864-feb9de180753"
     },
     {
       "name": "timlenny08",
