@@ -1,6 +1,6 @@
 {
-  "stand": "2026-09-06T22:01:52.134Z",
-  "anzahl": 57,
+  "stand": "2026-09-07T18:28:56.562Z",
+  "anzahl": 58,
   "hinweis": "Automatisch vom DNV-Bot aus den Discord-Rollen erzeugt. Änderungen hier werden überschrieben.",
   "mitglieder": [
     {
@@ -202,6 +202,16 @@
       "verifiziert": true,
       "plattform": "java",
       "uuid": "e918960e-5610-4f47-b5e6-ec5a2633d19d"
+    },
+    {
+      "name": "Tiro_PvP",
+      "rolle": "Builder",
+      "farbe": "builder",
+      "rang": 11,
+      "seit": "2026-09-06",
+      "verifiziert": true,
+      "plattform": "java",
+      "uuid": "b646c5e5-3ed1-480a-a1ad-46ebd7e0ee08"
     },
     {
       "name": "EagleOneHD123",
