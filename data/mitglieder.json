@@ -1,6 +1,6 @@
 {
-  "stand": "2026-09-08T09:36:56.141Z",
-  "anzahl": 61,
+  "stand": "2026-09-08T14:59:57.317Z",
+  "anzahl": 62,
   "hinweis": "Automatisch vom DNV-Bot aus den Discord-Rollen erzeugt. Änderungen hier werden überschrieben.",
   "mitglieder": [
     {
@@ -202,6 +202,16 @@
       "verifiziert": true,
       "plattform": "java",
       "uuid": "b646c5e5-3ed1-480a-a1ad-46ebd7e0ee08"
+    },
+    {
+      "name": "ynvnyx",
+      "rolle": "Builder",
+      "farbe": "builder",
+      "rang": 11,
+      "seit": "2026-09-08",
+      "verifiziert": true,
+      "plattform": "java",
+      "uuid": "b5723781-02e5-4249-919d-9502044eabd9"
     },
     {
       "name": "EagleOneHD123",
