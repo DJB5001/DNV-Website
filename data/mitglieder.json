@@ -1,5 +1,5 @@
 {
-  "stand": "2026-09-07T22:01:53.653Z",
+  "stand": "2026-09-08T09:36:56.141Z",
   "anzahl": 61,
   "hinweis": "Automatisch vom DNV-Bot aus den Discord-Rollen erzeugt. Änderungen hier werden überschrieben.",
   "mitglieder": [
@@ -114,16 +114,6 @@
       "uuid": "095ea30b-fe4c-438f-93bf-c6b30a3c5c7a"
     },
     {
-      "name": ".Toastbrot251",
-      "rolle": "Builder",
-      "farbe": "builder",
-      "rang": 11,
-      "seit": "2026-08-10",
-      "verifiziert": true,
-      "plattform": "bedrock",
-      "uuid": "00000000-0000-0000-0009-01f34aff6147"
-    },
-    {
       "name": "MisterM_00398",
       "rolle": "Builder",
       "farbe": "builder",
@@ -222,6 +212,16 @@
       "verifiziert": true,
       "plattform": "java",
       "uuid": "ba1b26db-4afc-4a36-aa0d-c52cbf95fa7c"
+    },
+    {
+      "name": ".Toastbrot251",
+      "rolle": "Farmer",
+      "farbe": "farmer",
+      "rang": 12,
+      "seit": "2026-08-10",
+      "verifiziert": true,
+      "plattform": "bedrock",
+      "uuid": "00000000-0000-0000-0009-01f34aff6147"
     },
     {
       "name": "Nostife",
