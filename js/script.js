@@ -307,6 +307,11 @@ const SPIELER_SORTIERUNG = {
 };
 
 const App = {
+  // Der Auktionsverlauf laedt neben allem anderen und ist erst nach ein
+  // paar Sekunden da. Bis dahin waeren eine kurze Item-Liste und ein
+  // leerer Verlaufs-Reiter nicht leer, sondern falsch — deshalb sagen
+  // die beiden solange, dass noch geladen wird.
+  verlaufGeladen: false,
   auctionSortMode: "END",
   auctionCategoryFilter: "Alle",
   auctionItemFilter: "",
@@ -2317,12 +2322,16 @@ document.addEventListener('click', (e) => {
   }
 });
 
-async function loadAuctions() {
-  // Aktive Auktionen und Verlauf UNABHÄNGIG laden: Ist die Verlaufsdatei
-  // kaputt (z.B. ungültiges JSON), sollen die aktiven Auktionen trotzdem
-  // angezeigt werden.
-
-  // 1) Aktive Auktionen
+/**
+ * Die laufenden Auktionen. Klein und schnell — ein paar hundert
+ * Einträge aus der API des Servers.
+ *
+ * Absichtlich getrennt vom Verlauf: Der ist 33 MB groß, und die
+ * Auktionsliste braucht ihn gar nicht. Nur die Rabatt-Abzeichen darauf
+ * vergleichen gegen den Schnitt, und die dürfen ein paar Sekunden
+ * später erscheinen. Vorher hing die ganze Seite daran.
+ */
+async function ladeAktiveAuktionen() {
   try {
     const res = await fetch("https://api.opsucht.net/auctions/active");
     App.auctionsData = await res.json();
@@ -2331,9 +2340,37 @@ async function loadAuctions() {
     App.auctionsData = [];
   }
 
-  // 2) Auktions-Verlauf (Fehler hier darf die Auktionen nicht beeinflussen)
+  App.playerStatsCache = {};
+  App.spielerListe = null;
+  itemIndexVerwerfen();
+  setupAuctionFilters();
+
+  document.querySelector('#tab-auctions .loading-spinner')?.remove();
+}
+
+/**
+ * Der Auktions-Verlauf: 33 MB, 41.000 Verkäufe.
+ *
+ * Läuft neben allem anderen und zeichnet nach, sobald er da ist. Ein
+ * Fehler hier darf die Auktionen nicht mitreißen — ist die Datei kaputt,
+ * bleibt der Verlauf leer und der Rest steht.
+ *
+ * Ohne `?t=${Date.now()}` an der Adresse: Der Zeitstempel machte jede
+ * Anfrage für den Browser zu einer anderen Datei, und weder sein
+ * Zwischenspeicher noch der des Service Workers kamen je zum Zug. Neu
+ * gebaut wird die Datei ohnehin nur alle 15 Minuten; um die Frische
+ * kümmern sich cache-control und ETag.
+ */
+async function ladeVerlauf({ frisch = false, neuZeichnen = true } = {}) {
   try {
-    const res = await fetch(`${HISTORY_REPO_BASE}/auction-history.json?t=${Date.now()}`);
+    // frisch: Wer den Aktualisieren-Knopf drueckt, will neue Zahlen und
+    // nicht die aus dem Speicher. `cache: 'reload'` geht am Zwischen-
+    // speicher des Browsers vorbei, und der Service Worker sieht es der
+    // Anfrage an und holt ebenfalls neu.
+    const res = await fetch(
+      `${HISTORY_REPO_BASE}/auction-history.json`,
+      frisch ? { cache: 'reload' } : undefined
+    );
     if (!res.ok) throw new Error("HTTP " + res.status);
     const history = await res.json();
     // Vor allem anderen entdoppeln — Durchschnitte, Verkaufszahlen,
@@ -2348,14 +2385,57 @@ async function loadAuctions() {
     App.auctionHistory = {};
   }
 
-  App.playerStatsCache = {}; // Cache leeren wenn neue Daten geladen werden
-  App.spielerListe = null;   // dasselbe für die Bestenliste im Spieler-Reiter
-  itemIndexVerwerfen();      // und für Item-Index und Durchschnitte
-  setupAuctionFilters();
+  App.playerStatsCache = {};
+  App.spielerListe = null;
+  itemIndexVerwerfen();      // Item-Index und Durchschnitte neu rechnen
   setupHistoryFilters();
+  App.verlaufGeladen = true;
 
-  document.querySelector('#tab-auctions .loading-spinner')?.remove();
   document.querySelector('#tab-history .loading-spinner')?.remove();
+
+  // Beim Aktualisieren-Knopf zeichnet refreshTab() selbst — zweimal
+  // hintereinander waere nur ein Flackern.
+  if (neuZeichnen) await zeichneSichtbaresNeu();
+}
+
+/**
+ * Die gerade offene Ansicht noch einmal zeichnen.
+ *
+ * Wird gerufen, wenn der Verlauf nachträglich ankommt: Bis dahin stehen
+ * dort "Keine Daten" statt Durchschnitten. Nur der sichtbare Reiter wird
+ * angefasst — die anderen zeichnen sich beim Wechsel ohnehin neu.
+ *
+ * Das kostet einmal die Blätter-Position in der Auktionsliste. Es
+ * passiert wenige Sekunden nach dem Öffnen, also bevor jemand ernsthaft
+ * geblättert hat; eine Liste mit falschen Rabatten stehen zu lassen wäre
+ * der schlechtere Tausch.
+ */
+async function zeichneSichtbaresNeu() {
+  const offen = document.querySelector('.section.active')?.id;
+
+  // Nur die Reiter, die wirklich am Verlauf hängen. clan, market,
+  // shards und profile ziehen ihre Zahlen anderswoher.
+  const zeichner = {
+    auctions: renderAuctions,
+    deals: renderDeals,
+    history: renderHistory,
+    items: renderItemSearch,
+    players: renderPlayers,
+  };
+
+  if (zeichner[offen]) await zeichner[offen]();
+}
+
+/**
+ * Beides zusammen und wirklich neu — der Aktualisieren-Knopf.
+ *
+ * Hier wird bewusst gewartet: Wer drueckt, will den neuen Stand sehen
+ * und nimmt die Sekunden dafuer in Kauf. Beim normalen Seitenaufbau
+ * laufen die beiden Haelften getrennt.
+ */
+async function loadAuctions() {
+  await ladeAktiveAuktionen();
+  await ladeVerlauf({ frisch: true, neuZeichnen: false });
 }
 
 // Kandidaten für das Bild eines Item-Typs, in der Reihenfolge, in der
@@ -4629,6 +4709,11 @@ async function renderHistory(isPagination = false) {
     await new Promise(resolve => requestAnimationFrame(resolve));
   }
 
+  // Der Kringel von eben bleibt stehen, bis der Verlauf wirklich da ist.
+  // ladeVerlauf() ruft danach zeichneSichtbaresNeu() und wir landen
+  // gleich noch einmal hier.
+  if (!App.verlaufGeladen) return;
+
   if (App.selectedPlayerUuid) {
     await renderPlayerProfile(App.selectedPlayerUuid, 'historyContainer', search, 'history');
     return;
@@ -5058,6 +5143,16 @@ function buildItemIndex() {
 function renderItemSearch() {
   const container = document.getElementById('itemsContainer');
   if (!container) return;
+
+  // Ohne Verlauf kaeme hier nur, was gerade im Auktionshaus liegt — ein
+  // Bruchteil, und jede Karte mit "Keine Daten". Das saehe nicht nach
+  // "laedt noch" aus, sondern nach "gibt es nicht".
+  if (!App.verlaufGeladen) {
+    container.innerHTML =
+      '<div class="content-loader"><span class="loading-spinner"></span><span>Lade Items...</span></div>';
+    return;
+  }
+
   const search = (document.getElementById('searchItems')?.value || '').toLowerCase();
 
   const index = buildItemIndex();
@@ -5818,7 +5913,7 @@ async function loadHistory(period, material, type) {
       if (App.chart) App.chart.destroy();
 
       try {
-        const history = await fetch(`${HISTORY_REPO_BASE}/shard-history.json?t=${Date.now()}`).then(res => res.json());
+        const history = await fetch(`${HISTORY_REPO_BASE}/shard-history.json`).then(res => res.json());
         App.shardHistory = history || {};
         document.getElementById("modalTitle").textContent = `Preisentwicklung: ${material}`;
       } catch (error) {
@@ -7187,14 +7282,24 @@ async function init() {
   applyVisibilitySettings();
   showSection('clan');
 
-  await Promise.all([loadMarket(), loadAuctions(), loadShards()]);
+  // Der Verlauf läuft daneben, nicht davor: 33 MB sind nichts, worauf
+  // eine Auktionsliste warten muss. Er zeichnet selbst nach, sobald er
+  // da ist (ladeVerlauf → zeichneSichtbaresNeu).
+  const verlaeuft = ladeVerlauf().catch((fehler) => {
+    console.warn('Verlauf nicht geladen:', fehler.message);
+  });
+  await Promise.all([loadMarket(), ladeAktiveAuktionen(), loadShards()]);
   setupAuctionFilters();
 
   // Hier und nicht am Ende: Ein Link auf ein Item oder einen Spieler
-  // braucht nur den Verlauf, und der ist jetzt da. Weiter unten hinge er
-  // hinter allem, was danach noch schiefgehen kann — und käme bei einer
-  // Störung nie an.
+  // braucht den Verlauf, und weiter unten hinge er hinter allem, was
+  // danach noch schiefgehen kann — und käme bei einer Störung nie an.
+  //
+  // Nur wenn wirklich ein solcher Link vorliegt, wird auf den Verlauf
+  // gewartet. Sonst hinge der Normalfall wieder an den 33 MB, und die
+  // ganze Trennung wäre umsonst.
   try {
+    if (tieferLink()) await verlaeuft;
     await folgeTiefemLink();
   } catch (error) {
     console.warn('Tiefem Link nicht gefolgt:', error.message);
