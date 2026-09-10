@@ -1,6 +1,6 @@
 {
-  "stand": "2026-09-09T22:02:16.681Z",
-  "anzahl": 62,
+  "stand": "2026-09-10T15:12:20.617Z",
+  "anzahl": 63,
   "hinweis": "Automatisch vom DNV-Bot aus den Discord-Rollen erzeugt. Änderungen hier werden überschrieben.",
   "mitglieder": [
     {
@@ -622,6 +622,16 @@
       "verifiziert": true,
       "plattform": "java",
       "uuid": "75b3c568-a192-4037-af3d-894f3fdc68cd"
+    },
+    {
+      "name": "Scripptx",
+      "rolle": "Farmer",
+      "farbe": "farmer",
+      "rang": 12,
+      "seit": "2026-09-09",
+      "verifiziert": true,
+      "plattform": "java",
+      "uuid": "4f5c65cc-43ab-4ca9-ab77-dbe9f777d4f3"
     }
   ]
 }
