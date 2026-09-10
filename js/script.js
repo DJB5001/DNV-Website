@@ -29,6 +29,60 @@ const verzauberungsNamen = {
   vanishing_curse: 'Fluch des Verschwindens', wind_burst: 'Windstoß'
 };
 
+/* Was Minecraft selbst höchstens vergibt.
+
+   Gebraucht für die Frage, ob eine Verzauberung überhaupt aus dem Spiel
+   stammt: Auf OPSUCHT gibt es Effizienz VI und Haltbarkeit 160, und
+   beides ist im normalen Minecraft nicht zu bekommen. Die Schlüssel sind
+   dieselben wie in verzauberungsNamen - was dort fehlt, ist gar keine
+   Vanilla-Verzauberung und braucht hier deshalb keine Stufe. */
+const VANILLA_HOECHSTSTUFE = {
+  aqua_affinity: 1, bane_of_arthropods: 5, binding_curse: 1, blast_protection: 4,
+  breach: 4, channeling: 1, density: 5, depth_strider: 3, efficiency: 5,
+  feather_falling: 4, fire_aspect: 2, fire_protection: 4, flame: 1, fortune: 3,
+  frost_walker: 2, impaling: 5, infinity: 1, knockback: 2, looting: 3, loyalty: 3,
+  luck_of_the_sea: 3, lure: 3, mending: 1, multishot: 1, piercing: 4, power: 5,
+  projectile_protection: 4, protection: 4, punch: 2, quick_charge: 3,
+  respiration: 3, riptide: 3, sharpness: 5, silk_touch: 1, smite: 5, soul_speed: 3,
+  sweeping_edge: 3, swift_sneak: 3, thorns: 3, unbreaking: 3, vanishing_curse: 1,
+  wind_burst: 3
+};
+
+/* Ab wie vielen Stufen über dem Vanilla-Maximum ein Item als OP gilt.
+
+   Nicht ab der ersten, und dafür gibt es einen gemessenen Grund: Über
+   dem Maximum liegen auf OPSUCHT 40,8 % aller je verkauften Items.
+   Haltbarkeit IV statt III hat dort fast jede Spitzhacke - das ist kein
+   Merkmal, das etwas heraushebt, sondern der Normalzustand des Servers.
+   Eine Kategorie, in die zwei von fünf Items fallen, sortiert nichts mehr.
+
+   Ab zwei Stufen bleiben 33 %: Effizienz X und Schutz XXII sind drin,
+   die gewöhnliche Server-Spitzhacke nicht. */
+const OP_STUFEN_ABSTAND = 2;
+
+/**
+ * Trägt das Item eine Verzauberung, die es im normalen Minecraft nicht gibt?
+ *
+ * Zwei Fälle, und beide zählen:
+ *
+ *   1. Die Verzauberung selbst kennt das Spiel nicht - alles, was nicht in
+ *      der Vanilla-Liste steht, ist vom Server dazugebaut.
+ *   2. Die Verzauberung gibt es, aber deutlich über ihrer höchsten Stufe.
+ *      Effizienz geht bis V, Haltbarkeit bis III; Effizienz X kommt aus
+ *      keinem Amboss der Welt.
+ */
+function hatEigeneVerzauberung(item) {
+  const roh = item?.enchantments;
+  if (!roh || typeof roh !== 'object') return false;
+
+  return Object.entries(roh).some(([schluessel, stufe]) => {
+    const name = String(schluessel).split(':').pop().toLowerCase();
+    const hoechste = VANILLA_HOECHSTSTUFE[name];
+    if (hoechste === undefined) return true;
+    return Number(stufe) >= hoechste + OP_STUFEN_ABSTAND;
+  });
+}
+
 const ROEMISCH = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
 
 /* Minecraft schreibt Stufen römisch — aber nur bis zehn. Auf OPSUCHT gibt es
@@ -85,6 +139,155 @@ try {
   bildGedaechtnis = {};
 }
 
+/* Der Item-Index und die 30-Tage-Durchschnitte, einmal gerechnet.
+
+   Beides entsteht aus dem gesamten Verlauf: rund 50.000 Verkäufe, für
+   jeden ein Variantenschlüssel aus Material, Lore und Verzauberungen.
+   Das kostet auf einem Rechner zwei Zehntelsekunden, auf einem Handy gut
+   eine ganze - und renderItemSearch() rief es bei JEDEM Tastendruck neu
+   auf. Wer "diamant" tippte, wartete siebenmal darauf; dazwischen stand
+   die Seite, und der Browser hielt sie irgendwann für abgestürzt.
+
+   Verworfen wird nicht nach Zeit, sondern wenn neue Daten geladen sind:
+   An etwas anderem hängt hier nichts. Siehe itemIndexVerwerfen(). */
+let itemIndexCache = null;
+const schnittCache = new Map();
+
+/* Ruft fn erst, wenn eine Weile nichts mehr passiert ist.
+
+   Für die Suchfelder: Zwischen zwei Anschlägen liegen beim Tippen 100
+   bis 200 Millisekunden, eine vollständige Neuberechnung dauert länger.
+   Ohne das hier staut sich die Arbeit, während man noch tippt. */
+function entprellt(fn, ms = 200) {
+  let warte = null;
+  return (...args) => {
+    clearTimeout(warte);
+    warte = setTimeout(() => fn(...args), ms);
+  };
+}
+
+/* Die vier Suchfelder hängen an diesen hier und nicht direkt an ihrer
+   Zeichenfunktion.
+
+   Jede von ihnen geht über alle Daten: die Auktionssuche über jede
+   laufende Auktion samt ihren Verzauberungen, die Item-Suche über den
+   ganzen Verlauf. Bei jedem Anschlag von vorn ist das mehr Arbeit, als
+   zwischen zwei Tastendrücken Zeit ist - die Seite bleibt stehen, und
+   getippt wird trotzdem weiter.
+
+   200 Millisekunden sind knapp über dem Abstand beim flüssigen Tippen
+   und noch unter dem, was man als Verzögerung bemerkt.
+
+   Die Aufrufe stehen in Pfeilfunktionen, damit hier nicht schon beim
+   Durchlaufen der Datei nach den Zeichenfunktionen gegriffen wird. */
+const sucheAuktionen = entprellt((text) => setAuctionSearch(text));
+const sucheItems = entprellt(() => renderItemSearch());
+const sucheMarkt = entprellt(() => renderMarket());
+const sucheSpieler = entprellt(() => renderPlayers());
+
+/* Die Listen des Filter-Panels stehen hier oben und nicht bei ihren
+   Funktionen: Es sind Bindungen auf oberster Ebene, die aus
+   Funktionen heraus benutzt werden. Lägen sie in der Dateimitte und
+   bräche die Datei davor ab (etwa weil ein CDN klemmt), wären sie in
+   der zeitlichen Totzone - und der Filter liefe beim ersten Klick in
+   einen ReferenceError, statt einfach zu tun, was er soll.
+   Derselbe Grund wie bei partnerInterval ganz oben. */
+const mat = (item) => (item?.material || '').toUpperCase();
+
+/**
+ * Die Kategorien im Filter-Panel, in der Reihenfolge der Anzeige.
+ *
+ * `gruppe` fasst sie unter einer Überschrift zusammen, `passt` ist die
+ * Prüfung. Wer eine dazunehmen will, schreibt eine Zeile — die Anzeige,
+ * die Zählung und das Zurücksetzen kommen von allein.
+ */
+const filterKategorien = [
+  { id: 'werkzeug', gruppe: 'Werkzeuge & Kampf', label: 'Werkzeuge', bild: 'DIAMOND_PICKAXE',
+    passt: (i) => /PICKAXE|_AXE|SHOVEL|SPADE|HOE|SHEARS|FISHING_ROD/.test(mat(i)) },
+  { id: 'kampf', gruppe: 'Werkzeuge & Kampf', label: 'Kampf', bild: 'DIAMOND_SWORD',
+    passt: (i) => /SWORD|BOW|TRIDENT|MACE|SHIELD/.test(mat(i)) },
+
+  { id: 'helm', gruppe: 'Rüstungen', label: 'Helme', bild: 'DIAMOND_HELMET',
+    passt: (i) => /HELMET|_HEAD/.test(mat(i)) },
+  { id: 'brust', gruppe: 'Rüstungen', label: 'Brustplatten', bild: 'DIAMOND_CHESTPLATE',
+    passt: (i) => /CHESTPLATE/.test(mat(i)) },
+  { id: 'hose', gruppe: 'Rüstungen', label: 'Beinschutz', bild: 'DIAMOND_LEGGINGS',
+    passt: (i) => /LEGGINGS/.test(mat(i)) },
+  { id: 'schuhe', gruppe: 'Rüstungen', label: 'Stiefel', bild: 'DIAMOND_BOOTS',
+    passt: (i) => /BOOTS/.test(mat(i)) },
+  { id: 'elytra', gruppe: 'Rüstungen', label: 'Elytren', bild: 'ELYTRA',
+    passt: (i) => /ELYTRA/.test(mat(i)) },
+
+  // Drei Wege, weil keiner allein reicht: Der Kategorieschlüssel ist der
+  // verlässlichste, steht aber nur an laufenden Auktionen. Material und
+  // Name fangen den Rest.
+  { id: 'booster', gruppe: 'Karten & Boosterpacks', label: 'Boosterpacks', bild: 'BUNDLE',
+    passt: (i, a) => kartenSchluessel(a) === 'BOOSTER_PACKS'
+      || /BOOSTER/.test(mat(i))
+      || /booster\s*pack/i.test(i?.displayName || '') },
+  ...[5, 4, 3, 2, 1].map((n) => ({
+    id: `sterne${n}`,
+    gruppe: 'Karten & Boosterpacks',
+    label: n === 1 ? '1 Stern' : `${n} Sterne`,
+    bild: 'PAPER',
+    passt: (i, a) => sterneVonAuktion(a) === n,
+  })),
+
+  { id: 'op', gruppe: 'Besondere', label: 'OP Items', bild: 'NETHER_STAR',
+    passt: (i) => auktionsGruppe(i) === 'op' },
+  { id: 'custom', gruppe: 'Besondere', label: 'Custom Items', bild: 'NAME_TAG',
+    passt: (i) => auktionsGruppe(i) === 'custom' },
+  { id: 'verzaubert', gruppe: 'Besondere', label: 'Verzaubert', bild: 'ENCHANTING_TABLE',
+    passt: (i) => Object.keys(i?.enchantments || {}).length > 0 },
+
+  { id: 'spawnegg', gruppe: 'Anderes', label: 'Spawn-Eier', bild: 'ZOMBIE_SPAWN_EGG',
+    passt: (i) => /SPAWN_EGG/.test(mat(i)) },
+  { id: 'shulker', gruppe: 'Anderes', label: 'Shulker', bild: 'SHULKER_BOX',
+    passt: (i) => /SHULKER_BOX/.test(mat(i)) },
+  { id: 'buch', gruppe: 'Anderes', label: 'Verzauberungsbücher', bild: 'ENCHANTED_BOOK',
+    passt: (i) => /ENCHANTED_BOOK/.test(mat(i)) },
+  { id: 'block', gruppe: 'Anderes', label: 'Blöcke & Material', bild: 'STONE',
+    passt: (i) => auktionsGruppe(i) === 'anderes' && !/SPAWN_EGG|SHULKER_BOX|ENCHANTED_BOOK/.test(mat(i)) },
+];
+
+/* Die Sterne einer Sammelkarte.
+
+   Sie stehen im Kategorieschlüssel der API ("SAMMELKARTE_3_STERN"), nicht
+   im Namen: Ein ★ im Namen ist auf OPSUCHT bloß Zierde, "Normale ★ Hose"
+   ist keine Ein-Stern-Karte. Gelesen wird deshalb genauso, wie es das
+   Auswahlfeld für Karten schon immer tat.
+
+   Der Verlauf trägt diese Kategorie nicht mit, nur die laufenden
+   Auktionen — und genau auf denen arbeitet der Filter. */
+const kartenSchluessel = (auktion) => (auktion ? getAuctionCategoryKey(auktion) : '').toUpperCase().replace(/ /g, '_');
+
+function sterneVonAuktion(auktion) {
+  const treffer = kartenSchluessel(auktion).match(/_([1-5])_(?:STERN|STARS)/);
+  return treffer ? Number(treffer[1]) : 0;
+}
+
+/**
+ * Die Verzauberungen mit festen Stufenknöpfen.
+ *
+ * Es gibt 43 verschiedene, und 43 Reihen liest niemand. Diese acht sind
+ * die häufigsten im Verlauf und decken zusammen den Großteil aller
+ * verzauberten Auktionen ab. Nach den selteneren sucht man weiterhin
+ * über das Suchfeld: "Seelenläufer" findet sie über den Namen.
+ */
+const filterVerzauberungen = [
+  'unbreaking', 'mending', 'efficiency', 'protection',
+  'sharpness', 'fortune', 'looting', 'silk_touch',
+];
+
+const auktionsArten = [
+  { id: 'op', label: 'OP Items' },
+  { id: 'karten', label: 'Karten & Boosterpacks' },
+  { id: 'ruestung', label: 'Rüstungen' },
+  { id: 'werkzeug', label: 'Werkzeuge & Kampf' },
+  { id: 'custom', label: 'Custom Items' },
+  { id: 'anderes', label: 'Anderes' },
+];
+
 // Zeitfenster, in dem zwei Aufnahmen als dieselbe, nur verlängerte
 // Auktion gelten. Gemessen an den echten Daten: 96 % aller Verlängerungen
 // liegen unter 5,5 Minuten, danach bricht die Verteilung ab. Zehn Minuten
@@ -113,6 +316,10 @@ const App = {
   auctionVarianteFilter: "",
   historyVarianteFilter: "",
   auctionStarFilter: "Alle",
+  // Preisspanne, Verzauberungsstufen und Kategorien aus dem Filter-Panel.
+  // Aufbau siehe leererAuktionsFilter().
+  auktionFilter: { preisVon: null, preisBis: null, stufen: {}, kategorien: [] },
+  auktionFilterOffen: false,
   dealsSortMode: "DISCOUNT_HIGH",
   dealsMinDiscount: 5,
   dealsDisplayCount: 50,
@@ -2143,6 +2350,7 @@ async function loadAuctions() {
 
   App.playerStatsCache = {}; // Cache leeren wenn neue Daten geladen werden
   App.spielerListe = null;   // dasselbe für die Bestenliste im Spieler-Reiter
+  itemIndexVerwerfen();      // und für Item-Index und Durchschnitte
   setupAuctionFilters();
   setupHistoryFilters();
 
@@ -2450,15 +2658,6 @@ function setStarFilter(star) {
  * der fünf ersten fällt, landet in "Anderes". Deshalb ist die Reihenfolge
  * hier auch die Prüfreihenfolge — "Anderes" fragt, ob keine andere passt.
  */
-const auktionsArten = [
-  { id: 'op', label: 'OP Items' },
-  { id: 'karten', label: 'Karten & Boosterpacks' },
-  { id: 'ruestung', label: 'Rüstungen' },
-  { id: 'werkzeug', label: 'Werkzeuge & Kampf' },
-  { id: 'custom', label: 'Custom Items' },
-  { id: 'anderes', label: 'Anderes' },
-];
-
 /**
  * In welche Gruppe gehört diese Auktion?
  *
@@ -2476,7 +2675,12 @@ function auktionsGruppe(item) {
   const name = item?.displayName || '';
   const material = (item?.material || '').toUpperCase();
 
-  if (/\bOP\b/i.test(name)) return 'op';
+  // "OP" im Namen ist die Absicht des Verkäufers, die Verzauberung der
+  // Beweis: Effizienz VI oder eine, die es im Spiel gar nicht gibt, kommt
+  // aus keinem Amboss. Vorher fielen genau diese Items durch - ein
+  // Schwert mit Schärfe X hieß eben "Schwert" und landete bei
+  // "Werkzeuge & Kampf", zwischen den gewöhnlichen.
+  if (/\bOP\b/i.test(name) || hatEigeneVerzauberung(item)) return 'op';
   if (/SAMMELKARTE|BOOSTER|_CARD/.test(material) || /sammelkarte|booster(pack)?\b/i.test(name)) return 'karten';
   if (/HELMET|CHESTPLATE|LEGGINGS|BOOTS|ELYTRA/.test(material)) return 'ruestung';
   if (/PICKAXE|AXE|SHOVEL|SPADE|HOE|SHEARS|SWORD|BOW|TRIDENT|SHIELD|MACE/.test(material)) return 'werkzeug';
@@ -2492,6 +2696,101 @@ function auktionsGruppe(item) {
 function passtZurArt(auktion, artId) {
   if (!auktionsArten.some(a => a.id === artId)) return true;
   return auktionsGruppe(auktion.item || {}) === artId;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Der Filter über den Auktionen
+
+   Die sechs Gruppen oben beantworten "was für ein Ding ist das".
+   Beim Suchen fragt man aber feiner: Stiefel, nicht Rüstung. Und man
+   fragt nach Dingen, die mit der Art nichts zu tun haben — was es
+   kosten darf, und ab welcher Stufe eine Verzauberung drauf sein muss.
+
+   Deshalb hier ein zweiter Satz Regeln. Anders als auktionsGruppe()
+   schließen sie sich nicht gegenseitig aus: Eine Auktion kann Stiefel
+   UND Elytre sein, und wer beides ankreuzt, will beides sehen. Die
+   Zahl neben jedem Eintrag sagt, wie viele gerade dahinterstehen —
+   so klickt niemand auf eine leere Auswahl.
+   ═══════════════════════════════════════════════════════════════ */
+
+/** Der leere Filter. Auch die Vorlage fürs Zurücksetzen. */
+function leererAuktionsFilter() {
+  return { preisVon: null, preisBis: null, stufen: {}, kategorien: [] };
+}
+
+/**
+ * Liest "50m", "1,5 mrd", "500k" oder "12345".
+ *
+ * Preise gehen hier bis in die Milliarden. Neun Ziffern fehlerfrei
+ * einzutippen ist auf dem Handy eine Zumutung, und genau so schreibt sie
+ * im Chat auch niemand.
+ */
+function lesePreis(eingabe) {
+  const roh = String(eingabe ?? '').trim().toLowerCase().replace(/\s+/g, '');
+  if (roh === '') return null;
+
+  const treffer = roh.match(/^(\d+(?:[.,]\d+)?)(k|m|mio|mrd|b)?$/);
+  if (!treffer) return null;
+
+  const faktor = { k: 1e3, m: 1e6, mio: 1e6, mrd: 1e9, b: 1e9 }[treffer[2]] ?? 1;
+  const zahl = Number(treffer[1].replace(',', '.'));
+  return Number.isFinite(zahl) ? Math.round(zahl * faktor) : null;
+}
+
+/** Der Preis, nach dem gefiltert wird: was die Auktion gerade kostet. */
+function auktionsPreis(auktion) {
+  return Number(auktion?.currentBid ?? auktion?.startBid ?? 0);
+}
+
+/** Höchste Stufe dieser Verzauberung am Item, oder 0. */
+function stufeVon(item, schluessel) {
+  const roh = item?.enchantments;
+  if (!roh || typeof roh !== 'object') return 0;
+
+  let hoechste = 0;
+  for (const [k, v] of Object.entries(roh)) {
+    if (String(k).split(':').pop().toLowerCase() === schluessel) {
+      hoechste = Math.max(hoechste, Number(v) || 0);
+    }
+  }
+  return hoechste;
+}
+
+/**
+ * Kommt diese Auktion durch den Filter?
+ *
+ * Zwischen den Abschnitten gilt UND, innerhalb der Kategorien ODER:
+ * "Stiefel oder Helme, aber nur unter 100 Mio und mit Haltbarkeit ab X".
+ * So liest man den Filter auch, wenn man ihn ausspricht.
+ */
+function passtZumFilter(auktion, filter = App.auktionFilter) {
+  if (!filter) return true;
+  const item = auktion?.item || {};
+
+  const preis = auktionsPreis(auktion);
+  if (filter.preisVon !== null && preis < filter.preisVon) return false;
+  if (filter.preisBis !== null && preis > filter.preisBis) return false;
+
+  for (const [schluessel, mindestens] of Object.entries(filter.stufen || {})) {
+    if (stufeVon(item, schluessel) < mindestens) return false;
+  }
+
+  if (filter.kategorien?.length) {
+    const passend = filterKategorien.filter((k) => filter.kategorien.includes(k.id));
+    if (!passend.some((k) => k.passt(item, auktion))) return false;
+  }
+
+  return true;
+}
+
+/** Wie viele Filter sind gesetzt? Die Zahl steht auf dem Knopf. */
+function anzahlAktiverFilter(filter = App.auktionFilter) {
+  if (!filter) return 0;
+  return (
+    (filter.preisVon !== null || filter.preisBis !== null ? 1 : 0) +
+    Object.keys(filter.stufen || {}).length +
+    (filter.kategorien?.length ? 1 : 0)
+  );
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -2776,7 +3075,7 @@ function zeigeSpielerPodest() {
     <div class="ah-podest">
       <div class="ah-podest__kopf">
         <span class="ah-podest__symbol">${ahIcon('pokal')}</span>
-        Top 5 — ${art.titel}
+        Top 5 · ${art.titel}
       </div>
       <div class="ah-podest__reihe">
         ${fuenf
@@ -2834,84 +3133,316 @@ function zeigeShardZahlen() {
   ]);
 }
 
-/**
- * Ein Symbol zum Filternamen.
- *
- * Bewusst über Stichwörter im Namen und nicht über die Kategorie-Schlüssel:
- * Die kommen aus der API und ändern sich, wenn dort etwas umsortiert wird.
- * Ein Name, der "Rüstung" enthält, zeigt einen Schild — egal wie der
- * Schlüssel dahinter gerade heißt.
- */
-const CHIP_SYMBOLE = [
-  [/^alle$/i, '📋'],
-  [/spieler/i, '👤'],
-  [/erinnerung/i, '🔔'],
-  [/\bop\b/i, '🌀'],
-  [/custom/i, '🧪'],
-  [/verzaubert/i, '✨'],
-  [/rüstung|armor|helm|brustplatte|hose|schuh|stiefel/i, '🛡️'],
-  [/werkzeug|tool|waffe|kampf|schwert|axt|spitzhacke/i, '⚔️'],
-  [/karte|booster|sammelkarte/i, '🎴'],
-  [/spawn|ei\b/i, '🥚'],
-  [/talisman/i, '🔮'],
-  [/kopf|köpfe/i, '🗿'],
-  [/shulker|kiste/i, '📦'],
-  [/elytra|elytren|schwinge/i, '🪽'],
-  [/trank|potion/i, '⚗️'],
-  [/platte|disc|musik/i, '💿'],
-  [/block|bau/i, '🧱'],
-  [/nahrung|essen|food/i, '🍗'],
-  [/rede|schrift|buch/i, '📖'],
-];
+/* ── Das Filter-Panel ──────────────────────────────────────────────────
 
-function chipSymbol(name) {
-  const treffer = CHIP_SYMBOLE.find(([muster]) => muster.test(name));
-  return treffer ? treffer[1] : '🔸';
+   Vorher stand hier eine Chip-Reihe mit sechs Kategorien, immer sichtbar.
+   Sie beantwortete aber nur eine von drei Fragen, die man beim Suchen
+   stellt: was für ein Ding, was darf es kosten, was muss drauf sein. Für
+   die anderen beiden war kein Platz mehr in der Leiste, und feiner als
+   "Rüstung" wurde es auch nie.
+
+   Jetzt liegt alles hinter einem Knopf, der zeigt, wie viele Filter
+   gesetzt sind. Was gewählt ist, steht als Chip-Reihe darunter — man muss
+   das Panel nicht aufklappen, um zu sehen, wonach gerade gesucht wird. */
+
+/**
+ * Das Bild vor einer Kategorie.
+ *
+ * Statt eines Emojis das Item selbst: Ein 👖 ist irgendeine Hose, eine
+ * Diamanthose ist die aus dem Spiel. Die Bilder kommen über dieselbe
+ * Kette wie überall sonst (Wiki, dann Spieltextur, dann Verbotsschild),
+ * also auch mit demselben Gedächtnis für die Adresse, die zuletzt
+ * geladen hat.
+ */
+function kategorieBild(kategorie) {
+  return itemBildTag(kategorie.bild, null, '', 'class="ah-chip__bild" aria-hidden="true"');
+}
+
+/** Wie viele der geladenen Auktionen fallen in diese Kategorie? */
+function kategorieTreffer(kategorie) {
+  return (App.auctionsData || []).filter((a) => kategorie.passt(a.item || {}, a)).length;
 }
 
 /**
- * Die Filter als Chips statt als Auswahlfeld.
+ * Die Stufen, die man je Verzauberung anbieten kann.
  *
- * Ein Auswahlfeld verbirgt seine Möglichkeiten, bis man es aufklappt — bei
- * einem Filter ist gerade das Angebot die Information. Die Chips zeigen
- * zusätzlich, wie viele Treffer dahinterstehen; ein Filter, der nichts
- * findet, ist damit schon vor dem Klick als leer erkennbar.
- *
- * Das Auswahlfeld bleibt versteckt bestehen: Es ist weiterhin die Quelle
- * für die Liste, und andere Stellen setzen seinen Wert von außen.
+ * Aus den Daten und nicht aus einer Tabelle: Auf OPSUCHT gibt es
+ * Haltbarkeit bis 160, und welche Stufen davon gerade wirklich in
+ * Auktionen stecken, weiß nur der Bestand. Angeboten werden höchstens
+ * sechs, gleichmäßig über das vorhandene Feld verteilt — eine Reihe aus
+ * dreißig Knöpfen wäre so unbrauchbar wie gar keine.
  */
-function zeigeAhChips() {
-  const ziel = document.getElementById('ahChips');
-  const quelle = document.getElementById('auction-filters');
-  if (!ziel || !quelle) return;
+function stufenVorhanden(schluessel) {
+  const vorhanden = new Set();
+  for (const a of App.auctionsData || []) {
+    const stufe = stufeVon(a.item, schluessel);
+    if (stufe > 0) vorhanden.add(stufe);
+  }
+  return [...vorhanden].sort((a, b) => a - b);
+}
 
-  const optionen = [...quelle.options];
-  if (optionen.length === 0) return;
+/** Zeichnet Knopf-Abzeichen, Chip-Reihe und - wenn offen - das Panel. */
+function zeigeAhFilter() {
+  zeigeFilterAbzeichen();
+  zeigeAktiveFilter();
+  if (App.auktionFilterOffen) zeichneFilterPanel();
+}
 
-  ziel.innerHTML = optionen
-    .map((o) => {
-      // Die Trefferzahl steht schon im Text der Option ("OP-Items (12)").
-      const treffer = o.textContent.match(/\((\d+)\)\s*$/);
-      const name = o.textContent.replace(/\s*\(\d+\)\s*$/, '');
-      const aktiv = o.value === App.auctionCategoryFilter;
+function zeigeFilterAbzeichen() {
+  const abzeichen = document.getElementById('ahFilterZahl');
+  const knopf = document.getElementById('ahFilterKnopf');
+  if (!abzeichen || !knopf) return;
+
+  const anzahl = anzahlAktiverFilter();
+  abzeichen.textContent = String(anzahl);
+  abzeichen.hidden = anzahl === 0;
+  knopf.classList.toggle('ah-knopf--aktiv', anzahl > 0);
+}
+
+/**
+ * Die gesetzten Filter als Chips unter der Leiste.
+ *
+ * Jeder trägt sein eigenes Kreuz: Einen einzelnen Filter wieder
+ * loszuwerden soll nicht bedeuten, das Panel zu öffnen und ihn dort zu
+ * suchen.
+ */
+function zeigeAktiveFilter() {
+  const ziel = document.getElementById('ahAktiveFilter');
+  if (!ziel) return;
+
+  const f = App.auktionFilter;
+  const chips = [];
+
+  if (f.preisVon !== null || f.preisBis !== null) {
+    const von = f.preisVon !== null ? ahZahlKurz(f.preisVon) : '0';
+    const bis = f.preisBis !== null ? ahZahlKurz(f.preisBis) : 'offen';
+    chips.push({ text: `Preis ${von} bis ${bis}`, weg: 'preis' });
+  }
+
+  for (const [schluessel, stufe] of Object.entries(f.stufen)) {
+    chips.push({ text: `${verzauberungName(schluessel)} ab ${stufenZeichen(stufe)}`, weg: `stufe:${schluessel}` });
+  }
+
+  for (const id of f.kategorien) {
+    const k = filterKategorien.find((x) => x.id === id);
+    if (k) chips.push({ text: k.label, bild: kategorieBild(k), weg: `kat:${id}` });
+  }
+
+  ziel.hidden = chips.length === 0;
+  if (chips.length === 0) return;
+
+  ziel.innerHTML =
+    chips
+      .map(
+        (c) => `<button type="button" class="ah-aktiv-chip" data-weg="${c.weg}"
+                        aria-label="Filter „${c.text}“ entfernen">
+                  ${c.bild ?? ''}${c.text}<span class="ah-aktiv-chip__x" aria-hidden="true">×</span>
+                </button>`
+      )
+      .join('') +
+    `<button type="button" class="ah-aktiv-chip ah-aktiv-chip--alle" data-weg="alle">Alles zurücksetzen</button>`;
+
+  ziel.querySelectorAll('.ah-aktiv-chip').forEach((chip) => {
+    chip.onclick = () => entferneFilter(chip.dataset.weg);
+  });
+}
+
+/** Nimmt einen einzelnen Filter wieder heraus. */
+function entferneFilter(weg) {
+  const f = App.auktionFilter;
+
+  if (weg === 'alle') {
+    App.auktionFilter = leererAuktionsFilter();
+  } else if (weg === 'preis') {
+    f.preisVon = null;
+    f.preisBis = null;
+  } else if (weg.startsWith('stufe:')) {
+    delete f.stufen[weg.slice(6)];
+  } else if (weg.startsWith('kat:')) {
+    f.kategorien = f.kategorien.filter((id) => id !== weg.slice(4));
+  }
+
+  zeigeAhFilter();
+  renderAuctions();
+}
+
+function schalteFilterPanel() {
+  App.auktionFilterOffen = !App.auktionFilterOffen;
+
+  const panel = document.getElementById('ahFilterPanel');
+  const knopf = document.getElementById('ahFilterKnopf');
+  if (panel) panel.hidden = !App.auktionFilterOffen;
+  if (knopf) knopf.setAttribute('aria-expanded', String(App.auktionFilterOffen));
+
+  if (App.auktionFilterOffen) zeichneFilterPanel();
+}
+
+function zeichneFilterPanel() {
+  const ziel = document.getElementById('ahFilterPanel');
+  if (!ziel) return;
+
+  const f = App.auktionFilter;
+
+  // Kategorien nach Überschrift bündeln, Leeres weglassen: Ein Knopf, der
+  // nichts findet, ist kein Angebot, sondern eine Sackgasse.
+  const gruppen = new Map();
+  for (const k of filterKategorien) {
+    const treffer = kategorieTreffer(k);
+    if (treffer === 0) continue;
+    if (!gruppen.has(k.gruppe)) gruppen.set(k.gruppe, []);
+    gruppen.get(k.gruppe).push({ ...k, treffer });
+  }
+
+  const kategorieHtml = [...gruppen.entries()]
+    .map(
+      ([name, eintraege]) => `
+      <div class="ah-filter-gruppe">
+        <h4 class="ah-filter-gruppe__titel">${name}</h4>
+        <div class="ah-filter-knoepfe">
+          ${eintraege
+            .map((k) => {
+              const aktiv = f.kategorien.includes(k.id);
+              return `<button type="button" class="ah-chip${aktiv ? ' ah-chip--aktiv' : ''}"
+                              data-kat="${k.id}" aria-pressed="${aktiv}">
+                        ${kategorieBild(k)}
+                        ${k.label}<span class="ah-chip__zahl">${k.treffer}</span>
+                      </button>`;
+            })
+            .join('')}
+        </div>
+      </div>`
+    )
+    .join('');
+
+  /* Ein Schieberegler je Verzauberung.
+
+     Der Regler läuft nicht über die Zahlen, sondern über die Stufen, die
+     es wirklich gibt: Haltbarkeit kommt als 3, 6, 10 und 160 vor, aber
+     nichts dazwischen. Über die Zahlen gezogen wären neun Zehntel des
+     Weges tote Strecke; über die Stufen ist jede Raste ein Treffer.
+
+     Ganz links steht "aus" — sonst wäre nicht zu unterscheiden, ob
+     jemand die niedrigste Stufe verlangt oder gar nichts. */
+  const verzauberungHtml = filterVerzauberungen
+    .map((schluessel) => {
+      const stufen = stufenVorhanden(schluessel);
+      if (stufen.length === 0) return '';
+
+      const gesetzt = f.stufen[schluessel] ?? null;
+      const index = gesetzt === null ? 0 : stufen.indexOf(gesetzt) + 1;
+
       return `
-        <button type="button"
-                class="ah-chip${aktiv ? ' ah-chip--aktiv' : ''}"
-                data-wert="${o.value.replace(/"/g, '&quot;')}"
-                aria-pressed="${aktiv}">
-          <span class="ah-chip__symbol" aria-hidden="true">${chipSymbol(name)}</span>
-          ${name}${treffer ? `<span class="ah-chip__zahl">${treffer[1]}</span>` : ''}
-        </button>`;
+        <div class="ah-filter-verz" data-verz-zeile="${schluessel}">
+          <div class="ah-filter-verz__kopf">
+            <span>${verzauberungName(schluessel)}</span>
+            <span class="ah-filter-verz__wert${gesetzt === null ? '' : ' ah-filter-verz__wert--aktiv'}"
+                  data-wert-fuer="${schluessel}">${
+              gesetzt === null ? 'aus' : `ab ${stufenZeichen(gesetzt)}`
+            }</span>
+          </div>
+          <input type="range" class="ah-regler${gesetzt === null ? '' : ' ah-regler--aktiv'}"
+                 data-verz="${schluessel}"
+                 min="0" max="${stufen.length}" step="1" value="${index}"
+                 aria-label="${verzauberungName(schluessel)}: Mindeststufe">
+          <div class="ah-filter-verz__skala">
+            <span>aus</span>
+            <span>${stufenZeichen(stufen[stufen.length - 1])}</span>
+          </div>
+        </div>`;
     })
     .join('');
 
-  ziel.querySelectorAll('.ah-chip').forEach((chip) => {
-    chip.onclick = () => {
-      quelle.value = chip.dataset.wert;
-      setAuctionFilter(chip.dataset.wert);
-      zeigeAhChips();
+  ziel.innerHTML = `
+    <div class="ah-filter-abschnitt">
+      <h3 class="ah-filter-titel">Preis</h3>
+      <div class="ah-filter-preis">
+        <label>
+          <span>Ab</span>
+          <input type="text" id="ahPreisVon" inputmode="decimal" placeholder="z.B. 10m"
+                 value="${f.preisVon !== null ? ahZahlKurz(f.preisVon) : ''}">
+        </label>
+        <label>
+          <span>Bis</span>
+          <input type="text" id="ahPreisBis" inputmode="decimal" placeholder="z.B. 1,5mrd"
+                 value="${f.preisBis !== null ? ahZahlKurz(f.preisBis) : ''}">
+        </label>
+      </div>
+      <p class="ah-filter-hinweis">Kurz geht auch: <code>500k</code>, <code>50m</code>, <code>1,5mrd</code>. Gerechnet wird mit dem aktuellen Gebot.</p>
+    </div>
+
+    <div class="ah-filter-abschnitt">
+      <h3 class="ah-filter-titel">Verzauberungen</h3>
+      <p class="ah-filter-hinweis">Mindestens diese Stufe. Nach selteneren suchst du über das Suchfeld.</p>
+      ${verzauberungHtml || '<p class="ah-filter-hinweis">Gerade ist nichts Verzaubertes in den Auktionen.</p>'}
+    </div>
+
+    <div class="ah-filter-abschnitt">
+      <h3 class="ah-filter-titel">Kategorie</h3>
+      ${kategorieHtml || '<p class="ah-filter-hinweis">Noch keine Auktionen geladen.</p>'}
+    </div>
+
+    <div class="ah-filter-fuss">
+      <button type="button" class="ah-knopf" id="ahFilterReset">Filter zurücksetzen</button>
+    </div>
+  `;
+
+  // Preis erst übernehmen, wenn jemand mit dem Tippen fertig ist.
+  const preisUebernehmen = entprellt(() => {
+    App.auktionFilter.preisVon = lesePreis(document.getElementById('ahPreisVon')?.value);
+    App.auktionFilter.preisBis = lesePreis(document.getElementById('ahPreisBis')?.value);
+    zeigeFilterAbzeichen();
+    zeigeAktiveFilter();
+    renderAuctions();
+  }, 400);
+
+  ziel.querySelector('#ahPreisVon')?.addEventListener('input', preisUebernehmen);
+  ziel.querySelector('#ahPreisBis')?.addEventListener('input', preisUebernehmen);
+
+  ziel.querySelectorAll('[data-kat]').forEach((knopf) => {
+    knopf.onclick = () => {
+      const id = knopf.dataset.kat;
+      const drin = f.kategorien.includes(id);
+      f.kategorien = drin ? f.kategorien.filter((x) => x !== id) : [...f.kategorien, id];
+      zeigeAhFilter();
+      renderAuctions();
     };
   });
+
+  /* Die Regler.
+
+     Beim Ziehen wird das Panel bewusst NICHT neu gezeichnet: Der Regler
+     hängt am Finger, und ein neu gebautes Element verliert ihn mitten in
+     der Bewegung. Aktualisiert werden nur die Zahl daneben, das Abzeichen
+     und die Chip-Reihe — alles Stellen, die den Regler nicht anfassen.
+     Die Auktionsliste zieht entprellt nach. */
+  const listeNachziehen = entprellt(() => renderAuctions(), 250);
+
+  ziel.querySelectorAll('.ah-regler[data-verz]').forEach((regler) => {
+    const schluessel = regler.dataset.verz;
+    const stufen = stufenVorhanden(schluessel);
+    const anzeige = ziel.querySelector(`[data-wert-fuer="${schluessel}"]`);
+
+    regler.addEventListener('input', () => {
+      const index = Number(regler.value);
+
+      if (index === 0) delete f.stufen[schluessel];
+      else f.stufen[schluessel] = stufen[index - 1];
+
+      const gesetzt = f.stufen[schluessel] ?? null;
+      if (anzeige) {
+        anzeige.textContent = gesetzt === null ? 'aus' : `ab ${stufenZeichen(gesetzt)}`;
+        anzeige.classList.toggle('ah-filter-verz__wert--aktiv', gesetzt !== null);
+      }
+      regler.classList.toggle('ah-regler--aktiv', gesetzt !== null);
+
+      zeigeFilterAbzeichen();
+      zeigeAktiveFilter();
+      listeNachziehen();
+    });
+  });
+
+  const reset = ziel.querySelector('#ahFilterReset');
+  if (reset) reset.onclick = () => entferneFilter('alle');
 }
 
 function setupAuctionFilters() {
@@ -2947,9 +3478,9 @@ function setupAuctionFilters() {
     filterContainer.value = 'Alle';
   }
 
-  // Die Chips und die Zahlen haengen an denselben Daten - sie werden hier
+  // Filter-Panel und Zahlen haengen an denselben Daten - sie werden hier
   // gleich mitgezogen, damit sie nie hinterherhinken.
-  zeigeAhChips();
+  zeigeAhFilter();
   zeigeAhZahlen();
 }
 
@@ -3140,6 +3671,11 @@ async function renderAuctions(isPagination = false) {
 
     // Kam der Sprung aus der Item-Ansicht, gilt genau eine Variante.
     if (App.auctionVarianteFilter && itemVariante(a.item) !== App.auctionVarianteFilter) return false;
+
+    // Preis, Verzauberungsstufen und Kategorien aus dem Filter-Panel.
+    // Steht vor der Kategorieprüfung, weil es unabhängig von ihr gilt.
+    if (!passtZumFilter(a)) return false;
+
     if (App.auctionCategoryFilter === 'Alle') return true;
     if (String(App.auctionCategoryFilter).startsWith('art:')) {
       return passtZurArt(a, App.auctionCategoryFilter.slice(4));
@@ -3460,18 +3996,37 @@ function variantenLabel(item, { mitVerzauberungen = true } = {}) {
   return teile.join(' · ');
 }
 
-// Der Durchschnitt pro Stück über ein Zeitfenster. 30 Tage ist die
-// Vorgabe: Daran hängen die Rabatt-Abzeichen auf den Auktionskarten und
-// der Schnäppchen-Tab, und die sind ein Vergleich gegen einen festen
-// Maßstab, kein frei wählbarer Blick.
-function getMonthlyAveragePerUnit(auction, tage = 30) {
-  const relevant = verkaeufeZurVariante(auction.item).filter(sale => istInLetztenTagen(sale, tage));
+/* Derselbe Durchschnitt wird oft hintereinander gebraucht: einmal je
+   Karte in der Auktionsliste, noch einmal in den Schnäppchen, noch
+   einmal in der Item-Suche. Jedes Mal wird dafür der Verlaufseintrag
+   dieses Namens durchgegangen und Variante für Variante verglichen.
+   Gemerkt wird deshalb in schnittCache (oben), geleert zusammen mit dem
+   Item-Index.
 
-  if (relevant.length === 0) return null;
+   Der Schlüssel trägt den Namen mit, nicht nur die Variante: Zwei Items
+   können dasselbe Material, dieselbe Lore und dieselben Verzauberungen
+   haben und trotzdem unter verschiedenen Namen im Verlauf liegen.
+
+   Die 30 Tage stehen hier fest, obwohl sich der Zeitraum im Item-Fenster
+   wählen lässt: Diese Zahl ist der Maßstab für die Rabatt-Abzeichen auf
+   den Auktionskarten und für den Schnäppchen-Tab. Ein Vergleich gegen
+   einen wandernden Maßstab wäre keiner — deshalb rechnet das Item-Fenster
+   seinen Zeitraum selbst und geht gar nicht durch diese Funktion. */
+function getMonthlyAveragePerUnit(auction) {
+  const item = auction?.item;
+  const schluessel = `${item?.displayName ?? item?.material ?? ''} ${itemVariante(item)}`;
+  if (schnittCache.has(schluessel)) return schnittCache.get(schluessel);
+
+  const relevant = verkaeufeZurVariante(item).filter(sale => istInLetztenTagen(sale, 30));
+
   // Verkaufspreis: finalPrice ist der echte Endpreis (bei Sofortkauf der
   // Sofortkaufpreis), currentBid als Fallback für ältere Einträge.
-  const sum = relevant.reduce((acc, sale) => acc + salePricePerUnit(sale), 0);
-  return sum / relevant.length;
+  const schnitt = relevant.length === 0
+    ? null
+    : relevant.reduce((acc, sale) => acc + salePricePerUnit(sale), 0) / relevant.length;
+
+  schnittCache.set(schluessel, schnitt);
+  return schnitt;
 }
 
 // Rabatt in Prozent gegenüber dem 30-Tage-Durchschnitt (pro Stück).
@@ -3868,7 +4423,7 @@ async function renderPlayers() {
 
   const liste = spielerBestenliste();
   if (!liste.length) {
-    container.innerHTML = `<div class="content-loader"><span>Noch keine Spielerdaten — der Verlauf wird geladen.</span></div>`;
+    container.innerHTML = `<div class="content-loader"><span>Noch keine Spielerdaten, der Verlauf wird geladen.</span></div>`;
     return;
   }
 
@@ -4443,13 +4998,25 @@ async function refreshTab(tabId, btn) {
 // Jedes Item genau EINMAL, durchsuchbar. Klick -> Durchschnitt + Kurve + Aktionen.
 // =====================================================================
 
+/** Wirft Index und Durchschnitte weg. Nach jedem Laden neuer Daten. */
+function itemIndexVerwerfen() {
+  itemIndexCache = null;
+  schnittCache.clear();
+}
+
 // Baut eine Map aller eindeutigen Items. Schlüssel ist NICHT der Name,
 // sondern Name + Variante: "Bohrer V3" als Sammelkarte und "Bohrer V3"
 // als Spitzhacke sind zwei Einträge, weil sie zwei verschiedene Dinge
 // sind. Vorher landeten beide in einem Eintrag — die Zähler summierten
 // über beide, während der angezeigte Durchschnitt nur zu der Variante
 // gehörte, die zufällig als repräsentatives Objekt gespeichert war.
+//
+// Das Ergebnis wird gemerkt (itemIndexCache oben): Bei rund 50.000
+// Verkäufen dauert der Aufbau zu lange, um ihn bei jedem Tastendruck in
+// der Suche zu wiederholen.
 function buildItemIndex() {
+  if (itemIndexCache) return itemIndexCache;
+
   const index = {};
 
   const add = (itemObj, source) => {
@@ -4484,6 +5051,7 @@ function buildItemIndex() {
     }
   }
 
+  itemIndexCache = index;
   return index;
 }
 
@@ -4526,6 +5094,11 @@ function renderItemSearch() {
 
   // Aus Performance-Gründen erstmal maximal 120 anzeigen
   const MAX = 120;
+
+  // Erst sammeln, dann einmal einhängen: Jede Karte einzeln an ein
+  // Element im Dokument zu hängen lässt den Browser 120-mal neu rechnen.
+  const sammler = document.createDocumentFragment();
+
   items.slice(0, MAX).forEach(entry => {
     const card = document.createElement('div');
     card.className = 'card animated';
@@ -4539,8 +5112,10 @@ function renderItemSearch() {
       <div class="price-info" style="font-size:0.8rem; color:var(--text-secondary)">${entry.activeCount} aktiv · ${entry.soldCount} verkauft</div>
     `;
     card.onclick = () => openItemDetail(entry.schluessel);
-    grid.appendChild(card);
+    sammler.appendChild(card);
   });
+
+  grid.appendChild(sammler);
 
   if (items.length > MAX) {
     const more = document.createElement('p');
@@ -5474,9 +6049,9 @@ async function openAuctionChart(auction) {
   const isExpired = new Date(auction.endTime) <= new Date();
 
   const fmtDate = (val) => {
-    if (!val) return '—';
+    if (!val) return 'unbekannt';
     const d = new Date(val);
-    return isNaN(d.getTime()) ? '—' : d.toLocaleString('de-DE');
+    return isNaN(d.getTime()) ? 'unbekannt' : d.toLocaleString('de-DE');
   };
 
   infoBox.innerHTML = `
@@ -7453,7 +8028,7 @@ function renderProfileLock(type) {
         <p class="lock-screen-text">
           ${type === 'auth'
       ? 'Bitte melde dich mit Discord an und verifiziere dich dort, um dein Profil zu sehen.'
-      : 'Verifiziere dich im Discord — danach steht dein Profil hier automatisch bereit.'}
+      : 'Verifiziere dich im Discord, danach steht dein Profil hier automatisch bereit.'}
         </p>
         <button class="auth-submit-btn" style="width: auto; padding: 1rem 3rem;" 
                 onclick="${type === 'auth' ? 'openAuthModal()' : 'openSettingsTab(\'minecraft\')'}">
