@@ -4718,23 +4718,91 @@ function renderItemMiniChart(verkaeufe, containerId) {
     v: salePricePerUnit(s)
   }));
 
+  // Zwei Bildpunkte je Anzeigepunkt: Auf einem Handy oder einem
+  // hochauflösenden Bildschirm wäre die Schrift sonst ausgefranst.
+  const dichte = Math.min(window.devicePixelRatio || 1, 2);
+  const W = container.clientWidth || 320;
+  const H = 220;
+
   const canvas = document.createElement('canvas');
-  canvas.width = container.clientWidth || 320;
-  canvas.height = 160;
+  canvas.width = W * dichte;
+  canvas.height = H * dichte;
+  canvas.style.width = '100%';
+  canvas.style.height = H + 'px';
   container.innerHTML = '';
   container.appendChild(canvas);
   const ctx = canvas.getContext('2d');
+  ctx.scale(dichte, dichte);
 
   const vals = points.map(p => p.v);
-  const minV = Math.min(...vals), maxV = Math.max(...vals);
+  let minV = Math.min(...vals), maxV = Math.max(...vals);
+  if (minV === maxV) { maxV = minV * 1.1 || 1; minV = minV * 0.9; }
+
+  // Runde Stufen statt Höchst- und Tiefstwert: An "irgendwo zwischen
+  // ganz oben und ganz unten" lässt sich nichts ablesen.
+  const schritt = achsenSchritt(maxV - minV);
+  const unten = Math.floor(minV / schritt) * schritt;
+  const oben = Math.max(Math.ceil(maxV / schritt) * schritt, unten + schritt);
+
   const minT = points[0].t, maxT = points[points.length - 1].t;
-  const pad = 30;
-  const W = canvas.width, H = canvas.height;
-  const x = t => pad + ((t - minT) / (maxT - minT || 1)) * (W - pad * 1.5);
-  const y = v => H - pad - ((v - minV) / (maxV - minV || 1)) * (H - pad * 1.5);
+  const links = 64, rechts = 12, obenRand = 12, untenRand = 26;
+  const x = t => links + ((t - minT) / (maxT - minT || 1)) * (W - links - rechts);
+  const y = v => H - untenRand - ((v - unten) / (oben - unten)) * (H - obenRand - untenRand);
+
+  const stil = getComputedStyle(document.documentElement);
+  const akzent = stil.getPropertyValue('--accent-color1').trim() || '#22d3ee';
+  const grau = '#8a90a6';
+
+  ctx.font = '11px system-ui, sans-serif';
+  ctx.textBaseline = 'middle';
+
+  // Waagerechtes Raster mit Preisen
+  ctx.textAlign = 'right';
+  for (let wert = unten; wert <= oben + schritt / 2; wert += schritt) {
+    const py = Math.round(y(wert)) + 0.5;
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(links, py);
+    ctx.lineTo(W - rechts, py);
+    ctx.stroke();
+
+    ctx.fillStyle = grau;
+    ctx.fillText(kurzePreisZahl(wert, schritt), links - 8, py);
+  }
+
+  // Datumsangaben unten, fünf Stück quer über den Zeitraum
+  ctx.textAlign = 'center';
+  const stufen = 4;
+  for (let i = 0; i <= stufen; i += 1) {
+    const t = minT + ((maxT - minT) * i) / stufen;
+    const px = Math.round(x(t)) + 0.5;
+    ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+    ctx.beginPath();
+    ctx.moveTo(px, obenRand);
+    ctx.lineTo(px, H - untenRand);
+    ctx.stroke();
+
+    const d = new Date(t);
+    const text = `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.`;
+    ctx.fillStyle = grau;
+    ctx.fillText(text, Math.min(Math.max(px, links), W - rechts - 16), H - untenRand + 13);
+  }
+
+  // Fläche unter der Kurve
+  const verlauf = ctx.createLinearGradient(0, obenRand, 0, H - untenRand);
+  verlauf.addColorStop(0, akzent + '55');
+  verlauf.addColorStop(1, akzent + '00');
+  ctx.fillStyle = verlauf;
+  ctx.beginPath();
+  ctx.moveTo(x(points[0].t), H - untenRand);
+  points.forEach(p => ctx.lineTo(x(p.t), y(p.v)));
+  ctx.lineTo(x(points[points.length - 1].t), H - untenRand);
+  ctx.closePath();
+  ctx.fill();
 
   // Linie
-  ctx.strokeStyle = '#22d3ee';
+  ctx.strokeStyle = akzent;
   ctx.lineWidth = 2;
   ctx.beginPath();
   points.forEach((p, i) => {
@@ -4743,19 +4811,45 @@ function renderItemMiniChart(verkaeufe, containerId) {
   });
   ctx.stroke();
 
-  // Punkte
-  ctx.fillStyle = '#22d3ee';
-  points.forEach(p => {
-    ctx.beginPath();
-    ctx.arc(x(p.t), y(p.v), 3, 0, Math.PI * 2);
-    ctx.fill();
-  });
+  // Punkte nur, solange sie nicht zu einem Band verkleben
+  if (points.length <= 60) {
+    ctx.fillStyle = akzent;
+    points.forEach(p => {
+      ctx.beginPath();
+      ctx.arc(x(p.t), y(p.v), 2.5, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  }
+}
 
-  // Min/Max Labels
-  ctx.fillStyle = '#94a3b8';
-  ctx.font = '11px sans-serif';
-  ctx.fillText(Math.round(maxV).toLocaleString('de-DE'), 2, y(maxV) + 4);
-  ctx.fillText(Math.round(minV).toLocaleString('de-DE'), 2, y(minV) + 4);
+/**
+ * Runder Abstand zwischen zwei Beschriftungen: 1, 2, 5, 10, 20, 50 …
+ *
+ * Dieselbe Rechnung wie in DNV-Bot/src/diagramm.js — die beiden
+ * Diagramme sollen dieselben Stufen zeigen, sonst nennt der Discord-Bot
+ * andere Zahlen als die Seite.
+ */
+function achsenSchritt(spanne, stufen = 4) {
+  const roh = Math.abs(spanne) / Math.max(stufen, 1);
+  if (!isFinite(roh) || roh <= 0) return 1;
+  const groesse = Math.pow(10, Math.floor(Math.log10(roh)));
+  const rest = roh / groesse;
+  return (rest < 1.5 ? 1 : rest < 3 ? 2 : rest < 7 ? 5 : 10) * groesse;
+}
+
+/**
+ * Preis für die Achse. Die Nachkommastelle richtet sich nach der
+ * Schrittweite, damit zwei benachbarte Stufen nie dasselbe behaupten.
+ */
+function kurzePreisZahl(wert, schritt) {
+  if (wert === 0) return '0';
+  const einheiten = [[1e9, ' Mrd'], [1e6, ' Mio'], [1e3, ' Tsd'], [1, '']];
+  let i = einheiten.findIndex(([t]) => Math.abs(wert) >= t);
+  if (i < 0) i = einheiten.length - 1;
+  while (schritt / einheiten[i][0] < 0.1 && i < einheiten.length - 1) i += 1;
+  const [teiler, kuerzel] = einheiten[i];
+  const stellen = schritt / teiler >= 1 ? 0 : 1;
+  return (wert / teiler).toFixed(stellen).replace('.', ',') + kuerzel;
 }
 
 function closeItemDetail() {

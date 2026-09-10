@@ -3790,8 +3790,11 @@ input[type="color"]::-webkit-color-swatch {
 }
 
 .zeitraum-wahl button {
-  padding: 0.2rem 0.55rem;
-  font-size: 0.75rem;
+  /* Knapp gehalten, damit die drei nebeneinander in die Kachel passen
+     und nicht umbrechen. */
+  padding: 0.2rem 0.45rem;
+  font-size: 0.72rem;
+  white-space: nowrap;
   font-weight: 600;
   color: var(--text-secondary);
   background: transparent;
