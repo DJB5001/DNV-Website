@@ -3779,6 +3779,42 @@ input[type="color"]::-webkit-color-swatch {
   color: #000;
 }
 
+/* Der 15 / 30 / 90-Umschalter im Item-Fenster. Klein gehalten: Er sitzt
+   in einer Kennzahl-Kachel, nicht in einer Werkzeugleiste, und darf die
+   Zahl darüber nicht erschlagen. */
+.zeitraum-wahl {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-top: 0.4rem;
+}
+
+.zeitraum-wahl button {
+  /* Knapp gehalten, damit die drei nebeneinander in die Kachel passen
+     und nicht umbrechen. */
+  padding: 0.2rem 0.45rem;
+  font-size: 0.72rem;
+  white-space: nowrap;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.zeitraum-wahl button:hover {
+  color: var(--text-primary);
+  border-color: var(--accent-color1);
+}
+
+.zeitraum-wahl button.aktiv {
+  color: #000;
+  background: var(--accent-color1);
+  border-color: var(--accent-color1);
+}
+
 .item-remind-btn {
   border-color: var(--text-secondary);
   opacity: 0.85;
