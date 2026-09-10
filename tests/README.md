@@ -37,6 +37,7 @@ npx http-server . -p 8123      # abweichender Port über PORT=...
 | `verlaengerung-test.mjs` | Verlängerte Auktionen zählen nur einmal — gegen die echten Daten | Verlauf |
 | `mitglieder-test.mjs` | Die Mitgliederliste kommt aus `data/mitglieder.json`; fehlt oder klemmt sie, trägt die hinterlegte Liste | Browser |
 | `auktionsfilter-test.mjs` | Suchleiste über den Auktionen, Filter nach Item-Art, Verzauberungen auf den Karten | Browser |
+| `zeitraum-test.mjs` | Der Umschalter 15 · 30 · 90 im Item-Fenster: Zahl und Kurve meinen denselben Zeitraum, die Wahl bleibt stehen | Browser |
 | `benachrichtigungen-test.mjs` | Discord-Anmeldung, die vier Einstellungen, die Vorlaufzeit beim Erinnern, die vom Bot gelesene Verknüpfung | Browser |
 | `clan-inhalt-test.mjs` | Die Clan-Abschnitte stehen auf beiden Seiten gleich, und die Kennzahl passt zur Zahl der Karten | Browser |
 

@@ -3460,8 +3460,12 @@ function variantenLabel(item, { mitVerzauberungen = true } = {}) {
   return teile.join(' · ');
 }
 
-function getMonthlyAveragePerUnit(auction) {
-  const relevant = verkaeufeZurVariante(auction.item).filter(sale => istInLetztenTagen(sale, 30));
+// Der Durchschnitt pro Stück über ein Zeitfenster. 30 Tage ist die
+// Vorgabe: Daran hängen die Rabatt-Abzeichen auf den Auktionskarten und
+// der Schnäppchen-Tab, und die sind ein Vergleich gegen einen festen
+// Maßstab, kein frei wählbarer Blick.
+function getMonthlyAveragePerUnit(auction, tage = 30) {
+  const relevant = verkaeufeZurVariante(auction.item).filter(sale => istInLetztenTagen(sale, tage));
 
   if (relevant.length === 0) return null;
   // Verkaufspreis: finalPrice ist der echte Endpreis (bei Sofortkauf der
@@ -4547,6 +4551,36 @@ function renderItemSearch() {
 }
 
 // Öffnet die Detailansicht für ein Item (Durchschnitt + Kurve + Aktionen)
+// Zeiträume, zwischen denen sich im Item-Fenster umschalten lässt.
+// Dieselben drei wie bei /wert im Discord — zwei Quellen, die sich
+// widersprechen, sind schlimmer als eine.
+//
+// Als Funktion und nicht als const: Weiter oben steht noch ein Aufruf
+// aus der Firebase-Zeit (Zeile 1440). Den Ersatz dafür bringt
+// supabase-compat.js mit — ist das Supabase-CDN einmal nicht erreichbar,
+// bricht diese Datei dort ab, und jedes const darunter bliebe
+// uninitialisiert. Funktionsdeklarationen werden hochgezogen und stehen
+// trotzdem.
+function zeitraumWahl() {
+  return { tage: [15, 30, 90], vorgabe: 30, speicher: 'itemDetailZeitraum' };
+}
+
+// Was der Besucher zuletzt gewählt hat. Wer Preise vergleicht, öffnet
+// zehn Items hintereinander und will nicht zehnmal dasselbe klicken.
+function gemerkterZeitraum() {
+  const { tage, vorgabe, speicher } = zeitraumWahl();
+  try {
+    const n = Number(localStorage.getItem(speicher));
+    return tage.includes(n) ? n : vorgabe;
+  } catch {
+    return vorgabe;
+  }
+}
+
+function merkeZeitraum(tage) {
+  try { localStorage.setItem(zeitraumWahl().speicher, String(tage)); } catch {}
+}
+
 // Erwartet den Variantenschlüssel aus buildItemIndex, nicht den blossen
 // Namen: Sonst würden Durchschnitt und Zähler wieder über Sammelkarte
 // und Werkzeug zusammen gerechnet.
@@ -4568,7 +4602,9 @@ async function openItemDetail(schluessel) {
   const avgAll = variantenVerkaeufe.length
     ? Math.round(variantenVerkaeufe.reduce((acc, s) => acc + salePricePerUnit(s), 0) / variantenVerkaeufe.length)
     : null;
-  const avgMonth = getMonthlyAveragePerUnit(pseudoAuction);
+
+  let zeitraum = gemerkterZeitraum();
+  const imFenster = tage => variantenVerkaeufe.filter(sale => istInLetztenTagen(sale, tage));
 
   const activeCount = (App.auctionsData || []).filter(
     a => a.item && (a.item.displayName ?? a.item.material) === itemName && gleicheVariante(a.item, repItem)
@@ -4585,7 +4621,13 @@ async function openItemDetail(schluessel) {
         ${itemBildTag(repItem.material, iconUrl, itemName, 'width="64" height="64" style="image-rendering:pixelated;"')}
       </div>
       <div class="info-item"><strong>Durchschnitt</strong>${avgAll !== null ? `<span class="sell">${avgAll.toLocaleString('de-DE')}</span>` : '<span>Keine Daten</span>'}</div>
-      <div class="info-item"><strong>Durchschnitt (30 Tage)</strong>${avgMonth !== null ? `<span class="sell">${Math.round(avgMonth).toLocaleString('de-DE')}</span>` : '<span>Keine Daten</span>'}</div>
+      <div class="info-item">
+        <strong>Durchschnitt im Zeitraum</strong>
+        <span class="sell" id="itemDetailAvg"></span>
+        <div class="zeitraum-wahl" id="itemDetailZeitraum">
+          ${zeitraumWahl().tage.map(t => `<button type="button" data-tage="${t}">${t} Tage</button>`).join('')}
+        </div>
+      </div>
       <div class="info-item"><strong>Aktive Auktionen</strong><span>${activeCount}</span></div>
       <div class="info-item"><strong>Verkäufe im Verlauf</strong><span>${soldCount}</span></div>
     </div>
@@ -4623,12 +4665,41 @@ async function openItemDetail(schluessel) {
   modal.classList.add('show');
   document.body.classList.add('modal-open');
 
-  if (variantenVerkaeufe.length >= 2) {
-    renderItemMiniChart(variantenVerkaeufe, 'itemDetailChart');
-  } else {
+  // Zahl und Kurve hängen am selben Zeitraum. Stünde neben dem
+  // 15-Tage-Schnitt die Kurve aus einem Vierteljahr, wäre das die Art
+  // Fehler, die niemandem auffällt und trotzdem in die Irre führt.
+  const zeigeZeitraum = () => {
+    const verkaeufe = imFenster(zeitraum);
+    const feld = document.getElementById('itemDetailAvg');
+    if (feld) {
+      const schnitt = verkaeufe.length
+        ? verkaeufe.reduce((acc, sale) => acc + salePricePerUnit(sale), 0) / verkaeufe.length
+        : null;
+      feld.textContent = schnitt !== null ? Math.round(schnitt).toLocaleString('de-DE') : 'Keine Daten';
+      feld.classList.toggle('sell', schnitt !== null);
+    }
+
+    document.querySelectorAll('#itemDetailZeitraum button').forEach(btn => {
+      btn.classList.toggle('aktiv', Number(btn.dataset.tage) === zeitraum);
+    });
+
     const chartDiv = document.getElementById('itemDetailChart');
-    if (chartDiv) chartDiv.innerHTML = '<p style="text-align:center;color:var(--text-secondary);">Noch nicht genug Verkäufe für eine Kurve.</p>';
-  }
+    if (verkaeufe.length >= 2) {
+      renderItemMiniChart(verkaeufe, 'itemDetailChart');
+    } else if (chartDiv) {
+      chartDiv.innerHTML = `<p style="text-align:center;color:var(--text-secondary);">In ${zeitraum} Tagen gab es dafür ${verkaeufe.length === 1 ? 'nur einen Verkauf' : 'keine Verkäufe'}.</p>`;
+    }
+  };
+
+  document.querySelectorAll('#itemDetailZeitraum button').forEach(btn => {
+    btn.onclick = () => {
+      zeitraum = Number(btn.dataset.tage) || zeitraumWahl().vorgabe;
+      merkeZeitraum(zeitraum);
+      zeigeZeitraum();
+    };
+  });
+
+  zeigeZeitraum();
 }
 
 // Kleine Preis-Kurve für ein Item (Verkaufspreis pro Stück über Zeit).
