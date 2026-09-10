@@ -7211,8 +7211,54 @@ async function init() {
   checkDisclaimer();
 }
 
+/* Hinweis und Cookie-Banner merken sich in localStorage, nicht in
+   sessionStorage. sessionStorage gehört zum Tab: Der Browser räumt es
+   weg, sobald der zugeht — deshalb stand beides bei jedem Besuch wieder
+   da, obwohl längst zugestimmt war.
+
+   Gespeichert wird der Zeitpunkt statt nur "true". Nach zwölf Monaten
+   wird einmal neu gefragt; eine Zustimmung, die nie abläuft, gilt als
+   angreifbar. Für den Besucher fühlt es sich trotzdem wie "einmal" an.
+
+   Als Funktionen und nicht als const, aus demselben Grund wie bei
+   zeitraumWahl(): Weiter oben steht noch ein Aufruf aus der
+   Firebase-Zeit. Ist das Supabase-CDN nicht erreichbar, bricht diese
+   Datei dort ab, und jedes const darunter bliebe uninitialisiert.
+   Funktionsdeklarationen werden hochgezogen. */
+function merkerLies(schluessel) {
+  // Im privaten Fenster und bei blockierten Websitedaten wirft schon der
+  // Zugriff. Ohne das try stürbe init() hier und alles danach mit ihm.
+  try { return localStorage.getItem(schluessel); } catch { return null; }
+}
+
+function merkerSetze(schluessel, wert) {
+  try { localStorage.setItem(schluessel, wert); } catch {}
+}
+
+function nochGueltig(schluessel) {
+  const GILT_MS = 365 * 24 * 60 * 60 * 1000;
+  const wert = merkerLies(schluessel);
+
+  if (wert) {
+    const zeit = Number(wert);
+    return Number.isFinite(zeit) && zeit > 0 ? Date.now() - zeit < GILT_MS : true;
+  }
+
+  /* Wer gerade auf der Seite ist, hat seine Zustimmung noch im alten
+     sessionStorage stehen. Ohne diese Zeilen würde ausgerechnet beim
+     Ausrollen noch einmal gefragt — bei genau den Leuten. */
+  try {
+    if (sessionStorage.getItem(schluessel)) {
+      merkerSetze(schluessel, String(Date.now()));
+      return true;
+    }
+  } catch {}
+
+  return false;
+}
+
 function checkDisclaimer() {
-  const hasSeenDisclaimer = sessionStorage.getItem('hasSeenDisclaimer');
+  const hasSeenDisclaimer = nochGueltig('hasSeenDisclaimer');
   if (!hasSeenDisclaimer) {
     const modal = document.getElementById('disclaimerModal');
     if (modal) {
@@ -7237,7 +7283,7 @@ function closeDisclaimerModal() {
     setTimeout(() => {
       modal.style.display = 'none'; // Hide after transition
       document.body.style.overflow = '';
-      sessionStorage.setItem('hasSeenDisclaimer', 'true');
+      merkerSetze('hasSeenDisclaimer', String(Date.now()));
 
       // Trigger cookie consent check after disclaimer is closed
       checkCookieConsent();
@@ -7247,7 +7293,7 @@ function closeDisclaimerModal() {
 
 function checkCookieConsent() {
   const cookieConsent = document.getElementById('cookieConsentModal');
-  if (!sessionStorage.getItem('cookiesAccepted') && !sessionStorage.getItem('cookiesDeclined') && cookieConsent) {
+  if (!nochGueltig('cookiesAccepted') && !nochGueltig('cookiesDeclined') && cookieConsent) {
     setTimeout(() => {
       cookieConsent.style.display = 'flex';
     }, 500); // Small delay before showing
@@ -8080,7 +8126,7 @@ function toggleCookieDetails() {
 }
 
 function acceptCookies() {
-  sessionStorage.setItem('cookiesAccepted', 'true');
+  merkerSetze('cookiesAccepted', String(Date.now()));
   const cookieConsent = document.getElementById('cookieConsentModal');
   if (cookieConsent) {
     cookieConsent.style.animation = 'slideDown 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards';
@@ -8268,7 +8314,7 @@ async function deleteDonation(id) {
   }
 }
 function declineCookies() {
-  sessionStorage.setItem('cookiesDeclined', 'true');
+  merkerSetze('cookiesDeclined', String(Date.now()));
   const cookieConsent = document.getElementById('cookieConsentModal');
   if (cookieConsent) {
     cookieConsent.style.animation = 'slideDown 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards';
