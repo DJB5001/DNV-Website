@@ -137,6 +137,46 @@ const nachher = await rabattJetzt();
 pruefe(nachher > vorher, 'Und die Rabatt-Abzeichen sind jetzt da',
   `vorher ${vorher}, nachher ${nachher}`);
 
+// ── 2b. Sortiert wird über gerechnete Zahlen, nicht über Text ───────
+//
+// Der Verlaufs-Reiter sortiert 34.000 Verkäufe nach Datum. Stand in dem
+// Vergleich `new Date(a.endTime) - new Date(b.endTime)`, wurde dieselbe
+// Zeichenkette über eine Million Mal geparst — gemessen 339 ms allein
+// dafür.
+console.log('\n— Wie sortiert wird —');
+
+const gestempelt = await seite.evaluate(() =>
+  Object.values(App.auctionHistory).flat().every((v) => typeof v._zeit === 'number' && v._zeit > 0));
+pruefe(gestempelt, 'Jeder Verkauf trägt seinen Zeitpunkt als Zahl');
+
+await seite.evaluate(async () => { showSection('history'); await renderHistory(); });
+const reihenfolge = await seite.evaluate(() =>
+  [...document.querySelectorAll('#historyContainer .card')].length);
+pruefe(reihenfolge > 0, 'Der Verlaufs-Reiter zeigt Karten', `${reihenfolge}`);
+
+// Die beiden Wege gegeneinander, im selben Augenblick auf derselben
+// Maschine — nur so ist die Zahl unabhängig davon, wo der Test läuft.
+const messung = await seite.evaluate(() => {
+  const proben = Array.from({ length: 20000 }, (_, i) => ({
+    endTime: new Date(Date.now() - i * 60000).toISOString(),
+  }));
+  proben.forEach((p) => zeitpunkt(p));
+
+  const t1 = performance.now();
+  [...proben].sort((a, b) => zeitpunkt(b) - zeitpunkt(a));
+  const gerechnet = performance.now() - t1;
+
+  const t2 = performance.now();
+  [...proben].sort((a, b) => new Date(b.endTime) - new Date(a.endTime));
+  const geparst = performance.now() - t2;
+
+  return { gerechnet, geparst };
+});
+
+pruefe(messung.gerechnet * 2 < messung.geparst,
+  'Und das ist um ein Vielfaches schneller als Text zu parsen',
+  `${messung.gerechnet.toFixed(0)} ms statt ${messung.geparst.toFixed(0)} ms bei 20.000 Einträgen`);
+
 // ── 3. Keine Zeitstempel mehr an den Adressen ───────────────────────
 //
 // `?t=${Date.now()}` machte jede Anfrage für den Browser zu einer
