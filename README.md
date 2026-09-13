@@ -11,7 +11,6 @@ Alles landet in **einem** Repo. Danach kannst du `opsucht-app` abschalten.
 | `css/clan.css` | **neu** — Design der Clan- und Rechtsseiten |
 | `js/nova.js` | **neu** — die Bewegung, die sich beide Welten teilen |
 | `clan.html` | **neu** — Clan-Infos |
-| `impressum.html` | **neu** |
 | `datenschutz.html` | **neu** — deckt jetzt Website, Bot und App ab |
 | `nutzungsbedingungen.html` | **neu** — deckt Bot und App ab |
 
@@ -22,7 +21,6 @@ Nicht enthalten sind deine eigenen App-Dateien (`js/`, `icons/`, `css/style.css`
 ```
 index.html                 ← die App (Startseite)
 clan.html                  ← Clan-Infos
-impressum.html
 datenschutz.html
 nutzungsbedingungen.html
 manifest.webmanifest

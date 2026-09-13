@@ -8,7 +8,7 @@
 
 // Hochzählen, sobald sich die Liste ändert — beim Aktivieren wirft der
 // Worker alle Caches weg, die nicht mehr so heißen.
-const CACHE_NAME = 'opsucht-static-v13';
+const CACHE_NAME = 'opsucht-static-v14';
 
 // Getrennt von den statischen Dateien: Hier liegen die Verlaufsdateien
 // aus dem Datenrepo. Zwei Speicher, damit das Aufräumen des einen nicht
@@ -24,7 +24,6 @@ const STATIC_ASSETS = [
   './',
   './index.html',
   './clan.html',
-  './impressum.html',
   './datenschutz.html',
   './nutzungsbedingungen.html',
   './css/style.css',

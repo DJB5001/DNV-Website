@@ -39,6 +39,7 @@ npx http-server . -p 8123      # abweichender Port über PORT=...
 | `auktionsfilter-test.mjs` | Suchleiste über den Auktionen, Filter nach Item-Art, Verzauberungen auf den Karten | Browser |
 | `opitems-test.mjs` | Was in „OP Items" gehört: die Verzauberungsregel an Beispielen und ihre Wirkung auf den ganzen Verlauf | Verlauf (optional) |
 | `filterpanel-test.mjs` | Das Filter-Panel: Preisspanne samt Kurzschreibweise, Mindeststufen, Kategorien und der Zähler auf dem Knopf | Verlauf (optional) |
+| `rechtliches-test.mjs` | Dass Impressum und Wohnanschrift wirklich weg sind — und die Datenschutzerklärung samt Verantwortlichem geblieben ist | — |
 | `laden-test.mjs` | Die Auktionsliste steht, bevor der 33-MB-Verlauf da ist; sortiert wird über gerechnete Zahlen statt über Datumstext; keine Zeitstempel mehr an den Adressen; was der Service Worker speichern darf | Browser |
 | `zustimmung-test.mjs` | Hinweis und Cookie-Banner kommen nur einmal: Der zweite Browser-Kontext erbt localStorage, aber keine Sitzung — genau ein neu gestarteter Browser | Browser |
 | `zeitraum-test.mjs` | Der Umschalter 15 · 30 · 90 im Item-Fenster: Zahl und Kurve meinen denselben Zeitraum, die Wahl bleibt stehen | Browser |
