@@ -529,10 +529,6 @@ function handleEscKey(event) {
   if (event.key === 'Escape') closeModal();
 }
 
-function openImpressumModal() { /* Impressum entfernt */ }
-function closeImpressumModal() { /* Impressum entfernt */ }
-function handleImpressumEscKey(event) { /* Impressum entfernt */ }
-
 function openPrivacyModal() {
   const modal = document.getElementById("privacyModal");
   modal.classList.add("show");
@@ -6207,7 +6203,6 @@ async function openAuctionChart(auction) {
   if (sellerProfileEl && auction.seller) {
     sellerProfileEl.onclick = () => {
       if (document.getElementById('chartModal').classList.contains('show')) closeModal();
-      if (document.getElementById('impressumModal')?.classList.contains('show')) closeImpressumModal();
       if (document.getElementById('privacyModal').classList.contains('show')) closePrivacyModal();
 
       const activeSection = document.querySelector('.section.active')?.id || 'auctions';

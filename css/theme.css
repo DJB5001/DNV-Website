@@ -451,12 +451,11 @@ button {
 }
 
 /* ── 10. Rechtliches am Seitenfuß ──────────────────────────────────
-   § 5 DDG verlangt, dass die Anbieterkennzeichnung leicht erkennbar,
-   unmittelbar erreichbar und ständig verfügbar ist. Der Fuß erfüllt das
-   zurückhaltend: klein, grau, ganz unten — aber mit dem Wort "Impressum"
-   im Klartext, als echter Link und ohne Aufklappen oder Hover-Trick.
-   Genau diese drei Dinge wären der Punkt, an dem "dezent" zu "versteckt"
-   und damit angreifbar würde. */
+   Die Datenschutzerklärung muss leicht erkennbar, unmittelbar erreichbar
+   und ständig verfügbar sein. Der Fuß erfüllt das zurückhaltend: klein,
+   grau, ganz unten — aber im Klartext benannt, als echter Link und ohne
+   Aufklappen oder Hover-Trick. Genau diese drei Dinge wären der Punkt,
+   an dem "dezent" zu "versteckt" würde. */
 
 .dnv-fuss {
   display: flex;
