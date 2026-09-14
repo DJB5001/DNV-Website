@@ -3873,6 +3873,58 @@ function salePricePerUnit(sale) {
   return price / (sale.item?.amount || 1);
 }
 
+/* Ein Schnitt, an dem einzelne Ausreißer nicht mehr ziehen.
+
+   Das Problem ist nicht selten, sondern die Regel: Von 1.744 Varianten
+   mit mindestens fünf Verkäufen lag bei 924 der rohe Schnitt über 20 %
+   neben dem typischen Preis. Auch bei den meistgehandelten Items —
+   ENCHANTED_BOOK stand mit Ø 29 Tsd da, während der typische Verkauf
+   bei 15 Tsd lag. Wer sein Buch danach einpreist, setzt fast doppelt zu
+   hoch an.
+
+   Der Grund ist die Form der Daten: Nach oben ist Platz bis zur
+   Unendlichkeit, nach unten endet es bei 1. Ein Schnitt folgt dieser
+   Schieflage.
+
+   Winsorisieren statt Aussortieren: Wer unter dem 25.-Perzentil liegt,
+   zählt als dieses; wer darüber hinausschießt, als das 75. Kein Verkauf
+   fällt weg — die Verkaufszahl bleibt ehrlich, und die Spanne min–max
+   zeigt den Ausreißer weiter. Er zieht nur nicht mehr an der Hauptzahl.
+
+   Muss Zeichen für Zeichen dasselbe ergeben wie winsorisierterSchnitt()
+   in opsuchtinfo/history-updater/wert-index.js: Der Bot liest dort den
+   fertigen Index, die Seite rechnet hier aus den Rohverkäufen. Laufen
+   die beiden auseinander, nennen sie verschiedene Preise für dasselbe
+   Item. wert-index.test.js vergleicht sie über alle Verkäufe. */
+function mittel(zahlen) {
+  return Math.round(zahlen.reduce((s, z) => s + z, 0) / zahlen.length);
+}
+
+/* Der Wert an der Stelle q (0 bis 1) einer aufsteigend sortierten Reihe. */
+function quantil(sortiert, q) {
+  const stelle = Math.round((sortiert.length - 1) * q);
+  return sortiert[Math.min(sortiert.length - 1, Math.max(0, stelle))];
+}
+
+function winsorisierterSchnitt(preise, q = 0.25) {
+  if (preise.length < 4) return mittel(preise);
+
+  const sortiert = [...preise].sort((a, b) => a - b);
+  const unten = quantil(sortiert, q);
+  const oben = quantil(sortiert, 1 - q);
+
+  return mittel(preise.map((p) => (p < unten ? unten : p > oben ? oben : p)));
+}
+
+/* Der Durchschnitt einer Verkaufsliste, pro Stück und gedämpft. Jede
+   Stelle, die auf der Seite "Durchschnitt" schreibt, geht hier durch —
+   sonst stünden für dasselbe Item zwei verschiedene Zahlen auf zwei
+   Kacheln. Gerundet wird je Verkauf, wie im Datenrepo auch. */
+function schnittVonVerkaeufen(verkaeufe) {
+  if (!verkaeufe || !verkaeufe.length) return null;
+  return winsorisierterSchnitt(verkaeufe.map(sale => Math.round(salePricePerUnit(sale))));
+}
+
 // =====================================================================
 // ITEM-VARIANTEN
 // ---------------------------------------------------------------------
@@ -4133,16 +4185,13 @@ function variantenLabel(item, { mitVerzauberungen = true } = {}) {
    seinen Zeitraum selbst und geht gar nicht durch diese Funktion. */
 function getMonthlyAveragePerUnit(auction) {
   const item = auction?.item;
-  const schluessel = `${item?.displayName ?? item?.material ?? ''} ${itemVariante(item)}`;
+  // Der Trenner als Escape, nicht als rohes Byte: Ein NUL mitten in der
+  // Datei macht sie für grep und andere Werkzeuge zur Binärdatei.
+  const schluessel = `${item?.displayName ?? item?.material ?? ''}\u0000${itemVariante(item)}`;
   if (schnittCache.has(schluessel)) return schnittCache.get(schluessel);
 
   const relevant = verkaeufeZurVariante(item).filter(sale => istInLetztenTagen(sale, 30));
-
-  // Verkaufspreis: finalPrice ist der echte Endpreis (bei Sofortkauf der
-  // Sofortkaufpreis), currentBid als Fallback für ältere Einträge.
-  const schnitt = relevant.length === 0
-    ? null
-    : relevant.reduce((acc, sale) => acc + salePricePerUnit(sale), 0) / relevant.length;
+  const schnitt = schnittVonVerkaeufen(relevant);
 
   schnittCache.set(schluessel, schnitt);
   return schnitt;
@@ -4890,8 +4939,10 @@ function calculateAuctionPriceTrend(auction) {
   // Zu wenig Daten -> keinen Trend anzeigen
   if (relevant.length < MIN_SALES) return null;
 
-  // 30-Tage-Durchschnitt (pro Stück)
-  const avg = relevant.reduce((acc, sale) => acc + salePricePerUnit(sale), 0) / relevant.length;
+  // 30-Tage-Durchschnitt (pro Stück), Ausreißer gedämpft — sonst macht
+  // ein einzelner Mondpreis von vor drei Wochen aus jedem heutigen
+  // Angebot einen Absturz.
+  const avg = schnittVonVerkaeufen(relevant);
   if (avg <= 0) return null;
 
   // Aktueller Preis pro Stück der laufenden Auktion
@@ -5308,9 +5359,7 @@ async function openItemDetail(schluessel) {
   const pseudoAuction = { item: repItem };
   const variantenVerkaeufe = verkaeufeZurVariante(repItem);
 
-  const avgAll = variantenVerkaeufe.length
-    ? Math.round(variantenVerkaeufe.reduce((acc, s) => acc + salePricePerUnit(s), 0) / variantenVerkaeufe.length)
-    : null;
+  const avgAll = schnittVonVerkaeufen(variantenVerkaeufe);
 
   let zeitraum = gemerkterZeitraum();
   const imFenster = tage => variantenVerkaeufe.filter(sale => istInLetztenTagen(sale, tage));
@@ -5381,10 +5430,8 @@ async function openItemDetail(schluessel) {
     const verkaeufe = imFenster(zeitraum);
     const feld = document.getElementById('itemDetailAvg');
     if (feld) {
-      const schnitt = verkaeufe.length
-        ? verkaeufe.reduce((acc, sale) => acc + salePricePerUnit(sale), 0) / verkaeufe.length
-        : null;
-      feld.textContent = schnitt !== null ? Math.round(schnitt).toLocaleString('de-DE') : 'Keine Daten';
+      const schnitt = schnittVonVerkaeufen(verkaeufe);
+      feld.textContent = schnitt !== null ? schnitt.toLocaleString('de-DE') : 'Keine Daten';
       feld.classList.toggle('sell', schnitt !== null);
     }
 
@@ -6166,19 +6213,11 @@ async function openAuctionChart(auction) {
   // Filter history by material and lore to distinguish items with the same name
   const filteredHistory = verkaeufeZurVariante(auction.item);
 
-  let avgPrice = null;
-  if (filteredHistory.length > 0) {
-    const sum = filteredHistory.reduce((acc, sale) => acc + salePricePerUnit(sale), 0);
-    avgPrice = Math.round(sum / filteredHistory.length);
-  }
+  const avgPrice = schnittVonVerkaeufen(filteredHistory);
 
   // Durchschnitt der letzten 30 Tage
   const lastMonthSales = filteredHistory.filter(sale => istInLetztenTagen(sale, 30));
-  let avgPriceMonth = null;
-  if (lastMonthSales.length > 0) {
-    const sumM = lastMonthSales.reduce((acc, sale) => acc + salePricePerUnit(sale), 0);
-    avgPriceMonth = Math.round(sumM / lastMonthSales.length);
-  }
+  const avgPriceMonth = schnittVonVerkaeufen(lastMonthSales);
 
   const isExpired = new Date(auction.endTime) <= new Date();
 

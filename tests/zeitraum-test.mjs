@@ -28,7 +28,21 @@ try {
 //
 //   15 Tage  (400+400+300+300) / 4   = 350
 //   30 Tage  (… + 250 + 250)   / 6   = 316,67 → 317
-//   90 Tage  (… + 200 + 200)   / 8   = 287,5  → 288
+//   90 Tage  (… + 200 + 200)   / 8   = 275
+//
+// Die ersten beiden sind schlichte Mittel. Beim 90er greift die
+// Ausreißer-Dämpfung, und zwar hier sichtbar, weil die acht Verkäufe
+// über das Vierteljahr von 400 auf 200 gefallen sind:
+//
+//   sortiert  200 200 250 250 300 300 400 400
+//   25 % → Stelle round(7 × 0,25) = 2 → 250
+//   75 % → Stelle round(7 × 0,75) = 5 → 300
+//   (250×4 + 300×4) ÷ 8 = 2.200 ÷ 8 = 275
+//
+// Roh wären es 288 gewesen. Der Unterschied ist gewollt: Die Enden einer
+// Reihe zählen nur bis zum 25.- bzw. 75.-Perzentil mit, damit ein
+// einzelner Mondpreis die Zahl nicht verreißt. Bei einer fallenden Reihe
+// wie dieser trifft es auch die echten Ränder — 4,5 % nach unten.
 const TAG = 24 * 60 * 60 * 1000;
 const verlauf = { Zeitprobe: [] };
 let lauf = 0;
@@ -114,14 +128,14 @@ pruefe(r.vorgabe.zahl === '317', 'Und der Schnitt gilt für diese 30 Tage', r.vo
 
 pruefe(r.auf15.zahl === '350', 'Ein Klick auf 15 Tage rechnet neu', r.auf15.zahl);
 pruefe(r.auf15.aktiv.join() === '15 Tage', 'Der gewählte Knopf ist hervorgehoben', r.auf15.aktiv.join());
-pruefe(r.auf90.zahl === '288', 'Und 90 Tage nehmen auch die alten Verkäufe mit', r.auf90.zahl);
+pruefe(r.auf90.zahl === '275', 'Und 90 Tage nehmen auch die alten Verkäufe mit', r.auf90.zahl);
 
 pruefe(Boolean(r.vorgabe.kurve && r.auf15.kurve && r.auf90.kurve), 'Zu jedem Zeitraum wird gezeichnet');
 pruefe(r.auf15.kurve !== r.vorgabe.kurve && r.auf90.kurve !== r.auf15.kurve,
   'Die Kurve zieht mit — nicht nur die Zahl');
 
 pruefe(r.auf90.gemerkt === '90', 'Die Wahl wird gemerkt', String(r.auf90.gemerkt));
-pruefe(r.wieder.aktiv.join() === '90 Tage' && r.wieder.zahl === '288',
+pruefe(r.wieder.aktiv.join() === '90 Tage' && r.wieder.zahl === '275',
   'Und steht beim nächsten Item noch', `${r.wieder.aktiv.join()} / ${r.wieder.zahl}`);
 
 console.log(fehler === 0 ? '\nAlle Prüfungen bestanden.' : `\n${fehler} fehlgeschlagen.`);
