@@ -131,15 +131,23 @@ pruefe(
   roller.some(e => /\+60%/.test(e.label)) && roller.some(e => /\+180%/.test(e.label)),
   'die Effektstärke steht im Etikett'
 );
+// Und der Materialname ist weg — er war das gemeldete Ärgernis: zwölf
+// Zeilen "Golden Horse Armor", zwischen denen man nicht wählen konnte.
+pruefe(
+  roller.every(e => !/Golden Horse Armor/.test(e.label)),
+  'und der Materialname steht nicht mehr davor'
+);
 
 // Allgemein: Wie viele Einträge sind unter ihrem Namen noch
 // ununterscheidbar?
 //
 // Null wird es nie. Manche Ausführungen trennt nur eine Spielersignatur
 // oder ein doppelt geliefertes Textstück — das fasst kein Etikett, das
-// noch in ein Auswahlmenü passt. Gemessen am echten Verlauf waren es
-// vorher 968 von 5.639, jetzt 403 von 5.632. Die Schwelle hier hält
-// fest, dass es nicht wieder in Richtung des alten Standes rutscht.
+// noch in ein Auswahlmenü passt. Gemessen am echten Verlauf: 968 von
+// 5.639, bevor der Etiketten-Unterscheider hierherkam, 403 danach, und
+// 269, seit der Effekt im Etikett steht und das Signaturdatum den
+// Schlüssel nicht mehr trennt. Die Schwelle hält fest, dass es nicht
+// wieder in Richtung des alten Standes rutscht.
 const nachName = new Map();
 for (const e of eintraege) {
   const k = `${e.name} :: ${e.label}`;
@@ -148,7 +156,7 @@ for (const e of eintraege) {
 let ununterscheidbar = 0;
 for (const c of nachName.values()) if (c > 1) ununterscheidbar += c;
 console.log(`\nEinträge mit gleichem Namen und gleichem Etikett: ${ununterscheidbar} von ${eintraege.length}`);
-pruefe(ununterscheidbar < 500, 'deutlich weniger ununterscheidbare Einträge als die 968 von vorher');
+pruefe(ununterscheidbar < 350, 'deutlich weniger ununterscheidbare Einträge als die 968 von vorher');
 
 console.log(fehler === 0 ? '\nAlle Prüfungen bestanden.' : `\n${fehler} Prüfung(en) fehlgeschlagen.`);
 process.exit(fehler === 0 ? 0 : 1);
