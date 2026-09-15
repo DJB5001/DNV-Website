@@ -26,7 +26,7 @@ npx http-server . -p 8123      # abweichender Port über PORT=...
 |---|---|---|
 | `varianten-test.mjs` | Sammelkarte und Werkzeug unter gleichem Namen werden getrennt | Verlauf |
 | `schnitt-test.mjs` | Der Durchschnitt: dass ein einzelner Mondpreis ihn nicht mehr verreißt, dass trotzdem jeder Verkauf mitzählt, und wie weit sich die Zahlen gegenüber vorher bewegen | Verlauf (optional) |
-| `index-test.mjs` | Der Item-Index teilt Varianten auf, ohne Verkäufe zu verlieren | Verlauf |
+| `index-test.mjs` | Der Item-Index teilt Varianten auf, ohne Verkäufe zu verlieren — und legt zusammen, was nur anders geschrieben ist (XP Talisman), ohne die zusammenzuwerfen, die sich wirklich unterscheiden (Yamakuza Roller) | Verlauf |
 | `tieferlink-test.mjs` | `#item=…` und `#spieler=…` — die Adressen, auf die die Discord-Befehle zeigen | Verlauf |
 | `bilder-test.mjs` | Aus Materialnamen entstehen brauchbare Bildadressen. Mit `--abrufen` wird jede Adresse wirklich geholt (dauert Minuten) | Verlauf |
 | `kette-test.mjs` | Bild-Rückfall: eigenes Bild → Wiki → Spieltextur → Verbotsschild, und dass die Adresse, die es geschafft hat, gemerkt wird | Browser |

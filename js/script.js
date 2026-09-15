@@ -3972,12 +3972,47 @@ function loreAlsText(item) {
   return Array.isArray(l) ? l.join('\n') : String(l);
 }
 
+/**
+ * Wo ein Effekt wirkt — als Klammerzusatz am Zeilenende.
+ *
+ * OPSucht schreibt das mal dazu und mal nicht. Der XP Talisman hieß bis
+ * Ende August "➥ Effekt: x1,5 XP" und seitdem "… (Off-Hand)". Wer sein
+ * Exemplar vorher bekommen hat, trägt den alten Text weiter mit sich
+ * herum — Minecraft backt die Lore in den Gegenstand. Dadurch stand
+ * dasselbe Item zweimal in der Liste, beide Male als "Jackpot", beide
+ * Male mit einem Median von 15 Mio.
+ *
+ * Bewusst eine kurze Liste und nicht "alles in Klammern am
+ * Zeilenende": "(3 Minuten)" gegen "(5 Minuten)" ist ein echter
+ * Unterschied, den man nicht wegwerfen darf. Der Wirkungsort ist
+ * dagegen zweimal dieselbe Aussage.
+ */
+const WIRKUNGSORT = /\s*\((?:Off-Hand|Off Hand|Hand|Hände|Haende|Kopf|Inventar)[^()]*\)$/i;
+
+/**
+ * Die Lore, wie sie den Variantenschlüssel bestimmt.
+ *
+ * Geglättet wird nur, was nichts über den Gegenstand aussagt:
+ * Leerzeilen, doppelter Leerraum — eine Zeile " " statt "" trennte
+ * bisher zwei Varianten — und der Wirkungsort oben.
+ *
+ * loreAlsText() bleibt daneben unverändert: Angezeigt wird weiter der
+ * echte Text samt "(Off-Hand)". Geglättet wird nur zum Vergleichen.
+ */
+function loreSchluessel(item) {
+  return loreAlsText(item)
+    .split('\n')
+    .map((z) => z.trim().replace(/\s+/g, ' ').replace(WIRKUNGSORT, ''))
+    .filter(Boolean)
+    .join('\n');
+}
+
 // Stabiler Schlüssel einer Variante. Getrennt wird mit \u0000, weil das
 // Zeichen in keinem der drei Teile vorkommen kann: mit einem Leerzeichen
 // als Trenner könnten Material, Lore und Verzauberungen ineinander laufen
 // und zwei verschiedene Varianten denselben Schlüssel ergeben.
 function itemVariante(item) {
-  return `${item?.material ?? ''}\u0000${loreAlsText(item)}\u0000${verzauberungsStempel(item)}`;
+  return `${item?.material ?? ''}\u0000${loreSchluessel(item)}\u0000${verzauberungsStempel(item)}`;
 }
 
 function gleicheVariante(a, b) {
@@ -4165,6 +4200,80 @@ function variantenLabel(item, { mitVerzauberungen = true } = {}) {
 
   if (!teile.length && item?.material) teile.push(materialLesbar(item.material));
   return teile.join(' · ');
+}
+
+/**
+ * Die reinen Beschreibungszeilen der Lore.
+ *
+ * Ohne die Angaben mit Doppelpunkt oder » — die stecken schon im Etikett —
+ * und ohne Zierlinien. Übrig bleibt der Fließtext, der bei manchen Items
+ * das Einzige ist, was zwei Ausführungen unterscheidet.
+ */
+function beschreibungsZeilen(item) {
+  return loreAlsText(item)
+    .split('\n')
+    .map((z) => z.trim())
+    .filter((z) => z && !/^[─—\-_=]+$/.test(z))
+    // "➥ Effekt: +180% Geschwindigkeit" trägt einen Doppelpunkt und flog
+    // damit heraus — ausgerechnet die Zeile, die den Yamakuza Roller mit
+    // +60 % von dem mit +180 % unterscheidet. Zwölf Einträge hießen
+    // deshalb alle "Golden Horse Armor", bei Schnitten von 4,5 bis 155
+    // Mio. "Gewinntyp »" und "Seltenheit »" bleiben draußen: Die stehen
+    // schon im Etikett.
+    .filter((z) => /^➥/.test(z) || !/[»:]\s/.test(z));
+}
+/** Höchstens so lang wird ein Zusatz — Discord nimmt 100 Zeichen im Ganzen. */
+const ZUSATZ_MAX = 34;
+/**
+ * Gleich benannten Einträgen einen Zusatz geben, der sie unterscheidet.
+ *
+ * Warum das hier steht und nicht in variantenLabel(): Es braucht die
+ * ganze Gruppe. "Gray Bundle" gibt es zweimal — einmal "Enthält 1
+ * Boosterpack aus der Season of Summer" (Ø 191 Tsd), einmal "aus der
+ * Redstone Season" (Ø 125 Tsd). Erst im Vergleich zeigt sich, welche
+ * Zeile den Unterschied macht; für sich allein betrachtet ist jede
+ * Beschreibung gleich unauffällig. variantenLabel bleibt deshalb eine
+ * reine Funktion eines Items — es ist der Teil, den die Website teilt.
+ *
+ * Damit bleiben von 419 Namen mit mehreren Varianten noch 66 (16 %)
+ * doppeldeutig benannt, vorher waren es drei Viertel. Der Rest lässt sich
+ * nicht benennen: Dort sind Material, Lore-Text und Verzauberungen gleich,
+ * und getrennt werden die Einträge nur durch eine Eigenheit der API — ein
+ * doppelt aufgenommener "Gewinntyp »"-Block, ein Leerzeichen zu viel.
+ * H4CKER.exe etwa steht so zweimal da, mit Ø 257.710 und Ø 257.520; dass
+ * die Schnitte fast gleich sind, sagt schon, dass es dasselbe Item ist.
+ * Unterscheidbar bleiben sie im Auswahlmenü über die Zeile darunter, die
+ * Verkaufszahl und Durchschnitt nennt.
+ *
+ * Ändert die Einträge an Ort und Stelle.
+ */
+function unterscheideEtiketten(eintraege) {
+  const nachEtikett = new Map();
+  for (const e of eintraege) {
+    if (!nachEtikett.has(e.v)) nachEtikett.set(e.v, []);
+    nachEtikett.get(e.v).push(e);
+  }
+
+  for (const gruppe of nachEtikett.values()) {
+    if (gruppe.length < 2) continue;
+
+    // Zeilen, die alle teilen, unterscheiden nichts.
+    const zaehler = new Map();
+    for (const e of gruppe) {
+      for (const zeile of new Set(e.beschreibung ?? [])) {
+        zaehler.set(zeile, (zaehler.get(zeile) ?? 0) + 1);
+      }
+    }
+
+    for (const e of gruppe) {
+      const eigen = (e.beschreibung ?? []).filter((z) => zaehler.get(z) < gruppe.length);
+      if (!eigen.length) continue;
+
+      let zusatz = eigen.join(' ');
+      if (zusatz.length > ZUSATZ_MAX) zusatz = `${zusatz.slice(0, ZUSATZ_MAX - 1).trimEnd()}…`;
+      e.v = `${e.v} · ${zusatz}`;
+    }
+  }
 }
 
 /* Derselbe Durchschnitt wird oft hintereinander gebraucht: einmal je
@@ -5224,6 +5333,30 @@ function buildItemIndex() {
     if (Array.isArray(sales)) {
       sales.forEach(sale => add(sale.item || { material: itemName, displayName: itemName }, 'history'));
     }
+  }
+
+  // Zwei Ausführungen desselben Namens können dasselbe Etikett tragen —
+  // zwölf Yamakuza Roller hießen alle "Golden Horse Armor", dabei sind
+  // es +60 % bis +180 % Geschwindigkeit. Welche Lore-Zeile sie trennt,
+  // zeigt sich erst im Vergleich der ganzen Gruppe, deshalb hier zum
+  // Schluss und nicht in variantenLabel().
+  //
+  // Dieselbe Funktion wie im Datenrepo; wert-index.test.js hält beide
+  // gegeneinander. Liefe sie auseinander, nennte der Discord-Bot die
+  // Ausführungen anders als diese Seite.
+  const nachName = new Map();
+  for (const eintrag of Object.values(index)) {
+    if (!nachName.has(eintrag.name)) nachName.set(eintrag.name, []);
+    nachName.get(eintrag.name).push(eintrag);
+  }
+  for (const gruppe of nachName.values()) {
+    if (gruppe.length < 2) continue;
+    const zumBenennen = gruppe.map(e => ({
+      v: e.label,
+      beschreibung: beschreibungsZeilen(e.item),
+    }));
+    unterscheideEtiketten(zumBenennen);
+    gruppe.forEach((e, i) => { e.label = zumBenennen[i].v; });
   }
 
   itemIndexCache = index;
