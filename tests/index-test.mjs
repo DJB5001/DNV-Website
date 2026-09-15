@@ -101,5 +101,54 @@ const summeRoh = Object.values(historie).reduce((s, v) => s + v.filter(x => x.it
 console.log(`Verkäufe im Index: ${summeIndex.toLocaleString('de-DE')} · im Verlauf: ${summeRoh.toLocaleString('de-DE')}`);
 pruefe(summeIndex === summeRoh, 'kein Verkauf ist beim Aufteilen verloren gegangen');
 
+// ── Der gemeldete Fall: XP Talisman ─────────────────────────────────
+//
+// Stand zweimal da, beide Male als "Jackpot". Dasselbe Item — OPSucht
+// hat Ende August "(Off-Hand)" in den Effekttext geschrieben, und
+// Exemplare aus Kisten behielten den alten. Beide Texte laufen weiter
+// nebeneinander, also muss der Schlüssel darüber hinwegsehen.
+console.log('\n=== XP Talisman ===');
+const talisman = eintraege.filter(e => e.name === 'XP Talisman');
+talisman.forEach(e => console.log(`  label="${e.label}"  verkauft=${e.soldCount}`));
+pruefe(talisman.length === 1, 'XP Talisman steht nur noch einmal da');
+
+// ── Und die Gegenprobe: Doppelgänger, die keine sind ────────────────
+//
+// Der Yamakuza Roller hat zwölf Ausführungen von +60 % bis +180 %
+// Geschwindigkeit, mit Schnitten von 4,5 bis 155 Mio. Die dürfen nicht
+// zusammen — aber sie dürfen auch nicht alle "Golden Horse Armor"
+// heißen, sonst kauft man blind. Genau dafür läuft in buildItemIndex()
+// jetzt der Etiketten-Unterscheider, den es dort vorher nicht gab.
+console.log('\n=== Yamakuza Roller ===');
+const roller = eintraege.filter(e => e.name === 'Yamakuza Roller');
+roller.slice(0, 4).forEach(e => console.log(`  label="${e.label.slice(0, 70)}"  verkauft=${e.soldCount}`));
+pruefe(roller.length > 1, 'verschiedene Effektstärken bleiben getrennte Einträge');
+pruefe(
+  new Set(roller.map(e => e.label)).size > 1,
+  'und tragen nicht alle dasselbe Etikett'
+);
+pruefe(
+  roller.some(e => /\+60%/.test(e.label)) && roller.some(e => /\+180%/.test(e.label)),
+  'die Effektstärke steht im Etikett'
+);
+
+// Allgemein: Wie viele Einträge sind unter ihrem Namen noch
+// ununterscheidbar?
+//
+// Null wird es nie. Manche Ausführungen trennt nur eine Spielersignatur
+// oder ein doppelt geliefertes Textstück — das fasst kein Etikett, das
+// noch in ein Auswahlmenü passt. Gemessen am echten Verlauf waren es
+// vorher 968 von 5.639, jetzt 403 von 5.632. Die Schwelle hier hält
+// fest, dass es nicht wieder in Richtung des alten Standes rutscht.
+const nachName = new Map();
+for (const e of eintraege) {
+  const k = `${e.name} :: ${e.label}`;
+  nachName.set(k, (nachName.get(k) ?? 0) + 1);
+}
+let ununterscheidbar = 0;
+for (const c of nachName.values()) if (c > 1) ununterscheidbar += c;
+console.log(`\nEinträge mit gleichem Namen und gleichem Etikett: ${ununterscheidbar} von ${eintraege.length}`);
+pruefe(ununterscheidbar < 500, 'deutlich weniger ununterscheidbare Einträge als die 968 von vorher');
+
 console.log(fehler === 0 ? '\nAlle Prüfungen bestanden.' : `\n${fehler} Prüfung(en) fehlgeschlagen.`);
 process.exit(fehler === 0 ? 0 : 1);
