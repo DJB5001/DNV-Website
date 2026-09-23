@@ -1889,31 +1889,17 @@ async function uuidNameHolen(uuid) {
   return "Unbekannt";
 }
 
+/**
+ * Die Marktdaten holen.
+ *
+ * Die eigentliche Arbeit steht in marktIstNeu() — dieselbe Stelle, die
+ * auch das automatische Nachladen benutzt. Zwei Fassungen davon hätten
+ * bedeutet, dass der Knopf und die Uhr die Maps unterschiedlich bauen
+ * können, ohne dass es auffällt.
+ */
 async function loadMarket() {
   try {
-    const [prices, items] = await Promise.all([
-      fetch("https://api.opsucht.net/market/prices").then(res => res.json()),
-      fetch("https://api.opsucht.net/market/items").then(res => res.json())
-    ]);
-    App.marketPrices = prices;
-    App.marketItems = items;
-    // Index erstellen für O(1) Zugriff
-    App.marketItemsMap = {};
-    items.forEach(item => {
-      if (item.material) {
-        App.marketItemsMap[item.material.toLowerCase()] = item;
-      }
-    });
-
-    // Preis-Index für O(1) Zugriff erstellen (Turbo)
-    App.marketPricesMap = {};
-    for (const cat in prices) {
-      for (const mat in prices[cat]) {
-        const orders = prices[cat][mat];
-        const sellOrder = orders.find(o => o.orderSide === "SELL");
-        App.marketPricesMap[mat.toLowerCase()] = sellOrder ? sellOrder.price : 0.8;
-      }
-    }
+    await marktIstNeu();
 
     // Falls ein Filter aktiv ist, Trends neu laden (optional, falls Daten veraltet)
     if (App.marketTrendFilter !== 'none') {
@@ -2361,14 +2347,49 @@ const Strom = {
   ereignisse: 0,
 };
 
+/**
+ * Ein kurzer Abdruck eines Textes.
+ *
+ * Gebraucht vom automatischen Nachladen: Es muss entscheiden, ob eine
+ * Antwort dieselbe ist wie beim letzten Mal, ohne sie aufzubewahren
+ * (bei den aktiven Auktionen sind das mehrere Megabyte) und ohne sie
+ * unnötig zu zerlegen. Länge plus FNV-1a; zwei verschiedene Antworten
+ * mit gleicher Länge *und* gleichem Abdruck sind nichts, womit man
+ * rechnen muss.
+ */
+function fingerabdruck(text) {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < text.length; i += 1) {
+    h ^= text.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return `${text.length}:${(h >>> 0).toString(16)}`;
+}
+
+/**
+ * Die laufenden Auktionen holen.
+ *
+ * Rückgabe: ob sich etwas geändert hat. Das ist nicht Zierrat, sondern
+ * der Grund, warum die Seite beim automatischen Nachladen stillsteht:
+ * Ohne diese Auskunft gälte jeder Durchgang als Änderung, und die Liste
+ * würde alle zwei Minuten neu gebaut — mitsamt Bildlaufstelle und
+ * Seitenzahl. Sind die Daten dieselben, wird nicht einmal zerlegt.
+ */
 async function ladeAktiveAuktionen() {
+  let geaendert = true;
   try {
     const res = await fetch("https://api.opsucht.net/auctions/active");
-    App.auctionsData = await res.json();
+    const text = await res.text();
+    const abdruck = fingerabdruck(text);
+    if (App.auktionenGeladen && abdruck === App.auktionenAbdruck) return false;
+    App.auktionenAbdruck = abdruck;
+    App.auctionsData = JSON.parse(text);
   } catch (error) {
     console.error("Fehler beim Laden der aktiven Auktionen:", error);
     App.auctionsData = [];
+    App.auktionenAbdruck = null;
   }
+  App.auktionenGeladen = true;
 
   Strom.wartend.clear();
   zeigeNeuZaehler();
@@ -2379,6 +2400,7 @@ async function ladeAktiveAuktionen() {
   setupAuctionFilters();
 
   document.querySelector('#tab-auctions .loading-spinner')?.remove();
+  return geaendert;
 }
 
 /* ====================================================================
@@ -2709,6 +2731,10 @@ async function ladeVerlauf({ frisch = false, neuZeichnen = true } = {}) {
       frisch ? { cache: 'reload' } : undefined
     );
     if (!res.ok) throw new Error("HTTP " + res.status);
+    // Die Groesse merken, damit das automatische Nachladen mit einer
+    // HEAD-Anfrage erkennen kann, ob sich ueberhaupt etwas geaendert
+    // hat — ohne die sieben Megabyte noch einmal zu holen.
+    App.verlaufGroesse = res.headers.get('content-length');
     const history = await res.json();
     // Vor allem anderen entdoppeln — Durchschnitte, Verkaufszahlen,
     // Spielerbilanzen und Shard-Kurse greifen alle auf dieselben Daten zu.
@@ -2782,6 +2808,263 @@ async function zeichneSichtbaresNeu() {
 async function loadAuctions() {
   await ladeAktiveAuktionen();
   await ladeVerlauf({ frisch: true, neuZeichnen: false });
+}
+
+/* ====================================================================
+   Von selbst aktuell bleiben
+   ====================================================================
+
+   Der Aktualisieren-Knopf bleibt, wo er ist — aber drücken muss ihn
+   niemand mehr. Alle zwei Minuten sieht die Seite selbst nach.
+
+   Die Schwierigkeit ist nicht das Nachsehen, sondern das Nichtstun.
+   Eine Seite, die sich alle zwei Minuten neu aufbaut, verliert die
+   Bildlaufstelle, die Seitenzahl und die Karte, auf die gerade jemand
+   zielt. Deshalb gilt hier durchweg: **gezeichnet wird nur, wenn sich
+   wirklich etwas geändert hat.** Am Servershop ändert sich stundenlang
+   nichts; dann steht die Seite auch stundenlang still.
+
+   Was wie geprüft wird, hängt am Preis der Prüfung:
+
+   | Quelle | Prüfung | Kosten |
+   |---|---|---|
+   | Auktionen | nichts — der Ereignisstrom meldet von selbst | 0 |
+   | Verlauf (7 MB) | HEAD, und nur die Größe vergleichen | ~200 Byte |
+   | Markt, Shards | holen und den Text vergleichen | klein |
+
+   Die mittlere Zeile ist der Trick. `Content-Length` gehört zu den
+   wenigen Kopfzeilen, die ein Browser auch über Repo-Grenzen hinweg
+   lesen darf — eine HEAD-Anfrage sagt also für ein paar hundert Byte,
+   ob die sieben Megabyte überhaupt neu sind. Ohne das hinge an jeder
+   Prüfung ein voller Download, und das wäre auf Mobilfunk eine
+   Zumutung. */
+
+/** Der Grundtakt, solange die Seite sichtbar ist. */
+const NACHLADEN_MS = 2 * 60_000;
+
+/**
+ * Wie oft jede Quelle höchstens gefragt wird.
+ *
+ * Nicht alles lohnt denselben Takt. Der Verlauf steht vorn, weil die
+ * Prüfung dort nur ein paar hundert Byte kostet (eine HEAD-Anfrage) und
+ * weil es die Zahlen sind, auf die jemand wartet. Der Servershop
+ * dagegen bewegt sich langsam, und seine Preisliste ist ein paar hundert
+ * Kilobyte — sie alle zwei Minuten zu holen wäre auf Mobilfunk eine
+ * Zumutung für nichts. Die Shard-Kurse ändern sich noch seltener.
+ */
+const NACHLADE_TAKTE = {
+  verlauf: 2 * 60_000,
+  auktionen: 2 * 60_000,
+  markt: 5 * 60_000,
+  shards: 10 * 60_000,
+};
+
+/** Welcher Reiter aus welchen Quellen lebt. */
+const REITER_QUELLEN = {
+  market: ['markt'],
+  shards: ['shards'],
+  auctions: ['auktionen', 'verlauf'],
+  deals: ['auktionen', 'verlauf'],
+  history: ['verlauf'],
+  items: ['auktionen', 'verlauf'],
+  players: ['auktionen', 'verlauf'],
+};
+
+/** Wer den jeweiligen Reiter zeichnet. */
+const REITER_ZEICHNER = {
+  market: () => renderMarket(),
+  shards: () => renderShards(),
+  auctions: () => renderAuctions(),
+  deals: () => renderDeals(),
+  history: () => renderHistory(),
+  items: () => renderItemSearch(),
+  players: () => renderPlayers(),
+};
+
+const Nachladen = {
+  uhr: null,
+  laeuft: false,
+  marktAbdruck: null,
+  shardAbdruck: null,
+  zuletzt: 0,
+  /** Wann jede Quelle zuletzt gefragt wurde. */
+  zuletztJe: { verlauf: 0, auktionen: 0, markt: 0, shards: 0 },
+  durchgaenge: 0,
+  geaendert: 0,
+};
+
+/**
+ * Ist diese Quelle wieder dran?
+ *
+ * `sofort` übergeht den Takt: Wer aus einem anderen Fenster zurückkommt,
+ * will den Stand von jetzt und nicht den von vor vier Minuten.
+ */
+function istDran(quelle, sofort) {
+  if (sofort) return true;
+  return Date.now() - (Nachladen.zuletztJe[quelle] ?? 0) >= NACHLADE_TAKTE[quelle];
+}
+
+/**
+ * Darf gerade gezeichnet werden?
+ *
+ * Nicht, während ein Fenster offen steht. Wer sich die Kurve eines
+ * Items ansieht oder in den Einstellungen etwas eintippt, will nicht,
+ * dass darunter die Liste ausgetauscht wird — und beim Schließen stünde
+ * er woanders als vorher.
+ */
+function stoertGerade() {
+  if (document.body.classList.contains('modal-open')) return true;
+  return [...document.querySelectorAll('.modal, .disclaimer-modal, .cookie-consent-modal')]
+    .some((m) => getComputedStyle(m).display !== 'none');
+}
+
+/**
+ * Hat sich der Verlauf geändert?
+ *
+ * Eine HEAD-Anfrage holt nur die Kopfzeilen. Weicht die Größe ab, wurde
+ * die Datei neu gebaut — bei 41.000 Verkäufen ändert schon ein
+ * einzelner neuer die Länge. Kommt keine Größe zurück (manche
+ * Zwischenspeicher lassen sie weg), wird im Zweifel geladen: lieber
+ * einmal zu viel als eine Seite, die stehen bleibt.
+ */
+async function verlaufIstNeu() {
+  try {
+    const res = await fetch(`${HISTORY_REPO_BASE}/auction-history.json`, {
+      method: 'HEAD',
+      cache: 'no-store',
+    });
+    if (!res.ok) return false;
+    const groesse = res.headers.get('content-length');
+    if (!groesse) return true;
+    return groesse !== App.verlaufGroesse;
+  } catch {
+    // Kein Netz: Dann ist auch nichts zu holen. Der nächste Durchgang
+    // versucht es wieder.
+    return false;
+  }
+}
+
+/** Markt und Shards holen, aber nur melden, wenn sie anders aussehen. */
+async function marktIstNeu() {
+  const [preise, items] = await Promise.all([
+    fetch('https://api.opsucht.net/market/prices').then((r) => r.text()),
+    fetch('https://api.opsucht.net/market/items').then((r) => r.text()),
+  ]);
+  const abdruck = fingerabdruck(preise) + '/' + fingerabdruck(items);
+  if (abdruck === Nachladen.marktAbdruck) return false;
+  Nachladen.marktAbdruck = abdruck;
+
+  // Denselben Weg wie loadMarket() gehen, nur ohne die Daten ein
+  // zweites Mal zu holen.
+  App.marketPrices = JSON.parse(preise);
+  App.marketItems = JSON.parse(items);
+  App.marketItemsMap = {};
+  for (const item of App.marketItems) {
+    if (item.material) App.marketItemsMap[item.material.toLowerCase()] = item;
+  }
+  App.marketPricesMap = {};
+  for (const kategorie in App.marketPrices) {
+    for (const material in App.marketPrices[kategorie]) {
+      const orders = App.marketPrices[kategorie][material];
+      const sellOrder = orders.find((o) => o.orderSide === 'SELL');
+      App.marketPricesMap[material.toLowerCase()] = sellOrder ? sellOrder.price : 0.8;
+    }
+  }
+  return true;
+}
+
+async function shardsSindNeu() {
+  const text = await fetch('https://api.opsucht.net/merchant/rates').then((r) => r.text());
+  const abdruck = fingerabdruck(text);
+  if (abdruck === Nachladen.shardAbdruck) return false;
+  Nachladen.shardAbdruck = abdruck;
+
+  App.shardRates = (JSON.parse(text) || []).map((rate) => ({
+    ...rate,
+    parsed: parseShardItem(rate.source),
+  }));
+  return true;
+}
+
+/**
+ * Ein Durchgang.
+ *
+ * Geprüft wird immer alles — die Quellen sind billig, und wer den
+ * Reiter wechselt, soll dort keine alten Zahlen vorfinden. Gezeichnet
+ * wird nur der sichtbare Reiter, und nur wenn eine seiner Quellen sich
+ * gerührt hat.
+ */
+async function nachladen({ sofort = false } = {}) {
+  if (Nachladen.laeuft) return;
+  if (!sofort && document.hidden) return;
+  Nachladen.laeuft = true;
+  Nachladen.durchgaenge += 1;
+
+  const auftraege = {
+    // Die aktiven Auktionen nur, wenn der Ereignisstrom sie nicht
+    // ohnehin laufend nachträgt. Steht er, ist diese Abfrage der
+    // Rückfallweg; läuft er, wäre sie verschwendet.
+    auktionen: () => (Strom.verbunden ? false : ladeAktiveAuktionen()),
+    verlauf: () =>
+      verlaufIstNeu().then((istNeu) =>
+        istNeu ? ladeVerlauf({ frisch: true, neuZeichnen: false }).then(() => true) : false
+      ),
+    markt: marktIstNeu,
+    shards: shardsSindNeu,
+  };
+
+  const neu = new Set();
+  try {
+    const faellig = Object.keys(auftraege).filter((q) => istDran(q, sofort));
+    const ergebnisse = await Promise.allSettled(faellig.map((q) => auftraege[q]()));
+    faellig.forEach((quelle, i) => {
+      Nachladen.zuletztJe[quelle] = Date.now();
+      const e = ergebnisse[i];
+      if (e.status === 'fulfilled' && e.value) neu.add(quelle);
+      else if (e.status === 'rejected') {
+        console.warn(`Nachladen von ${quelle} gestolpert:`, e.reason?.message ?? e.reason);
+      }
+    });
+  } finally {
+    Nachladen.laeuft = false;
+    Nachladen.zuletzt = Date.now();
+  }
+
+  if (neu.size === 0) return;
+  Nachladen.geaendert += 1;
+
+  const offen = document.querySelector('.section.active')?.id;
+  const quellen = REITER_QUELLEN[offen] ?? [];
+  if (!quellen.some((q) => neu.has(q))) return;
+  if (stoertGerade()) return;
+
+  // Die Bildlaufstelle halten. Die Zeichner bauen ihren Behälter neu
+  // auf; wird er dabei kurz kürzer, springt die Seite nach oben, und
+  // wer gerade mitten in der Liste las, ist wieder ganz am Anfang.
+  const stelle = window.scrollY;
+  await REITER_ZEICHNER[offen]?.();
+  if (Math.abs(window.scrollY - stelle) > 1) window.scrollTo({ top: stelle });
+}
+
+/**
+ * Die Uhr stellen.
+ *
+ * Im Hintergrund wird nicht nachgeladen: Ein Reiter, den niemand
+ * ansieht, braucht keine frischen Zahlen, und auf dem Handy kostet das
+ * Akku und Datenvolumen. Dafür wird sofort nachgesehen, sobald jemand
+ * zurückkommt — genau dann sind die Zahlen am ältesten.
+ */
+function starteNachladen() {
+  if (Nachladen.uhr) return;
+  Nachladen.uhr = setInterval(() => nachladen(), NACHLADEN_MS);
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) return;
+    // Wer nur kurz weg war, braucht nichts: Der Takt hat eben erst
+    // nachgesehen.
+    if (Date.now() - Nachladen.zuletzt < NACHLADEN_MS / 2) return;
+    nachladen({ sofort: true });
+  });
 }
 
 // Kandidaten für das Bild eines Item-Typs, in der Reihenfolge, in der
@@ -5601,13 +5884,9 @@ function createAuctionCard(auction, historyType = null, personalData = null) {
 
 async function loadShards() {
   try {
-    const ratesPromise = fetch("https://api.opsucht.net/merchant/rates").then(res => res.json());
-    const rates = await ratesPromise;
-    // Pre-parse Shard-Informationen für schnellere Filterung/Anzeige
-    App.shardRates = (rates || []).map(rate => ({
-      ...rate,
-      parsed: parseShardItem(rate.source)
-    }));
+    // Wie beim Markt: Geholt und gebaut wird an einer Stelle, die sich
+    // Knopf und Uhr teilen.
+    await shardsSindNeu();
   } catch (error) {
     console.error("Fehler beim Laden der Shard-Daten:", error);
     App.shardRates = [];
@@ -7901,6 +8180,11 @@ async function init() {
   // nicht geladen ist, wäre ein Ereignis ohne Zeile — und die Auktion
   // käme gleich darauf mit dem alten Preis aus /active nach.
   starteAuktionsStrom();
+
+  // Der Strom deckt die laufenden Auktionen ab. Verlauf, Markt und
+  // Shards kommen aus Dateien und Abfragen, die sich nicht von selbst
+  // melden — dafür sieht die Seite alle zwei Minuten nach.
+  starteNachladen();
 
   // Hier und nicht am Ende: Ein Link auf ein Item oder einen Spieler
   // braucht den Verlauf, und weiter unten hinge er hinter allem, was

@@ -45,6 +45,7 @@ selbst; mit `CHROMIUM=/pfad/zu/chrome` lässt es sich vorgeben.
 | `mitglieder-test.mjs` | Die Mitgliederliste kommt aus `data/mitglieder.json`; fehlt oder klemmt sie, trägt die hinterlegte Liste | Browser |
 | `auktionsfilter-test.mjs` | Suchleiste über den Auktionen, Filter nach Item-Art, Verzauberungen auf den Karten | Browser |
 | `strom-test.mjs` | Der Live-Strom: Gebote ziehen die Zeile nach, Verkaufte werden grau statt herausgerissen, neue Auktionen warten hinter dem Knopf — und nichts davon baut die Liste neu auf | Browser |
+| `nachladen-test.mjs` | Das automatische Nachladen — vor allem das Nichtstun: Bei unveränderten Daten wird nicht gezeichnet, der 7-MB-Verlauf gar nicht erst geholt, und ein offenes Fenster wird in Ruhe gelassen | Browser |
 | `opitems-test.mjs` | Was in „OP Items" gehört: die Verzauberungsregel an Beispielen und ihre Wirkung auf den ganzen Verlauf | Verlauf (optional) |
 | `filterpanel-test.mjs` | Das Filter-Panel: Preisspanne samt Kurzschreibweise, Mindeststufen, Kategorien und der Zähler auf dem Knopf | Verlauf (optional) |
 | `rechtliches-test.mjs` | Dass Impressum und Wohnanschrift wirklich weg sind — und die Datenschutzerklärung samt Verantwortlichem geblieben ist | — |
