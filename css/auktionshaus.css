@@ -1231,3 +1231,113 @@ img.ah-podest__kopf-bild {
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   Der Ereignisstrom: was sich live ändert
+   ═══════════════════════════════════════════════════════════════
+
+   Zurückhaltend, und das mit Absicht. Eine Liste, in der ständig
+   etwas blinkt, liest niemand mehr — was hier leuchtet, hat sich
+   gerade wirklich geändert, und es leuchtet einmal kurz.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Der Knopf für neu eingestellte Auktionen. Er steht über der Liste
+   und schiebt sie beim Erscheinen ein Stück nach unten — einmal, und
+   nicht bei jeder neuen Auktion. */
+.auktionen-neu {
+  display: flex;
+  justify-content: center;
+  margin: 0 0 1rem;
+}
+
+.auktionen-neu[hidden] {
+  display: none;
+}
+
+.auktionen-neu__knopf {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 1.1rem;
+  border: 1px solid var(--accent-color1);
+  border-radius: 999px;
+  background: var(--accent-glow-weak);
+  color: var(--accent-color1);
+  font-family: var(--schrift-text);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: background var(--transition-speed), transform var(--transition-speed);
+}
+
+.auktionen-neu__knopf:hover {
+  background: var(--accent-glow);
+  transform: translateY(-1px);
+}
+
+.auktionen-neu__punkt {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent-color1);
+  box-shadow: 0 0 0 0 var(--accent-glow);
+  animation: auktionen-neu-puls 2s ease-out infinite;
+}
+
+@keyframes auktionen-neu-puls {
+  0%   { box-shadow: 0 0 0 0 var(--accent-glow); }
+  70%  { box-shadow: 0 0 0 7px rgba(169, 126, 240, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(169, 126, 240, 0); }
+}
+
+/* Ein frisch geändertes Gebot leuchtet einmal auf. Ohne das ändert
+   sich eine Zahl irgendwo in einer Liste aus fünfzig Karten, und
+   niemand bemerkt es. */
+.price-info__wert.preis-frisch {
+  animation: preis-frisch 1.4s ease-out;
+}
+
+@keyframes preis-frisch {
+  0%   { color: var(--accent-cyan); text-shadow: 0 0 10px var(--accent-cyan); }
+  100% { color: inherit; text-shadow: none; }
+}
+
+/* Vorbei, aber noch an Ort und Stelle.
+   Die Karte herauszunehmen ließe alles darunter hochrutschen — wer
+   gerade auf eine Karte zielt, klickt dann daneben. Also bleibt sie
+   stehen, wird grau und sagt, was passiert ist. Beim nächsten
+   Neuaufbau der Liste ist sie weg. */
+.card.auktion-vorbei {
+  position: relative;
+  opacity: 0.4;
+  filter: grayscale(0.8);
+  pointer-events: none;
+  transition: opacity 0.4s ease, filter 0.4s ease;
+}
+
+.auktion-vorbei__fahne {
+  position: absolute;
+  inset: auto 0 0 0;
+  padding: 0.3rem 0.6rem;
+  background: rgba(6, 6, 11, 0.85);
+  border-top: 1px solid var(--border);
+  color: var(--text-primary);
+  font-family: var(--schrift-text);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-align: center;
+  z-index: 6;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auktionen-neu__punkt,
+  .price-info__wert.preis-frisch {
+    animation: none;
+  }
+  .auktionen-neu__knopf:hover {
+    transform: none;
+  }
+}

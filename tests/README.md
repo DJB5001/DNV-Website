@@ -17,8 +17,14 @@ Die Browser-Tests brauchen zusätzlich Playwright und eine laufende
 Auslieferung der Seite:
 
 ```sh
+npm install                    # Playwright, Fassung aus package.json
+npx playwright install chromium
 npx http-server . -p 8123      # abweichender Port über PORT=...
 ```
+
+Liegt schon ein Chromium daneben, das nicht zu dieser Playwright-Fassung
+passt — auf CI-Abbildern der Normalfall —, findet `strom-test.mjs` es
+selbst; mit `CHROMIUM=/pfad/zu/chrome` lässt es sich vorgeben.
 
 ## Die einzelnen Tests
 
@@ -38,6 +44,7 @@ npx http-server . -p 8123      # abweichender Port über PORT=...
 | `verlaengerung-test.mjs` | Verlängerte Auktionen zählen nur einmal — gegen die echten Daten | Verlauf |
 | `mitglieder-test.mjs` | Die Mitgliederliste kommt aus `data/mitglieder.json`; fehlt oder klemmt sie, trägt die hinterlegte Liste | Browser |
 | `auktionsfilter-test.mjs` | Suchleiste über den Auktionen, Filter nach Item-Art, Verzauberungen auf den Karten | Browser |
+| `strom-test.mjs` | Der Live-Strom: Gebote ziehen die Zeile nach, Verkaufte werden grau statt herausgerissen, neue Auktionen warten hinter dem Knopf — und nichts davon baut die Liste neu auf | Browser |
 | `opitems-test.mjs` | Was in „OP Items" gehört: die Verzauberungsregel an Beispielen und ihre Wirkung auf den ganzen Verlauf | Verlauf (optional) |
 | `filterpanel-test.mjs` | Das Filter-Panel: Preisspanne samt Kurzschreibweise, Mindeststufen, Kategorien und der Zähler auf dem Knopf | Verlauf (optional) |
 | `rechtliches-test.mjs` | Dass Impressum und Wohnanschrift wirklich weg sind — und die Datenschutzerklärung samt Verantwortlichem geblieben ist | — |

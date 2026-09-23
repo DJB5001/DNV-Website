@@ -118,6 +118,14 @@ function ausSpeicherUndErneuern(request) {
 self.addEventListener('fetch', (event) => {
   const url = event.request.url;
 
+  // Der Ereignisstrom geht am Service Worker vorbei. Ohne respondWith
+  // macht der Browser es selbst — und das ist hier genau richtig: Eine
+  // Verbindung, die stundenlang offen bleibt, würde sonst durch den
+  // Worker laufen und ihn am Leben halten, solange die Seite offen ist.
+  // Zu gewinnen gibt es dabei nichts; zwischenspeichern lässt sich ein
+  // Strom ohnehin nicht.
+  if (url.includes('/auctions/stream')) return;
+
   // Laufende Auktionen und Gebote dürfen nie aus der Konserve kommen.
   // Eine langsame Seite ist ärgerlich; ein Gebot von vor zehn Minuten
   // als aktueller Stand ist falsch.
