@@ -1266,6 +1266,17 @@
                 hidden aria-hidden="true"></select>
       </div>
 
+      <!-- Der Knopf für neu eingestellte Auktionen. Er steht außerhalb
+           von #auctionContainer, weil renderAuctions() den Container bei
+           jedem Durchgang leert — hier drin wäre er nach dem ersten
+           Klick weg. -->
+      <div id="auktionenNeuLeiste" class="auktionen-neu" hidden>
+        <button type="button" id="auktionenNeuKnopf" class="auktionen-neu__knopf" onclick="zeigeNeueAuktionen()">
+          <span class="auktionen-neu__punkt" aria-hidden="true"></span>
+          <span id="auktionenNeuText">Neue Auktionen</span>
+        </button>
+      </div>
+
       <div id="auctionContainer"></div>
     </div>
 

@@ -1645,96 +1645,114 @@ function updateHeaderUser(user) {
 }
 
 // --- Auth State Observer ---
-firebase.auth().onAuthStateChanged(async (user) => {
-  // Initial Theme load from localStorage before user settings are fetched
-  initThemeFromLocalStorage();
-  if (user) {
-    console.log("User Logged In:", user.discordName || user.displayName || user.uid);
+//
+// In einem try, und das hat einen Anlass: Diese Zeile stand hier ohne
+// Absicherung auf oberster Ebene. Ist das Firebase-CDN blockiert — ein
+// Werbeblocker reicht —, wirft sie beim Auswerten der Datei, und damit
+// hoert script.js an dieser Stelle auf. Alles, was weiter unten steht,
+// entsteht nie: keine Auktionsliste, kein Live-Strom, keine Filter.
+//
+// Auf dem Papier ist das die Anmeldung. In Wahrheit war es ein
+// Schalter, der die halbe Seite abschaltet, wenn ein Fremddienst
+// haengt. Dieselbe Ueberlegung steht schon beim Besucherzaehler.
+try {
+  firebase.auth().onAuthStateChanged(async (user) => {
+    // Initial Theme load from localStorage before user settings are fetched
+    initThemeFromLocalStorage();
+    if (user) {
+      console.log("User Logged In:", user.discordName || user.displayName || user.uid);
 
-    // Dynamic Header
-    updateHeaderUser(user);
+      // Dynamic Header
+      updateHeaderUser(user);
 
-    // Sync User Info & Fetch Roles
-    const userRef = userDatabase.ref('users/' + user.uid);
-    const userDataSnapshot = await userRef.once('value');
-    const userData = userDataSnapshot.val() || {};
+      // Sync User Info & Fetch Roles
+      const userRef = userDatabase.ref('users/' + user.uid);
+      const userDataSnapshot = await userRef.once('value');
+      const userData = userDataSnapshot.val() || {};
 
-    const updates = {
-      lastLogin: firebase.database.ServerValue.TIMESTAMP
-    };
-    // Discord gibt nur mit erweitertem Zugriff eine E-Mail heraus, und die
-    // brauchen wir nicht. Die Spalte wird deshalb nur angefasst, wenn wirklich
-    // etwas drinsteht - sonst würde eine vorhandene Adresse geleert.
-    if (user.email) updates.email = user.email;
+      const updates = {
+        lastLogin: firebase.database.ServerValue.TIMESTAMP
+      };
+      // Discord gibt nur mit erweitertem Zugriff eine E-Mail heraus, und die
+      // brauchen wir nicht. Die Spalte wird deshalb nur angefasst, wenn wirklich
+      // etwas drinsteht - sonst würde eine vorhandene Adresse geleert.
+      if (user.email) updates.email = user.email;
 
-    // Automatically add these fields if they don't exist yet
-    if (userData.isAdmin === undefined) updates.isAdmin = false;
-    if (userData.isPartner === undefined) updates.isPartner = false;
+      // Automatically add these fields if they don't exist yet
+      if (userData.isAdmin === undefined) updates.isAdmin = false;
+      if (userData.isPartner === undefined) updates.isPartner = false;
 
-    await userRef.update(updates);
+      await userRef.update(updates);
 
-    // Update local app state
-    App.isAdmin = (userData.isAdmin === true) || (updates.isAdmin === true);
-    App.isPartner = (userData.isPartner === true) || (updates.isPartner === true);
+      // Update local app state
+      App.isAdmin = (userData.isAdmin === true) || (updates.isAdmin === true);
+      App.isPartner = (userData.isPartner === true) || (updates.isPartner === true);
 
-    console.log("Roles - Admin:", App.isAdmin, "Partner:", App.isPartner);
+      console.log("Roles - Admin:", App.isAdmin, "Partner:", App.isPartner);
 
-    // Show/Hide Ads Tab based on roles
-    const adsTab = document.getElementById('settings-tab-ads');
-    if (adsTab) {
-      adsTab.style.display = (App.isAdmin || App.isPartner) ? 'block' : 'none';
+      // Show/Hide Ads Tab based on roles
+      const adsTab = document.getElementById('settings-tab-ads');
+      if (adsTab) {
+        adsTab.style.display = (App.isAdmin || App.isPartner) ? 'block' : 'none';
+      }
+
+      // Show/Hide Donations Settings Tab based on roles
+      const donationsTab = document.getElementById('settings-tab-donations');
+      if (donationsTab) {
+        donationsTab.style.display = App.isAdmin ? 'block' : 'none';
+      }
+
+      // Show/Hide User Codes Settings Tab based on roles
+      const userCodesTab = document.getElementById('settings-tab-user-codes');
+      if (userCodesTab) {
+        userCodesTab.style.display = App.isAdmin ? 'block' : 'none';
+      }
+
+      // Load persisted settings
+      loadUserSettings(user);
+
+      // Load Reminders for UI
+      await loadUserReminders(user);
+
+      // Die Vorlaufzeit von hier bestimmt, wie früh eine Erinnerung gesetzt
+      // werden darf - sie muss also stehen, bevor jemand den Glockenknopf
+      // drückt, nicht erst wenn er die Einstellungen öffnet.
+      await ladeDcEinstellungen();
+      pruefeBenachrichtigungsAnker();
+
+      // Load Ads
+      loadAds();
+
+      // Load Minecraft Verification (to show/hide Profil tab)
+      loadMinecraftVerificationStatus();
+    } else {
+      console.log("User Logged Out via AuthStateChanged");
+      App.isAdmin = false;
+      App.isPartner = false;
+      const adsTab = document.getElementById('settings-tab-ads');
+      if (adsTab) adsTab.style.display = 'none';
+
+      const donationsTab = document.getElementById('settings-tab-donations');
+      if (donationsTab) donationsTab.style.display = 'none';
+
+      const userCodesTab = document.getElementById('settings-tab-user-codes');
+      if (userCodesTab) userCodesTab.style.display = 'none';
+
+      updateHeaderUser(null);
+      toggleLightMode(false);
+      resetVisibilitySettings();
+      App.pinnedItems = []; // Reset pins on logout
+      App.dcEinstellungen = { ...DC_VORGABEN };
+      loadAds(); // Reload default/empty ads
     }
-
-    // Show/Hide Donations Settings Tab based on roles
-    const donationsTab = document.getElementById('settings-tab-donations');
-    if (donationsTab) {
-      donationsTab.style.display = App.isAdmin ? 'block' : 'none';
-    }
-
-    // Show/Hide User Codes Settings Tab based on roles
-    const userCodesTab = document.getElementById('settings-tab-user-codes');
-    if (userCodesTab) {
-      userCodesTab.style.display = App.isAdmin ? 'block' : 'none';
-    }
-
-    // Load persisted settings
-    loadUserSettings(user);
-
-    // Load Reminders for UI
-    await loadUserReminders(user);
-
-    // Die Vorlaufzeit von hier bestimmt, wie früh eine Erinnerung gesetzt
-    // werden darf - sie muss also stehen, bevor jemand den Glockenknopf
-    // drückt, nicht erst wenn er die Einstellungen öffnet.
-    await ladeDcEinstellungen();
-    pruefeBenachrichtigungsAnker();
-
-    // Load Ads
-    loadAds();
-
-    // Load Minecraft Verification (to show/hide Profil tab)
-    loadMinecraftVerificationStatus();
-  } else {
-    console.log("User Logged Out via AuthStateChanged");
-    App.isAdmin = false;
-    App.isPartner = false;
-    const adsTab = document.getElementById('settings-tab-ads');
-    if (adsTab) adsTab.style.display = 'none';
-
-    const donationsTab = document.getElementById('settings-tab-donations');
-    if (donationsTab) donationsTab.style.display = 'none';
-
-    const userCodesTab = document.getElementById('settings-tab-user-codes');
-    if (userCodesTab) userCodesTab.style.display = 'none';
-
-    updateHeaderUser(null);
-    toggleLightMode(false);
-    resetVisibilitySettings();
-    App.pinnedItems = []; // Reset pins on logout
-    App.dcEinstellungen = { ...DC_VORGABEN };
-    loadAds(); // Reload default/empty ads
-  }
-});
+  });
+} catch (fehler) {
+  console.warn('Anmeldung nicht verfuegbar:', fehler.message);
+  // Ohne Anmeldung sieht man die Seite als Gast — das ist erheblich
+  // mehr als gar nichts.
+  try { initThemeFromLocalStorage(); } catch { /* auch das ist Beiwerk */ }
+  try { updateHeaderUser(null); } catch { /* dito */ }
+}
 
 function openProfileSettings() {
   const modal = document.getElementById("logoutModal");
@@ -2327,6 +2345,22 @@ document.addEventListener('click', (e) => {
  * vergleichen gegen den Schnitt, und die dürfen ein paar Sekunden
  * später erscheinen. Vorher hing die ganze Seite daran.
  */
+/* Der Zustand des Ereignisstroms. Er steht hier oben und nicht unten
+   beim Rest des Stroms, weil ladeAktiveAuktionen() ihn braucht: Eine
+   Zuweisung mit const gilt erst ab der Zeile, in der sie steht. Bricht
+   die Auswertung von script.js vorher ab — ein blockiertes CDN reicht —,
+   wuerde die Auktionsliste an einer Zeile scheitern, die es ohne den
+   Strom gar nicht gaebe. */
+const AUKTIONS_STROM_URL = "https://api.opsucht.net/auctions/stream";
+
+const Strom = {
+  quelle: null,
+  /** Neu eingestellte Auktionen, die noch auf den Knopf warten. */
+  wartend: new Map(),
+  verbunden: false,
+  ereignisse: 0,
+};
+
 async function ladeAktiveAuktionen() {
   try {
     const res = await fetch("https://api.opsucht.net/auctions/active");
@@ -2336,12 +2370,319 @@ async function ladeAktiveAuktionen() {
     App.auctionsData = [];
   }
 
+  Strom.wartend.clear();
+  zeigeNeuZaehler();
+
   App.playerStatsCache = {};
   App.spielerListe = null;
   itemIndexVerwerfen();
   setupAuctionFilters();
 
   document.querySelector('#tab-auctions .loading-spinner')?.remove();
+}
+
+/* ====================================================================
+   Der Ereignisstrom des Auktionshauses
+   ====================================================================
+
+   Seit dem 23.09.2026 schickt api.opsucht.net jede Änderung im
+   Auktionshaus sofort. Vorher wurde die Liste genau einmal geladen —
+   wer die Seite offen ließ, sah irgendwann Auktionen, die es längst
+   nicht mehr gab, und Gebote von vor einer Stunde.
+
+   Die Regel, nach der hier entschieden wird: **Was die Liste verrutschen
+   lässt, wartet auf einen Klick. Was nur eine Zeile ändert, passiert
+   sofort.**
+
+   Ein Gebot ändert den Preis auf einer Karte, die ohnehin schon da
+   steht — nichts bewegt sich, also sofort. Eine verkaufte Auktion wird
+   grau und heißt „verkauft", statt aus der Liste gerissen zu werden:
+   Würde sie verschwinden, rutschte alles darunter nach oben, und wer
+   gerade auf eine Karte zielt, trifft eine andere. Neue Auktionen
+   müssten oben eingefügt werden und verschieben damit alles — die
+   sammeln sich hinter einem Knopf.
+
+   Deshalb wird hier auch nicht renderAuctions() gerufen. Das baut die
+   ganze Liste neu auf, setzt „Mehr anzeigen" zurück und springt an den
+   Anfang. Bei einem Gebot pro Sekunde wäre die Seite unbenutzbar. */
+
+/**
+ * Dieselbe Kennung, die createAuctionCard() in die Karte schreibt.
+ *
+ * Sie muss zeichengenau dieselbe sein — sie ist der einzige Faden
+ * zwischen einem Ereignis und der Karte, die es betrifft.
+ */
+function auktionsKennung(a) {
+  return a?.id || (a?.seller + "_" + (a?.item?.material || "") + "_" + a?.endTime);
+}
+
+/** Die Auktion aus einem Ereignis — oder null, wenn sie nicht zu erkennen ist. */
+function auktionAusEreignis(rohdaten) {
+  let daten;
+  try {
+    daten = JSON.parse(rohdaten);
+  } catch {
+    return null;
+  }
+  if (!daten || typeof daten !== "object") return null;
+  // Angekündigt sind „die vollständigen Daten der Auktion". Ob sie blank
+  // im Ereignis stehen oder eingepackt, steht dort nicht — deshalb
+  // werden die plausiblen Formen durchprobiert, statt eine zu raten.
+  for (const kandidat of [daten, daten.auction, daten.data, daten.payload]) {
+    if (kandidat && typeof kandidat === "object" && kandidat.item) return kandidat;
+  }
+  return null;
+}
+
+/** Die Karte zu einer Auktion, falls sie gerade sichtbar ist. */
+function karteZu(kennung) {
+  if (!kennung) return null;
+  return document.querySelector(`#auctionContainer .card[data-auction-id="${CSS.escape(kennung)}"]`);
+}
+
+/**
+ * Ein neues Gebot: Preis und Gebotszahl auf der Karte nachziehen.
+ *
+ * Nur die zwei Zeilen, nicht die ganze Karte. Ein innerHTML auf die
+ * Karte würde den Klick-Handler mitnehmen und das Bild neu laden — für
+ * eine Zahl, die sich um ein paar Tausend ändert.
+ */
+function stromGebot(auktion) {
+  const kennung = auktionsKennung(auktion);
+  const index = (App.auctionsData || []).findIndex((a) => auktionsKennung(a) === kennung);
+  if (index === -1) {
+    // Kennen wir nicht — entweder eine der wartenden, oder die Liste ist
+    // älter als das Ereignis. In beiden Fällen ist nichts zu tun.
+    if (Strom.wartend.has(kennung)) Strom.wartend.set(kennung, auktion);
+    return;
+  }
+  App.auctionsData[index] = auktion;
+
+  const karte = karteZu(kennung);
+  if (!karte) return;
+
+  const anzahl = auktion.bids ? Object.keys(auktion.bids).length : 0;
+  const preis = anzahl > 0 ? (auktion.currentBid ?? auktion.startBid) : auktion.startBid;
+
+  const haupt = karte.querySelector(".auction-currentBid");
+  if (haupt) {
+    const beschriftung = haupt.querySelector("span");
+    const wert = haupt.querySelector(".price-info__wert");
+    if (beschriftung) beschriftung.textContent = anzahl > 0 ? "Aktuelles Gebot" : "Startgebot";
+    if (wert && wert.textContent !== formatCardPrice(preis)) {
+      wert.textContent = formatCardPrice(preis);
+      // Kurz aufleuchten. Ohne das ändert sich eine Zahl irgendwo in
+      // einer Liste aus fünfzig Karten, und niemand bemerkt es.
+      wert.classList.remove("preis-frisch");
+      void wert.offsetWidth;
+      wert.classList.add("preis-frisch");
+    }
+  }
+
+  setzeGebotszahl(karte, anzahl);
+}
+
+/**
+ * Die Zeile „Gebote" auf den Stand bringen — und sie anlegen, wenn es
+ * sie noch nicht gibt.
+ *
+ * createAuctionCard() lässt sie bei null Geboten weg. Beim *ersten*
+ * Gebot gibt es also nichts nachzuziehen, und ohne diesen Zweig bliebe
+ * die Zahl bis zum nächsten Neuaufbau der Liste unsichtbar — also
+ * genau in dem Moment, in dem sie am meisten sagt.
+ */
+function setzeGebotszahl(karte, anzahl) {
+  const vorhanden = karte.querySelector(".auction-bids .price-info__wert");
+  if (vorhanden) {
+    vorhanden.textContent = String(anzahl);
+    return;
+  }
+  if (anzahl <= 0) return;
+
+  const preise = karte.querySelector(".auction-preise");
+  if (!preise) return;
+
+  const zeile = document.createElement("div");
+  zeile.className = "price-info auction-bids";
+  zeile.innerHTML = '<span>Gebote</span><span class="price-info__wert"></span>';
+  zeile.querySelector(".price-info__wert").textContent = String(anzahl);
+
+  // An dieselbe Stelle wie beim Neuaufbau: hinter Sofortkauf, vor dem
+  // 30-Tage-Schnitt. Sonst springt die Zeile beim nächsten Zeichnen.
+  const danach = preise.querySelector(".auction-monthAvg, .auction-bid-amount");
+  preise.insertBefore(zeile, danach ?? null);
+}
+
+/**
+ * Die Auktion ist vorbei.
+ *
+ * Aus den Daten fliegt sie sofort — was nicht mehr läuft, soll in
+ * keiner Zählung und keinem Schnitt mehr auftauchen. Die Karte bleibt
+ * aber stehen und wird grau: Sie herauszunehmen ließe alles darunter
+ * hochrutschen, und wer gerade zielt, klickt daneben. Beim nächsten
+ * Neuaufbau der Liste ist sie ohnehin weg.
+ */
+function stromBeendet(kennung, grund) {
+  if (!kennung) return;
+  Strom.wartend.delete(kennung);
+  zeigeNeuZaehler();
+
+  const vorher = (App.auctionsData || []).length;
+  App.auctionsData = (App.auctionsData || []).filter((a) => auktionsKennung(a) !== kennung);
+  if (App.auctionsData.length !== vorher) {
+    App.playerStatsCache = {};
+    App.spielerListe = null;
+  }
+
+  const karte = karteZu(kennung);
+  if (!karte || karte.classList.contains("auktion-vorbei")) return;
+  karte.classList.add("auktion-vorbei");
+  const fahne = document.createElement("div");
+  fahne.className = "auktion-vorbei__fahne";
+  fahne.textContent = grund;
+  karte.appendChild(fahne);
+}
+
+/** Die Leiste mit dem Knopf an den Stand der wartenden Auktionen anpassen. */
+function zeigeNeuZaehler() {
+  const leiste = document.getElementById("auktionenNeuLeiste");
+  const text = document.getElementById("auktionenNeuText");
+  if (!leiste || !text) return;
+
+  const anzahl = Strom.wartend.size;
+  leiste.hidden = anzahl === 0;
+  text.textContent = anzahl === 1 ? "1 neue Auktion" : `${anzahl} neue Auktionen`;
+}
+
+/** Der Klick auf den Knopf: Jetzt kommen sie in die Liste. */
+function zeigeNeueAuktionen() {
+  if (Strom.wartend.size === 0) return;
+  // Vorn dran: Das Neueste zuerst, so wie es auch nach einem Neuladen
+  // stünde. Sortiert wird danach ohnehin nach dem gewählten Modus.
+  App.auctionsData = [...Strom.wartend.values(), ...(App.auctionsData || [])];
+  Strom.wartend.clear();
+  zeigeNeuZaehler();
+
+  App.playerStatsCache = {};
+  App.spielerListe = null;
+  itemIndexVerwerfen();
+  setupAuctionFilters();
+  renderAuctions();
+}
+
+/**
+ * Verbindet mit dem Ereignisstrom.
+ *
+ * EventSource bringt zwei Dinge mit, die hier sonst von Hand stünden:
+ * Es verbindet nach einem Abriss selbst neu, und es schickt dabei die
+ * zuletzt gesehene Kennung als Last-Event-ID mit — genau das, was
+ * verhindert, dass die Änderungen während der Trennung verloren gehen.
+ *
+ * Scheitert alles, bleibt die Seite, wie sie vor dem 23.09.2026 war:
+ * Die Auktionen stehen von dem Moment, in dem sie geladen wurden. Das
+ * ist der Grund, warum hier nirgends ein Fehler angezeigt wird — es
+ * gibt nichts zu melden, es fehlt nur eine Annehmlichkeit.
+ */
+function starteAuktionsStrom() {
+  if (Strom.quelle || typeof EventSource === "undefined") return;
+
+  let quelle;
+  try {
+    quelle = new EventSource(AUKTIONS_STROM_URL);
+  } catch (fehler) {
+    console.info("Auktions-Livestrom nicht verfügbar:", fehler.message);
+    return;
+  }
+  Strom.quelle = quelle;
+
+  quelle.onopen = () => {
+    Strom.verbunden = true;
+  };
+  quelle.onerror = () => {
+    // EventSource verbindet von selbst neu. Hier steht deshalb nur, dass
+    // es gerade nicht steht — eine Fehlermeldung wäre falsch, solange
+    // der Browser noch dabei ist, es wieder hinzubekommen.
+    Strom.verbunden = false;
+  };
+
+  const auf = (art, tun) =>
+    quelle.addEventListener(art, (e) => {
+      Strom.ereignisse += 1;
+      try {
+        tun(e);
+      } catch (fehler) {
+        console.warn(`Auktions-Ereignis ${art} nicht verarbeitet:`, fehler);
+      }
+    });
+
+  auf("auction.created", (e) => {
+    const auktion = auktionAusEreignis(e.data);
+    if (!auktion) return;
+    const kennung = auktionsKennung(auktion);
+    if ((App.auctionsData || []).some((a) => auktionsKennung(a) === kennung)) return;
+    Strom.wartend.set(kennung, auktion);
+    zeigeNeuZaehler();
+  });
+
+  for (const art of ["auction.bid_placed", "auction.updated"]) {
+    auf(art, (e) => {
+      const auktion = auktionAusEreignis(e.data);
+      if (auktion) stromGebot(auktion);
+    });
+  }
+
+  auf("auction.sold", (e) => {
+    const auktion = auktionAusEreignis(e.data);
+    if (auktion) stromBeendet(auktionsKennung(auktion), "Verkauft");
+  });
+  auf("auction.instant_bought", (e) => {
+    const auktion = auktionAusEreignis(e.data);
+    if (auktion) stromBeendet(auktionsKennung(auktion), "Sofort gekauft");
+  });
+  auf("auction.expired", (e) => {
+    const auktion = auktionAusEreignis(e.data);
+    if (auktion) stromBeendet(auktionsKennung(auktion), "Abgelaufen");
+  });
+  auf("auction.cancelled", (e) => {
+    const auktion = auktionAusEreignis(e.data);
+    if (auktion) stromBeendet(auktionsKennung(auktion), "Zurückgezogen");
+  });
+
+  // auction.removed trägt nur die Kennung, keine Auktion. Es kommt
+  // zusätzlich zu den Ereignissen oben — dass hier nichts Neues
+  // passiert, wenn die Auktion schon weg ist, erledigt stromBeendet
+  // selbst.
+  auf("auction.removed", (e) => {
+    let daten;
+    try {
+      daten = JSON.parse(e.data);
+    } catch {
+      return;
+    }
+    const kennung = typeof daten === "string" ? daten : daten?.uid ?? daten?.id ?? daten?.auctionId;
+    if (kennung) stromBeendet(String(kennung), "Beendet");
+  });
+
+  // „Fang noch mal von vorn an." Genau dafür ist das Ereignis
+  // angekündigt: Der Server sagt, dass er den Anschluss nicht mehr
+  // herstellen kann, und die aktiven Auktionen einmal neu zu holen ist
+  // die vorgesehene Antwort.
+  auf("stream.reset", async () => {
+    console.info("Auktionsstrom bittet um Neuabgleich — Auktionen werden neu geladen.");
+    await ladeAktiveAuktionen();
+    renderAuctions();
+  });
+}
+
+/** Nur für Tests und fürs Aufräumen beim Verlassen der Seite. */
+function beendeAuktionsStrom() {
+  Strom.quelle?.close();
+  Strom.quelle = null;
+  Strom.verbunden = false;
+}
+
+if (typeof window !== "undefined") {
+  window.addEventListener("pagehide", beendeAuktionsStrom);
 }
 
 /**
@@ -7554,6 +7895,12 @@ async function init() {
   });
   await Promise.all([loadMarket(), ladeAktiveAuktionen(), loadShards()]);
   setupAuctionFilters();
+
+  // Erst jetzt, nicht vorher: Der Strom trägt Änderungen in eine Liste
+  // ein, die es geben muss. Ein Gebot auf eine Auktion, die noch gar
+  // nicht geladen ist, wäre ein Ereignis ohne Zeile — und die Auktion
+  // käme gleich darauf mit dem alten Preis aus /active nach.
+  starteAuktionsStrom();
 
   // Hier und nicht am Ende: Ein Link auf ein Item oder einen Spieler
   // braucht den Verlauf, und weiter unten hinge er hinter allem, was
