@@ -3250,45 +3250,144 @@ function itemBildTag(material, adresse, alt, zusatz = '') {
     onload="bildGeladen(this)" onerror="bildRueckfall(this)"${zusatz ? ' ' + zusatz : ''}>`;
 }
 
+/* ── Die Bilder der Custom Items ─────────────────────────────────────
+
+   Seit dem 23.09.2026 liefert die Auktions-API bei Custom Items einen
+   echten Render: `item.icon` zeigt dann auf items.opsucht.net, und das
+   ist das Bild, das das Item im Spiel hat — die Hightechangel als
+   Hightechangel, nicht als Angel.
+
+   Drei Dinge, an den echten Daten gemessen, erklären die Regeln unten:
+
+   1. **Das Bild hängt am konkreten Item, nicht am Namen.** „Runenbrecher"
+      gibt es mit zwei Modellen. Nachgeschlagen wird deshalb über die
+      volle Variante — Name, Material, Lore, Verzauberungen —, so wie
+      der Items-Reiter sie auch trennt.
+
+   2. **Der Server rendert neu und vergibt dabei neue Adressen.** Aus
+      `10496.png` wurde `lWowtEefZVEu.png`. 122 von 431 Varianten hatten
+      nach einem Tag schon mehrere Renders — und bei allen 122 lösen sie
+      sich zeitlich ab, keiner läuft durcheinander. Der neueste ist also
+      der richtige, egal was an einem einzelnen Verkauf steht.
+
+   3. **`item.icon` gibt es schon seit Juli** — nur war es bis gestern
+      für jedes Item ein allgemeines Materialbild von img.mc-api.io.
+      Weil diese Funktion das Feld zuerst fragte, kamen die handgepflegten
+      Bilder aus config.js seit Juli nie mehr zum Zug: Eine Sammelkarte
+      zeigte ein Blatt Papier. Das allgemeine Bild steht jetzt ganz
+      hinten, wo es hingehört. */
+
+const RENDER_HOST = 'items.opsucht.net';
+
+/** Ein echter Render des Servers — kein allgemeines Materialbild. */
+function istRender(adresse) {
+  if (typeof adresse !== 'string') return false;
+  try {
+    return new URL(adresse).hostname === RENDER_HOST;
+  } catch {
+    return false;
+  }
+}
+
+let renderIndexCache = null;
+
+/** Name plus Variante: der Schlüssel, unter dem ein Render gilt. */
+function renderSchluessel(item) {
+  return `${item?.displayName ?? item?.material ?? ''}\u0000${itemVariante(item)}`;
+}
+
+/**
+ * Der neueste bekannte Render je Variante.
+ *
+ * Aus Verlauf und laufenden Auktionen zusammen: Ein Verkauf von vor
+ * dem 23.09. hat keinen Render — dieselbe Variante liegt aber
+ * vielleicht gerade im Auktionshaus, und dann ist ihr Bild bekannt.
+ * So zeigt der Verlauf das richtige Bild, ohne dass jedes Item erst
+ * noch einmal verkauft werden muss.
+ *
+ * Gebaut wird nur aus Einträgen, die einen Render tragen. Die Variante
+ * auszurechnen kostet die Lore, und bei 88.000 Verkäufen ohne Render
+ * wäre das Arbeit für nichts.
+ */
+function renderIndex() {
+  if (renderIndexCache) return renderIndexCache;
+  const index = new Map();
+  const merke = (item, zeit) => {
+    if (!istRender(item?.icon)) return;
+    const schluessel = renderSchluessel(item);
+    const bisher = index.get(schluessel);
+    if (!bisher || zeit >= bisher.zeit) index.set(schluessel, { adresse: item.icon, zeit });
+  };
+
+  for (const name in App.auctionHistory || {}) {
+    const verkaeufe = App.auctionHistory[name];
+    if (Array.isArray(verkaeufe)) for (const verkauf of verkaeufe) merke(verkauf.item, zeitpunkt(verkauf));
+  }
+  // Laufende Auktionen sind das Neueste, was es gibt.
+  const jetzt = Date.now();
+  for (const auktion of App.auctionsData || []) merke(auktion.item, jetzt);
+
+  renderIndexCache = index;
+  return index;
+}
+
+/** Wie gut das Bild eines Items ist: Render 2, Materialbild 1, keines 0. */
+function bildRang(item) {
+  if (istRender(item?.icon)) return 2;
+  return item?.icon ? 1 : 0;
+}
+
+/** Der neueste Render dieser Variante, oder null. */
+function renderFuer(item) {
+  if (!item) return null;
+  return renderIndex().get(renderSchluessel(item))?.adresse ?? null;
+}
+
+/**
+ * Welches Bild ein Item bekommt — in dieser Reihenfolge:
+ *
+ *   1. der neueste Render des Servers für diese Variante
+ *   2. ein Render am Item selbst, den der Index noch nicht kennt
+ *      (eine Auktion, die eben erst über den Strom kam)
+ *   3. das handgepflegte Bild aus config.js
+ *   4. Sammelkarte oder Booster
+ *   5. das allgemeine Bild des Item-Typs — von der API, sonst die
+ *      eigene Kette aus Wiki und Spieltextur
+ *
+ * Der Render steht vor dem handgepflegten Bild, weil er das Item zeigt,
+ * wie es im Spiel aussieht, und weil der Server ihn pflegt. Bei 151 von
+ * 152 laufenden Auktionen mit handgepflegtem Bild gab es am 24.09.
+ * schon einen. Das handgepflegte bleibt für den Rest und für Verkäufe
+ * von Items, die seitdem nicht mehr gehandelt wurden.
+ */
 function getAuctionItemIcon(item) {
   const displayName = item.displayName ?? item.material;
   const material = item.material;
-  let iconUrl = item.icon;
 
-  if (!iconUrl || iconUrl.includes("NONE")) {
-    // 1. Check customAuctionIcons (Config) FIRST
-    let customIconEntry = customAuctionIcons[displayName];
+  const render = renderFuer(item);
+  if (render) return render;
+  if (istRender(item.icon)) return item.icon;
 
-    // Fallback: Case-Insensitive Lookup (e.g. "Diamond Card" -> "DIAMOND CARD")
-    if (!customIconEntry) {
-      customIconEntry = customAuctionIcons[displayName.toUpperCase()];
-    }
+  let customIconEntry = customAuctionIcons[displayName];
+  // Groß-/Kleinschreibung ignorieren ("Diamond Card" -> "DIAMOND CARD")
+  if (!customIconEntry) customIconEntry = customAuctionIcons[displayName.toUpperCase()];
+  // Ein Eintrag kann je Material ein eigenes Bild haben.
+  const gepflegt =
+    typeof customIconEntry === 'object' && customIconEntry !== null
+      ? customIconEntry[material]
+      : customIconEntry;
+  if (gepflegt) return gepflegt;
 
-    if (typeof customIconEntry === 'object' && customIconEntry !== null) {
-      // Material Fallback for Object-Entry
-      iconUrl = customIconEntry[material];
-    } else {
-      // Simple String Match
-      iconUrl = customIconEntry;
-    }
-
-    // if found in config, return it immediately
-    if (iconUrl) return iconUrl;
-
-    // 2. Trading Card / Booster Check (Fallback for generic items)
-    if (item.lore && Array.isArray(item.lore)) {
-      const isCardOrBooster = item.lore.some(line =>
-        line.includes("Dieses Boosterpack enthält") ||
-        line.includes("Sammle diese Sammelkarte")
-      );
-
-      if (isCardOrBooster) {
-        return "https://i.postimg.cc/v8gy5LQM/Booster.png";
-      }
-    }
+  if (Array.isArray(item.lore)) {
+    const karteOderBooster = item.lore.some(
+      (zeile) => zeile.includes("Dieses Boosterpack enthält") || zeile.includes("Sammle diese Sammelkarte")
+    );
+    if (karteOderBooster) return "https://i.postimg.cc/v8gy5LQM/Booster.png";
   }
-  // Kein eigenes Bild gefunden: das Bild des Item-Typs nehmen.
-  return iconUrl || materialBildUrl(material) || BARRIER_BILD;
+
+  // "NONE" im Namen stand bei älteren Antworten für "kein Bild".
+  const allgemein = item.icon && !item.icon.includes("NONE") ? item.icon : null;
+  return allgemein || materialBildUrl(material) || BARRIER_BILD;
 }
 
 function getAuctionCategoryKey(auction) {
@@ -5959,6 +6058,7 @@ async function refreshTab(tabId, btn) {
 /** Wirft Index und Durchschnitte weg. Nach jedem Laden neuer Daten. */
 function itemIndexVerwerfen() {
   itemIndexCache = null;
+  renderIndexCache = null;
   schnittCache.clear();
 }
 
@@ -5994,8 +6094,10 @@ function buildItemIndex() {
     }
     if (source === 'active') index[schluessel].activeCount++;
     if (source === 'history') index[schluessel].soldCount++;
-    // Ein Item mit Icon bevorzugt als repräsentatives Objekt behalten
-    if (!index[schluessel].item.icon && itemObj.icon) index[schluessel].item = itemObj;
+    // Als Vertreter das Item mit dem besten Bild behalten: ein echter
+    // Render vor einem allgemeinen Materialbild vor gar keinem. Vorher
+    // hieß es nur "hat ein Icon" — und das hat seit Juli jedes Item.
+    if (bildRang(itemObj) > bildRang(index[schluessel].item)) index[schluessel].item = itemObj;
   };
 
   // Aus aktiven Auktionen
