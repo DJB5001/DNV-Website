@@ -1,6 +1,6 @@
 {
-  "stand": "2026-10-08T22:01:42.679Z",
-  "anzahl": 57,
+  "stand": "2026-10-09T11:59:45.260Z",
+  "anzahl": 56,
   "hinweis": "Automatisch vom DNV-Bot aus den Discord-Rollen erzeugt. Änderungen hier werden überschrieben.",
   "mitglieder": [
     {
@@ -362,16 +362,6 @@
       "verifiziert": true,
       "plattform": "java",
       "uuid": "25c5ad30-6a9e-4ecc-9268-57d48eb97b8d"
-    },
-    {
-      "name": "HowIMetYourMoney",
-      "rolle": "Farmer",
-      "farbe": "farmer",
-      "rang": 12,
-      "seit": "2026-08-18",
-      "verifiziert": true,
-      "plattform": "java",
-      "uuid": "16bc97a3-b9bb-4b7c-80e9-40d02b1293c1"
     },
     {
       "name": "KingBanane2208",
